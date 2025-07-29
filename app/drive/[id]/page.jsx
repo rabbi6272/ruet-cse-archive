@@ -148,13 +148,7 @@ export default function DrivePage({ params }) {
                       <div
                         className="cursor-pointer text-6xl"
                         onClick={() => {
-                          !file.mimeType.includes("mp4") &&
-                            !file.mimeType.includes("image/png") &&
-                            !file.mimeType.includes("image/jpeg") &&
-                            !file.mimeType.includes("pdf") &&
-                            !file.mimeType.includes("document") &&
-                            !file.mimeType.includes("spreadsheet") &&
-                            !file.mimeType.includes("presentation") &&
+                          file.mimeType.includes("folder") &&
                             router.push(`/drive/${file.id}`);
                         }}
                       >
@@ -177,21 +171,14 @@ export default function DrivePage({ params }) {
                         {file.mimeType.includes("presentation") && (
                           <i className="fas fa-file-powerpoint text-orange-500  "></i>
                         )}
-                        {!file.mimeType.includes("mp4") &&
-                          !file.mimeType.includes("image/png") &&
-                          !file.mimeType.includes("image/jpeg") &&
-                          !file.mimeType.includes("pdf") &&
-                          !file.mimeType.includes("document") &&
-                          !file.mimeType.includes("spreadsheet") &&
-                          !file.mimeType.includes("presentation") && (
-                            // <i className="fas fa-folder text-gray-500 "></i>
-                            <Image
-                              src="/images/folder.svg"
-                              alt="File Icon"
-                              width={80}
-                              height={80}
-                            />
-                          )}
+                        {file.mimeType.includes("folder") && (
+                          <Image
+                            src="/images/folder.svg"
+                            alt="File Icon"
+                            width={80}
+                            height={80}
+                          />
+                        )}
                       </div>
 
                       <div className="">

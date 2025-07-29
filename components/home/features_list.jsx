@@ -149,7 +149,8 @@ export function FeaturesList() {
                 />
               </svg>
               <span>
-                Available PDF files: <AnimatedCounter target={25} suffix="+" />
+                Available PDF files:{" "}
+                <AnimatedCounter target={25} suffix="+" duration={4000} />
               </span>
             </li>
 
@@ -169,7 +170,8 @@ export function FeaturesList() {
                 />
               </svg>
               <span>
-                Code snippets: <AnimatedCounter target={50} suffix="+" />
+                Code snippets:{" "}
+                <AnimatedCounter target={50} suffix="+" duration={4000} />
               </span>
             </li>
 
@@ -189,7 +191,8 @@ export function FeaturesList() {
                 />
               </svg>
               <span>
-                Alumni: <AnimatedCounter target={150} suffix="+" />
+                Alumni:{" "}
+                <AnimatedCounter target={150} suffix="+" duration={4000} />
               </span>
             </li>
           </ul>
