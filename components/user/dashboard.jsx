@@ -14,6 +14,7 @@ import {
 } from "firebase/database";
 import toast, { Toaster } from "react-hot-toast";
 import NotificationCenter from "./NotificationCenter";
+import Link from "next/link";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -152,20 +153,23 @@ const Dashboard = () => {
       <Toaster />
       <div className="max-w-[95%] lg:max-w-5xl mx-auto">
         {/* User Profile Section */}
-        <div className="bg-white dark:bg-slate-700 shadow rounded-lg p-6 mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-6">
+        <div className="flex justify-between items-center bg-white dark:bg-slate-700 shadow rounded-lg p-4 lg:p-6 mb-8">
+          <div className="flex flex-col items-start">
+            <div className="flex items-center space-x-3 lg:space-x-4">
+              {/* Name icon */}
               <div className="flex-shrink-0">
                 <div className="h-16 w-16 rounded-full bg-indigo-100 dark:bg-indigo-300 flex items-center justify-center text-indigo-600 text-2xl font-bold">
                   {user.name.charAt(0)}
                 </div>
               </div>
+
+              {/* User Info */}
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-200">
                   {user.name}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Roll Number: {user.roll}
+                  Roll: {user.roll}
                 </p>
                 <p className="text-gray-600 dark:text-gray-400 ">
                   {snippets.length}{" "}
@@ -173,44 +177,32 @@ const Dashboard = () => {
                 </p>
               </div>
             </div>
-            
-            {/* Notification Center */}
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <NotificationCenter userRoll={user?.roll} />
-              </div>
-              
-              {/* View All Notifications Link */}
-              <a
-                href="/notifications"
-                className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium transition-colors duration-200 flex items-center"
-              >
-                <i className="fas fa-external-link-alt mr-1"></i>
-                View All
-              </a>
-            </div>
+
+            {/* New Snippet Button */}
+            <button
+              onClick={handleNewSnippet}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white my-4 px-6 py-2.5 rounded-lg shadow transition duration-200 flex items-center"
+            >
+              <i className="fas fa-plus mr-2"></i>
+              Post New Snippet
+            </button>
           </div>
 
-          <button
-            onClick={handleNewSnippet}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white my-4 px-6 py-2.5 rounded-lg shadow transition duration-200 flex items-center"
-          >
-            <svg
-              className="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
+          {/* Notification Center */}
+          <div className="flex flex-col items-center space-y-3">
+            <div className="relative cursor-pointer">
+              <NotificationCenter userRoll={user?.roll} />
+            </div>
+
+            {/* View All Notifications Link */}
+            <Link
+              href="/user/notifications"
+              className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium transition-colors duration-200 flex items-center"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-              ></path>
-            </svg>
-            Post New Snippet
-          </button>
+              <i className="fas fa-external-link-alt mr-1"></i>
+              View All
+            </Link>
+          </div>
         </div>
 
         {/* Error Message */}
