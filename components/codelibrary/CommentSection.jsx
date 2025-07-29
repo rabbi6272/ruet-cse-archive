@@ -15,7 +15,7 @@ function getNameFromRoll(roll) {
     .join(" ");
 }
 
-const CommentSection = ({ snippetId, snippetAuthor }) => {
+const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Code" }) => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [replyingTo, setReplyingTo] = useState(null);
@@ -127,7 +127,7 @@ const CommentSection = ({ snippetId, snippetAuthor }) => {
       if (user.roll !== snippetAuthor) {
         await createNotification(
           snippetAuthor,
-          `${getNameFromRoll(user.roll)} commented on your code snippet`,
+          `${getNameFromRoll(user.roll)} commented on your code`,
           'comment',
           snippetId,
           newComment.trim()
@@ -135,14 +135,14 @@ const CommentSection = ({ snippetId, snippetAuthor }) => {
       }
 
       // Check for mentions and create notifications
-      const mentionRegex = /@(\w+)\((\d+)\)/g;
+      const mentionRegex = /@([^(]+)\((\d+)\)/g;
       let match;
       while ((match = mentionRegex.exec(newComment)) !== null) {
         const [, , mentionedRoll] = match;
         if (mentionedRoll !== user.roll) {
           await createNotification(
             mentionedRoll,
-            `${getNameFromRoll(user.roll)} mentioned you in a comment`,
+            `${getNameFromRoll(user.roll)} mentioned you in ${getNameFromRoll(snippetAuthor)}'s code`,
             'mention',
             snippetId,
             newComment.trim()
@@ -174,10 +174,11 @@ const CommentSection = ({ snippetId, snippetAuthor }) => {
 
       // Find the comment author to notify
       const comment = comments.find(c => c.id === commentId);
+      
       if (comment && user.roll !== comment.authorRoll) {
         await createNotification(
           comment.authorRoll,
-          `${getNameFromRoll(user.roll)} replied to your comment`,
+          `${getNameFromRoll(user.roll)} replied to your comment on ${getNameFromRoll(snippetAuthor)}'s code`,
           'reply',
           snippetId,
           replyText.trim()
@@ -185,14 +186,14 @@ const CommentSection = ({ snippetId, snippetAuthor }) => {
       }
 
       // Check for mentions in reply
-      const mentionRegex = /@(\w+)\((\d+)\)/g;
+      const mentionRegex = /@([^(]+)\((\d+)\)/g;
       let match;
       while ((match = mentionRegex.exec(replyText)) !== null) {
         const [, , mentionedRoll] = match;
         if (mentionedRoll !== user.roll) {
           await createNotification(
             mentionedRoll,
-            `${getNameFromRoll(user.roll)} mentioned you in a reply`,
+            `${getNameFromRoll(user.roll)} mentioned you in ${getNameFromRoll(snippetAuthor)}'s code`,
             'mention',
             snippetId,
             replyText.trim()
@@ -210,18 +211,33 @@ const CommentSection = ({ snippetId, snippetAuthor }) => {
 
   const createNotification = async (recipientRoll, message, type, relatedSnippetId, commentText = null) => {
     try {
+      // Don't create notification for self
+      if (recipientRoll === user.roll) {
+        return;
+      }
+      
+      // Validate recipient roll
+      if (!recipientRoll) {
+        console.error("No recipient roll provided");
+        return;
+      }
+      
       const notificationRef = ref(db, `notifications/${recipientRoll}`);
-      await push(notificationRef, {
+      const notificationData = {
         message,
         type,
         relatedSnippetId,
-        snippetTitle: snippet?.title || "Code Snippet",
-        commentText: commentText ? commentText.substring(0, 150) : null, // Limit text length
+        snippetTitle: snippetTitle || "Untitled Code",
+        snippetAuthor,
+        commentText: commentText ? commentText.substring(0, 150) : null,
         createdAt: new Date().toISOString(),
+        timestamp: Date.now(),
         read: false,
         fromUserRoll: user.roll,
-        fromUserName: user.name
-      });
+        fromUserName: user.name || getNameFromRoll(user.roll)
+      };
+      
+      await push(notificationRef, notificationData);
     } catch (error) {
       console.error("Error creating notification:", error);
     }
@@ -263,8 +279,8 @@ const CommentSection = ({ snippetId, snippetAuthor }) => {
   };
 
   const renderText = (text) => {
-    // Replace mentions with styled spans
-    return text.replace(/@(\w+)\((\d+)\)/g, '<span class="text-blue-500 font-medium">@$1</span>');
+    // Replace mentions with styled spans - updated regex to match the new mention format
+    return text.replace(/@([^(]+)\((\d+)\)/g, '<span class="text-blue-500 font-medium">@$1</span>');
   };
 
   const toggleExpandReplies = (commentId) => {

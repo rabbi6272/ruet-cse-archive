@@ -175,10 +175,19 @@ const Dashboard = () => {
             </div>
             
             {/* Notification Center */}
-            <div className="relative">
-              <NotificationCenter userRoll={user.roll} />
-              {/* Additional visual indicator for notifications */}
-              <div className="absolute -top-2 -right-2 w-3 h-3 bg-red-500 rounded-full opacity-0 notification-pulse"></div>
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <NotificationCenter userRoll={user?.roll} />
+              </div>
+              
+              {/* View All Notifications Link */}
+              <a
+                href="/notifications"
+                className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium transition-colors duration-200 flex items-center"
+              >
+                <i className="fas fa-external-link-alt mr-1"></i>
+                View All
+              </a>
             </div>
           </div>
 

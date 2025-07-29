@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { ref, onValue, off, update, remove } from "firebase/database";
+import { ref, onValue, off } from "firebase/database";
 import { formatDistanceToNow } from "date-fns";
 import { users } from "@/lib/mino";
 
@@ -22,11 +22,14 @@ const NotificationCenter = ({ userRoll }) => {
   const [previousCount, setPreviousCount] = useState(0);
 
   useEffect(() => {
-    if (!userRoll) return;
+    if (!userRoll) {
+      return;
+    }
 
     const notificationsRef = ref(db, `notifications/${userRoll}`);
     const fetchNotifications = onValue(notificationsRef, (snapshot) => {
       const data = snapshot.val();
+      
       if (data) {
         const notificationsArray = Object.keys(data)
           .map((key) => ({
@@ -78,38 +81,6 @@ const NotificationCenter = ({ userRoll }) => {
     }
   };
 
-  const markAsRead = async (notificationId) => {
-    try {
-      const notificationRef = ref(db, `notifications/${userRoll}/${notificationId}`);
-      await update(notificationRef, { read: true });
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
-    }
-  };
-
-  const markAllAsRead = async () => {
-    try {
-      const updates = {};
-      notifications.forEach(notification => {
-        if (!notification.read) {
-          updates[`notifications/${userRoll}/${notification.id}/read`] = true;
-        }
-      });
-      await update(ref(db), updates);
-    } catch (error) {
-      console.error("Error marking all notifications as read:", error);
-    }
-  };
-
-  const deleteNotification = async (notificationId) => {
-    try {
-      const notificationRef = ref(db, `notifications/${userRoll}/${notificationId}`);
-      await remove(notificationRef);
-    } catch (error) {
-      console.error("Error deleting notification:", error);
-    }
-  };
-
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'comment':
@@ -130,6 +101,36 @@ const NotificationCenter = ({ userRoll }) => {
       return formatDistanceToNow(new Date(dateString), { addSuffix: true });
     } catch {
       return "some time ago";
+    }
+  };
+
+  const formatNotificationMessage = (notification) => {
+    const timeAgo = formatTimeAgo(notification.createdAt);
+    const snippetTitle = notification.snippetTitle || "Untitled Code";
+    const fromUser = notification.fromUserName || getNameFromRoll(notification.fromUserRoll);
+    const snippetAuthor = notification.snippetAuthor ? getNameFromRoll(notification.snippetAuthor) : "someone";
+    
+    switch (notification.type) {
+      case 'comment':
+        return {
+          main: `${fromUser} commented on your code "${snippetTitle}"`,
+          time: timeAgo
+        };
+      case 'reply':
+        return {
+          main: `${fromUser} replied to your comment on ${snippetAuthor}'s code "${snippetTitle}"`,
+          time: timeAgo
+        };
+      case 'mention':
+        return {
+          main: `${fromUser} mentioned you in ${snippetAuthor}'s code "${snippetTitle}"`,
+          time: timeAgo
+        };
+      default:
+        return {
+          main: notification.message,
+          time: timeAgo
+        };
     }
   };
 
@@ -181,14 +182,6 @@ const NotificationCenter = ({ userRoll }) => {
                 </p>
               )}
             </div>
-            {unreadCount > 0 && (
-              <button
-                onClick={markAllAsRead}
-                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
-              >
-                Mark all read
-              </button>
-            )}
           </div>
 
           {/* Notifications List */}
@@ -198,16 +191,9 @@ const NotificationCenter = ({ userRoll }) => {
                 {notifications.slice(0, 10).map((notification) => (
                   <div
                     key={notification.id}
-                    className={`px-4 py-3 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 relative cursor-pointer ${
+                    className={`px-4 py-3 border-b border-gray-100 dark:border-gray-700 transition-all duration-200 relative ${
                       !notification.read ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500' : ''
                     }`}
-                    onClick={() => {
-                      if (notification.relatedSnippetId) {
-                        markAsRead(notification.id);
-                        setShowNotifications(false);
-                        window.location.href = `/codelibrary#${notification.relatedSnippetId}`;
-                      }
-                    }}
                   >
                   <div className="flex items-start space-x-3">
                     {/* Notification Icon */}
@@ -222,16 +208,14 @@ const NotificationCenter = ({ userRoll }) => {
                     {/* Notification Content */}
                     <div className="flex-1 min-w-0">
                       <div className="mb-2">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          {notification.message}
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 leading-relaxed">
+                          {formatNotificationMessage(notification).main}
                         </p>
                         
-                        {/* Snippet Title */}
-                        {notification.snippetTitle && (
-                          <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 font-medium bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded inline-block">
-                            <i className="fas fa-code mr-1"></i>{notification.snippetTitle}
-                          </p>
-                        )}
+                        {/* Time ago */}
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {formatNotificationMessage(notification).time}
+                        </p>
                         
                         {/* Comment Preview */}
                         {notification.commentText && (
@@ -245,18 +229,7 @@ const NotificationCenter = ({ userRoll }) => {
                         )}
                       </div>
                       
-                      <div className="flex items-center justify-between">
-                        <div>
-                          {notification.fromUserRoll && (
-                            <p className="text-xs text-gray-600 dark:text-gray-400">
-                              <i className="fas fa-user mr-1"></i>{getNameFromRoll(notification.fromUserRoll)} ({notification.fromUserRoll})
-                            </p>
-                          )}
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            <i className="fas fa-clock mr-1"></i>{formatTimeAgo(notification.createdAt)}
-                          </p>
-                        </div>
-                        
+                      <div className="flex items-center justify-end">
                         {/* Notification Type Badge */}
                         <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                           notification.type === 'comment' 
@@ -322,10 +295,11 @@ const NotificationCenter = ({ userRoll }) => {
               </div>
             ) : (
               <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                <div className="text-4xl mb-2">
+                <div className="text-4xl mb-4">
                   <i className="fas fa-bell-slash"></i>
                 </div>
-                <p>No notifications yet</p>
+                <p className="text-lg mb-2">No notifications found</p>
+                <p className="text-sm">You'll be notified when someone interacts with your content</p>
               </div>
             )}
           </div>

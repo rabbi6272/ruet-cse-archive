@@ -429,6 +429,7 @@ const CodeLibrary = () => {
                   <CommentSection 
                     snippetId={snippet.id} 
                     snippetAuthor={snippet.rollNumber}
+                    snippetTitle={snippet.title}
                   />
                 </div>
               </div>
