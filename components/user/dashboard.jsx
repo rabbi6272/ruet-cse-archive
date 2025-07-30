@@ -18,11 +18,11 @@ import NotificationCenter from "./NotificationCenter";
 import Link from "next/link";
 import hljs from "highlight.js";
 import "highlight.js/styles/monokai.css";
-import { 
-  getUserNutrinos, 
-  recordDailyVisit, 
+import {
+  getUserNutrinos,
+  recordDailyVisit,
   awardSnippetNutrinos,
-  getUserNutrinosHistory 
+  getUserNutrinosHistory,
 } from "@/lib/nutrinos-system";
 
 const ITEMS_PER_PAGE = 5;
@@ -38,10 +38,14 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [isCodeReviewer, setIsCodeReviewer] = useState(false);
   const [expandedSnippets, setExpandedSnippets] = useState({});
-  const [userNutrinos, setUserNutrinos] = useState({ totalNutrinos: 0, rank: 'Newbie', level: 1 });
+  const [userNutrinos, setUserNutrinos] = useState({
+    totalNutrinos: 0,
+    rank: "Newbie",
+    level: 1,
+  });
   const [nutrinosHistory, setNutrinosHistory] = useState([]);
   const [showNutrinosHistory, setShowNutrinosHistory] = useState(false);
-  
+
   const maxCodeLines = 20;
 
   // Check authentication and load user data
@@ -65,7 +69,7 @@ const Dashboard = () => {
     try {
       const nutrinosData = await getUserNutrinos(rollNumber);
       setUserNutrinos(nutrinosData);
-      
+
       const history = await getUserNutrinosHistory(rollNumber, 5);
       setNutrinosHistory(history);
     } catch (error) {
@@ -75,7 +79,7 @@ const Dashboard = () => {
 
   // Highlight code blocks after component renders
   useEffect(() => {
-    const codeBlocks = document.querySelectorAll('pre code');
+    const codeBlocks = document.querySelectorAll("pre code");
     codeBlocks.forEach((block) => {
       hljs.highlightElement(block);
     });
@@ -142,13 +146,13 @@ const Dashboard = () => {
         lastUpdated: new Date().toISOString(),
       });
       setEditingId(null);
-      
+
       // Award Nutrinos for editing snippet
       await awardSnippetNutrinos.edit(user.roll, snippetId);
-      
+
       // Refresh Nutrinos data
       await loadUserNutrinosData(user.roll);
-      
+
       toast.success("Snippet updated successfully! +1.5 Nutrinos earned!");
     } catch (err) {
       setError("Failed to update snippet. Please try again.");
@@ -159,17 +163,21 @@ const Dashboard = () => {
 
   // Delete snippet
   const handleDeleteSnippet = async (snippetId) => {
-    if (confirm("Are you sure you want to delete this snippet? You will lose 3 Nutrinos.")) {
+    if (
+      confirm(
+        "Are you sure you want to delete this snippet? You will lose 3 Nutrinos."
+      )
+    ) {
       try {
         const snippetRef = ref(db, `codeSnippets/${snippetId}`);
         await remove(snippetRef);
-        
+
         // Award negative Nutrinos for deleting snippet
         await awardSnippetNutrinos.delete(user.roll, snippetId);
-        
+
         // Refresh Nutrinos data
         await loadUserNutrinosData(user.roll);
-        
+
         toast.success("Snippet deleted successfully! -3 Nutrinos deducted.");
       } catch (err) {
         setError("Failed to delete snippet. Please try again.");
@@ -189,14 +197,14 @@ const Dashboard = () => {
       ...prev,
       [id]: !prev[id],
     }));
-    
+
     // Re-highlight after state change and DOM update
     setTimeout(() => {
-      const codeBlocks = document.querySelectorAll('pre code');
+      const codeBlocks = document.querySelectorAll("pre code");
       codeBlocks.forEach((block) => {
         // Remove existing highlighting classes
-        block.removeAttribute('data-highlighted');
-        block.className = block.className.replace(/hljs[^\s]*/g, '').trim();
+        block.removeAttribute("data-highlighted");
+        block.className = block.className.replace(/hljs[^\s]*/g, "").trim();
         // Re-apply highlighting
         hljs.highlightElement(block);
       });
@@ -227,15 +235,15 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-4 px-4">
+    <div className="min-h-screen py-4 px-4">
       <Toaster />
-      <div className="max-w-6xl mx-auto">
+      <div className="w-full lg:max-w-6xl mx-auto">
         {/* User Profile Section */}
         <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl p-4 lg:p-6 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="flex items-center gap-4">
               {/* Name icon */}
-              <div className="h-12 w-12 lg:h-16 lg:w-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-lg lg:text-2xl font-bold shadow-lg">
+              <div className="flex-shrink-0 h-12 w-12 lg:h-16 lg:w-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-lg lg:text-2xl font-bold shadow-lg">
                 {user.name.charAt(0)}
               </div>
 
@@ -248,9 +256,10 @@ const Dashboard = () => {
                   Roll: {user.roll}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {snippets.length} {snippets.length === 1 ? "snippet" : "snippets"}
+                  {snippets.length}{" "}
+                  {snippets.length === 1 ? "snippet" : "snippets"}
                 </p>
-                
+
                 {/* Nutrinos Display */}
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                   {/* User Role Badge */}
@@ -258,7 +267,7 @@ const Dashboard = () => {
                     <span>🛡️</span>
                     <span>{getUserDisplayRole(user)}</span>
                   </div>
-                  
+
                   {/* Nutrinos Count - More Lively */}
                   <div className="flex items-center gap-1 bg-gradient-to-r from-green-400 to-emerald-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg transform hover:scale-110 transition-all duration-300 nutrinos-badge cursor-pointer">
                     <span className="lightning-icon">⚡</span>
@@ -266,17 +275,17 @@ const Dashboard = () => {
                       {userNutrinos.totalNutrinos.toFixed(2)} Nutrinos
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center gap-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-2 py-1 rounded-full text-xs font-medium shadow-sm hover:shadow-lg transition-all duration-200 hover:scale-105">
                     <span>🏆</span>
                     <span>{userNutrinos.rank}</span>
                   </div>
-                  
+
                   <div className="flex items-center gap-1 bg-gradient-to-r from-green-500 to-teal-600 text-white px-2 py-1 rounded-full text-xs font-medium shadow-sm hover:shadow-lg transition-all duration-200 hover:scale-105">
                     <span>📊</span>
                     <span>Level {userNutrinos.level}</span>
                   </div>
-                  
+
                   <button
                     onClick={() => setShowNutrinosHistory(!showNutrinosHistory)}
                     className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-all duration-200 hover:scale-105 transform px-2 py-1 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
@@ -293,10 +302,10 @@ const Dashboard = () => {
               <NotificationCenter userRoll={user?.roll} />
               <Link
                 href="/user/notifications"
-                className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
+                className="text-xs   text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors flex flex-col items-center gap-1"
               >
                 <i className="fas fa-external-link-alt"></i>
-                <span className="hidden sm:inline">View All</span>
+                <span className="inline">View All</span>
               </Link>
             </div>
           </div>
@@ -306,7 +315,9 @@ const Dashboard = () => {
             <div className="relative">
               <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto">
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Recent Nutrinos Activity</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    Recent Nutrinos Activity
+                  </h3>
                 </div>
                 <div className="divide-y divide-gray-100 dark:divide-gray-700">
                   {nutrinosHistory.length > 0 ? (
@@ -315,14 +326,23 @@ const Dashboard = () => {
                         <div className="flex justify-between items-center">
                           <div>
                             <p className="text-sm text-gray-900 dark:text-gray-100">
-                              {typeof entry.reason === 'string' ? entry.reason : 'Activity completed'}
+                              {typeof entry.reason === "string"
+                                ? entry.reason
+                                : "Activity completed"}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                               {new Date(entry.timestamp).toLocaleDateString()}
                             </p>
                           </div>
-                          <div className={`text-sm font-bold ${entry.nutrinos >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {entry.nutrinos >= 0 ? '+' : ''}{entry.nutrinos.toFixed(2)}
+                          <div
+                            className={`text-sm font-bold ${
+                              entry.nutrinos >= 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {entry.nutrinos >= 0 ? "+" : ""}
+                            {entry.nutrinos.toFixed(2)}
                           </div>
                         </div>
                       </div>
@@ -401,7 +421,9 @@ const Dashboard = () => {
         <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden">
           {/* Snippets Header */}
           <div className="px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Your Code Snippets</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Your Code Snippets
+            </h2>
           </div>
 
           {loading ? (
@@ -413,8 +435,12 @@ const Dashboard = () => {
               <div className="text-gray-400 mb-2">
                 <i className="fas fa-code text-3xl"></i>
               </div>
-              <p className="text-gray-500 dark:text-gray-400">No code snippets yet</p>
-              <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Start by posting your first snippet!</p>
+              <p className="text-gray-500 dark:text-gray-400">
+                No code snippets yet
+              </p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+                Start by posting your first snippet!
+              </p>
             </div>
           ) : (
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -515,11 +541,11 @@ const Dashboard = () => {
                           </button>
                         </div>
                       </div>
-                      
+
                       <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
                         {snippet.description}
                       </p>
-                      
+
                       <div className="code-container dark:bg-gray-900 bg-gray-200 rounded-xl overflow-hidden relative group">
                         {/* Code snippet */}
                         <pre
@@ -552,10 +578,13 @@ const Dashboard = () => {
                               className="px-4 py-2 text-sm font-medium rounded-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors shadow-sm"
                               onClick={() => {
                                 // Remove highlighting before animation
-                                const codeBlocks = document.querySelectorAll('pre code');
+                                const codeBlocks =
+                                  document.querySelectorAll("pre code");
                                 codeBlocks.forEach((block) => {
-                                  block.removeAttribute('data-highlighted');
-                                  block.className = block.className.replace(/hljs[^\s]*/g, '').trim();
+                                  block.removeAttribute("data-highlighted");
+                                  block.className = block.className
+                                    .replace(/hljs[^\s]*/g, "")
+                                    .trim();
                                 });
                                 toggleExpand(snippet.id);
                               }}
@@ -568,7 +597,7 @@ const Dashboard = () => {
                           </div>
                         )}
                       </div>
-                      
+
                       {snippet.tags && snippet.tags.length > 0 && (
                         <div className="mt-4 flex flex-wrap gap-2">
                           {snippet.tags.map((tag) => (
@@ -602,7 +631,8 @@ const Dashboard = () => {
                     <span className="font-medium">
                       {Math.min(currentPage * ITEMS_PER_PAGE, snippets.length)}
                     </span>{" "}
-                    of <span className="font-medium">{snippets.length}</span> snippets
+                    of <span className="font-medium">{snippets.length}</span>{" "}
+                    snippets
                   </p>
                 </div>
                 <div className="flex gap-2">

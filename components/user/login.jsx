@@ -1,44 +1,19 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { users } from "@/lib/mino";
-import ReCAPTCHA from "react-google-recaptcha";
 
 import toast, { Toaster } from "react-hot-toast";
 
 export function LoginForm() {
   const router = useRouter();
-  const recaptchaRef = useRef(null);
 
   const [rollNumber, setRollNumber] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [recaptchaToken, setRecaptchaToken] = useState(null);
-
-  const handleRecaptchaChange = (token) => {
-    setRecaptchaToken(token);
-  };
-
-  const verifyRecaptcha = async (token) => {
-    try {
-      const response = await fetch("/api/verify-recaptcha", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ recaptchaToken: token }),
-      });
-
-      const data = await response.json();
-      return data.success;
-    } catch (error) {
-      console.error("reCAPTCHA verification error:", error);
-      return false;
-    }
-  };
 
   // Mock data (since we can't access @/db/data.json in browser)
   const handleSubmit = async (e) => {
@@ -46,30 +21,7 @@ export function LoginForm() {
     setIsLoading(true);
     setError("");
 
-    // Check if reCAPTCHA is completed
-    if (!recaptchaToken) {
-      setError("Please complete the reCAPTCHA verification");
-      toast.error("Please complete the reCAPTCHA verification");
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      // Verify reCAPTCHA first
-      const recaptchaValid = await verifyRecaptcha(recaptchaToken);
-
-      if (!recaptchaValid) {
-        setError("reCAPTCHA verification failed. Please try again.");
-        toast.error("reCAPTCHA verification failed. Please try again.");
-        // Reset reCAPTCHA
-        if (recaptchaRef.current) {
-          recaptchaRef.current.reset();
-        }
-        setRecaptchaToken(null);
-        setIsLoading(false);
-        return;
-      }
-
       const user = users.find((user) => user.roll === rollNumber);
 
       // Check if user exists
@@ -77,11 +29,6 @@ export function LoginForm() {
         setError("User not found");
         setIsLoading(false);
         toast.error("User not found");
-        // Reset reCAPTCHA on failed login
-        if (recaptchaRef.current) {
-          recaptchaRef.current.reset();
-        }
-        setRecaptchaToken(null);
         return;
       }
 
@@ -90,11 +37,6 @@ export function LoginForm() {
         setError("Invalid password");
         setIsLoading(false);
         toast.error("Invalid password");
-        // Reset reCAPTCHA on failed login
-        if (recaptchaRef.current) {
-          recaptchaRef.current.reset();
-        }
-        setRecaptchaToken(null);
         return;
       }
 
@@ -119,11 +61,6 @@ export function LoginForm() {
       setError("An error occurred. Please try again.");
       toast.error("An error occurred. Please try again.");
       console.error("Login error:", err);
-      // Reset reCAPTCHA on error
-      if (recaptchaRef.current) {
-        recaptchaRef.current.reset();
-      }
-      setRecaptchaToken(null);
     } finally {
       setIsLoading(false);
     }
@@ -219,27 +156,10 @@ export function LoginForm() {
             </div>
           </div>
 
-          {/* reCAPTCHA */}
-          <div className="mb-4 w-full flex justify-center">
-            <ReCAPTCHA
-              ref={recaptchaRef}
-              sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
-              onChange={handleRecaptchaChange}
-              theme="light" // You can change to "dark" if needed
-            />
-          </div>
-
-          {/* reCAPTCHA requirement message */}
-          {!recaptchaToken && (
-            <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-4">
-              Complete the reCAPTCHA to proceed
-            </p>
-          )}
-
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isLoading || !recaptchaToken}
+            disabled={isLoading}
             className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-300 transition-colors duration-300"
           >
             {isLoading ? "Logging in..." : "Login"}

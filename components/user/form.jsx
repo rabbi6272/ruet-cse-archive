@@ -1,18 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { ref, push } from "firebase/database";
 import { useRouter } from "next/navigation";
-import ReCAPTCHA from "react-google-recaptcha";
 import toast from "react-hot-toast";
 import { addNutrinos } from "@/lib/nutrinos-system";
 
 export function CodeSnippetForm() {
   const router = useRouter();
-  const recaptchaRef = useRef(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [recaptchaToken, setRecaptchaToken] = useState(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -28,28 +25,6 @@ export function CodeSnippetForm() {
 
   const [tagInput, setTagInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
-
-  const handleRecaptchaChange = (token) => {
-    setRecaptchaToken(token);
-  };
-
-  const verifyRecaptcha = async (token) => {
-    try {
-      const response = await fetch("/api/verify-recaptcha", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ recaptchaToken: token }),
-      });
-
-      const data = await response.json();
-      return data.success;
-    } catch (error) {
-      console.error("reCAPTCHA verification error:", error);
-      return false;
-    }
-  };
 
   // Check if user is logged in
   useEffect(() => {
@@ -132,31 +107,9 @@ export function CodeSnippetForm() {
       return;
     }
 
-    // Check if reCAPTCHA is completed (only if reCAPTCHA is enabled)
-    if (process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && !recaptchaToken) {
-      toast.error("Please complete the reCAPTCHA verification");
-      return;
-    }
-
     setSubmitting(true);
 
     try {
-      // Verify reCAPTCHA first (only if reCAPTCHA is enabled)
-      if (process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
-        const recaptchaValid = await verifyRecaptcha(recaptchaToken);
-
-        if (!recaptchaValid) {
-          toast.error("reCAPTCHA verification failed. Please try again.");
-          // Reset reCAPTCHA
-          if (recaptchaRef.current) {
-            recaptchaRef.current.reset();
-          }
-          setRecaptchaToken(null);
-          setSubmitting(false);
-          return;
-        }
-      }
-
       const snippetsRef = ref(db, "codeSnippets");
       await push(snippetsRef, {
         ...formData,
@@ -165,10 +118,15 @@ export function CodeSnippetForm() {
 
       // Award Nutrinos points for code snippet submission
       try {
-        await addNutrinos(formData.rollNumber, 'snippet_add', 'Code Snippet Added', {
-          title: formData.title,
-          language: formData.language
-        });
+        await addNutrinos(
+          formData.rollNumber,
+          "snippet_add",
+          "Code Snippet Added",
+          {
+            title: formData.title,
+            language: formData.language,
+          }
+        );
       } catch (nutritosError) {
         console.error("Failed to award Nutrinos points:", nutritosError);
         // Don't break the flow, just log the error
@@ -192,12 +150,6 @@ export function CodeSnippetForm() {
 
       setTagInput("");
 
-      // Reset reCAPTCHA after successful submission
-      if (recaptchaRef.current) {
-        recaptchaRef.current.reset();
-      }
-      setRecaptchaToken(null);
-
       toast.success("Snippet submitted successfully!");
       router.push("/user/dashboard");
 
@@ -205,11 +157,6 @@ export function CodeSnippetForm() {
     } catch (error) {
       console.error("Submission error:", error);
       toast.error("Failed to submit snippet. Please try again.");
-      // Reset reCAPTCHA on error
-      if (recaptchaRef.current) {
-        recaptchaRef.current.reset();
-      }
-      setRecaptchaToken(null);
     } finally {
       setSubmitting(false);
     }
@@ -404,48 +351,12 @@ export function CodeSnippetForm() {
             </label>
           </div>
 
-          {/* reCAPTCHA */}
-          {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (
-            <>
-              <div className="flex justify-center">
-                <div className="transform scale-90 sm:scale-100">
-                  <ReCAPTCHA
-                    ref={recaptchaRef}
-                    sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
-                    onChange={handleRecaptchaChange}
-                    theme="light"
-                  />
-                </div>
-              </div>
-
-              {/* reCAPTCHA requirement message */}
-              {!recaptchaToken && (
-                <p className="text-sm text-gray-600 dark:text-gray-400 text-center -mt-4 mb-4">
-                  Complete the reCAPTCHA to proceed
-                </p>
-              )}
-            </>
-          )}
-
-          {/* Development mode notice */}
-          {!process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (
-            <div className="flex justify-center">
-              <p className="text-sm text-yellow-600 dark:text-yellow-400 text-center bg-yellow-50 dark:bg-yellow-900/20 px-4 py-2 rounded-lg">
-                ⚠️ Development mode: reCAPTCHA disabled
-              </p>
-            </div>
-          )}
-
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={
-              submitting ||
-              (process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && !recaptchaToken)
-            }
+            disabled={submitting}
             className={`w-full px-6 py-3 text-lg font-medium text-white rounded-lg transition-colors duration-200 ${
-              submitting ||
-              (process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && !recaptchaToken)
+              submitting
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-indigo-600 hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500"
             }`}
