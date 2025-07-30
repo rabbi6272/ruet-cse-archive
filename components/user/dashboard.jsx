@@ -185,23 +185,23 @@ const Dashboard = () => {
             <div className="flex flex-col sm:flex-row gap-2">
               <button
                 onClick={handleNewSnippet}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 lg:px-6 lg:py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center"
               >
                 <i className="fas fa-plus mr-2"></i>
                 Post New Snippet
               </button>
-              
+
               <Link
                 href="/user/help"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 lg:px-6 lg:py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center"
               >
                 <i className="fas fa-question-circle mr-2"></i>
                 Get Help
               </Link>
-              
+
               <Link
                 href="/user/my-doubts"
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 lg:px-6 lg:py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center"
               >
                 <i className="fas fa-list mr-2"></i>
                 My Doubts
@@ -211,7 +211,7 @@ const Dashboard = () => {
               {isCodeReviewer && (
                 <Link
                   href="/reviewers/dashboard"
-                  className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center border-2 border-orange-300"
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 lg:px-6 lg:py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center "
                 >
                   <i className="fas fa-clipboard-check mr-2"></i>
                   Resolve Doubts

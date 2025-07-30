@@ -1,10 +1,13 @@
 "use client";
 import { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
+import Link from "next/link";
+
 import { ref, onValue, off } from "firebase/database";
 import { formatDistanceToNow } from "date-fns";
+
+import { db } from "@/lib/firebase";
 import { users } from "@/lib/mino";
-import Link from "next/link";
+
 import Loading from "../../loading";
 
 function getNameFromRoll(roll) {

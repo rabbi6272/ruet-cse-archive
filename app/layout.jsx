@@ -2,6 +2,7 @@ import "./globals.css";
 
 import { Navbar } from "@/components/home/navbar";
 import { FooterComponent } from "@/components/footer/footer";
+import { PageTitleProvider } from "@/components/providers/PageTitleProvider";
 
 import { lato } from "./ui/fonts";
 import { Toaster } from "react-hot-toast";
@@ -35,14 +36,16 @@ export default function RootLayout({ children }) {
       <body
         className={`${lato.className} antialiased bg-gray-200 dark:bg-[#071a26f1]`}
       >
-        <SpeedInsights />
-        <Analytics />
-        <Toaster />
-        <Navbar />
+        <PageTitleProvider>
+          <SpeedInsights />
+          <Analytics />
+          <Toaster />
+          <Navbar />
 
-        {children}
+          {children}
 
-        <FooterComponent />
+          <FooterComponent />
+        </PageTitleProvider>
       </body>
     </html>
   );
