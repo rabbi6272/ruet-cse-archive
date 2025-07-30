@@ -232,25 +232,25 @@ const Dashboard = () => {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3">
               <button
                 onClick={handleNewSnippet}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 lg:px-6 lg:py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center gap-2"
               >
                 <i className="fas fa-plus text-xs"></i>
                 <span className="hidden sm:inline">Add Code</span>
                 <span className="sm:hidden">Add</span>
               </button>
-              
+
               <Link
                 href="/user/help"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 lg:px-6 lg:py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center gap-2"
               >
                 <i className="fas fa-question-circle text-xs"></i>
                 <span className="hidden sm:inline">Post Doubt</span>
                 <span className="sm:hidden">Doubt</span>
               </Link>
-              
+
               <Link
                 href="/user/my-doubts"
-                className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 lg:px-6 lg:py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center gap-2"
               >
                 <i className="fas fa-list text-xs"></i>
                 <span className="hidden sm:inline">My Doubts</span>
@@ -261,7 +261,7 @@ const Dashboard = () => {
               {isCodeReviewer && (
                 <Link
                   href="/reviewers/dashboard"
-                  className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 lg:px-6 lg:py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center gap-2"
                 >
                   <i className="fas fa-clipboard-check text-xs"></i>
                   <span className="hidden sm:inline">Resolve Doubts</span>
