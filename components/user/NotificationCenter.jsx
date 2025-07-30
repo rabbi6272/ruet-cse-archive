@@ -361,7 +361,7 @@ const NotificationCenter = ({ userRoll }) => {
                         {/* View Snippet Button */}
                         {notification.relatedSnippetId && (
                           <Link
-                            href={`/codelibrary#${notification.relatedSnippetId}`}
+                            href={`/codelibrary/view/uid=#${notification.relatedSnippetId}`}
                             onClick={() => {
                               markAsRead(notification.id);
                               setShowNotifications(false);
@@ -372,22 +372,20 @@ const NotificationCenter = ({ userRoll }) => {
                           </Link>
                         )}
 
-                        <div className="flex items-center space-x-2">
-                          {!notification.read && (
-                            <button
-                              onClick={() => markAsRead(notification.id)}
-                              className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                            >
-                              Mark read
-                            </button>
-                          )}
+                        {!notification.read && (
                           <button
-                            onClick={() => deleteNotification(notification.id)}
-                            className="text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                            onClick={() => markAsRead(notification.id)}
+                            className="text-xs px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors duration-200 font-medium"
                           >
-                            ✕
+                            Mark read
                           </button>
-                        </div>
+                        )}
+                        <button
+                          onClick={() => deleteNotification(notification.id)}
+                          className="text-xs px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors duration-200 font-medium"
+                        >
+                          ✕ Delete
+                        </button>
                       </div>
                     </div>
 
