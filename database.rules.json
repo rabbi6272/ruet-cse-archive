@@ -1,0 +1,71 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+
+    "codeSnippets": {
+      ".indexOn": ["rollNumber", "language", "date", "difficulty"],
+      "$snippetId": {
+        ".validate": "newData.hasChildren(['title', 'codeSnippet', 'language', 'rollNumber'])"
+      }
+    },
+
+    "codeSnippetComments": {
+      "$snippetId": {
+        ".indexOn": ["timestamp", "author/roll"],
+        "$commentId": {
+          ".validate": "newData.hasChildren(['content', 'author', 'timestamp'])"
+        }
+      }
+    },
+
+    "doubts": {
+      ".indexOn": ["status", "timestamp", "userDetails/roll"],
+      "$doubtId": {
+        ".validate": "newData.hasChildren(['title', 'description', 'userDetails', 'timestamp'])"
+      }
+    },
+
+    "resolvedDoubts": {
+      ".indexOn": ["userSatisfied", "timestamp", "status"],
+      "$doubtId": {
+        ".read": true,
+        ".write": "auth != null"
+      }
+    },
+
+    "notifications": {
+      "$userRoll": {
+        ".indexOn": ["read", "timestamp", "type"],
+        "$notificationId": {
+          ".read": "$userRoll === auth.uid || auth.uid === 'admin'",
+          ".write": "$userRoll === auth.uid || auth.uid === 'admin'"
+        }
+      }
+    },
+
+    "userNutrinos": {
+      "$userRoll": {
+        ".indexOn": ["totalNutrinos", "lastUpdated"],
+        ".read": true,
+        ".write": "auth != null"
+      }
+    },
+
+    "solverPoints": {
+      "$userRoll": {
+        ".indexOn": ["totalPoints", "doubtsResolved"],
+        ".read": true,
+        ".write": "auth != null"
+      }
+    },
+
+    "reviewerNotifications": {
+      ".indexOn": ["timestamp", "read", "type"],
+      "$notificationId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    }
+  }
+}

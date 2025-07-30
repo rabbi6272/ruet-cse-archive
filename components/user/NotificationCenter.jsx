@@ -114,7 +114,9 @@ const NotificationCenter = ({ userRoll }) => {
   };
 
   const formatNotificationMessage = (notification) => {
-    const timeAgo = formatTimeAgo(notification.createdAt || notification.timestamp);
+    const timeAgo = formatTimeAgo(
+      notification.createdAt || notification.timestamp
+    );
     const snippetTitle = notification.snippetTitle || "Untitled Code";
     const fromUser =
       notification.fromUserName || getNameFromRoll(notification.fromUserRoll);
@@ -145,7 +147,8 @@ const NotificationCenter = ({ userRoll }) => {
         };
       case "doubt_assigned":
         return {
-          main: notification.title || "Your doubt has been assigned to a reviewer",
+          main:
+            notification.title || "Your doubt has been assigned to a reviewer",
           time: timeAgo,
         };
       default:
@@ -376,14 +379,16 @@ const NotificationCenter = ({ userRoll }) => {
                         {/* View Snippet Button */}
                         {notification.relatedSnippetId && (
                           <Link
-                            href={`/codelibrary/view/uid=#${notification.relatedSnippetId}`}
+                            href={`/codelibrary/${notification.relatedSnippetId}`}
                             onClick={() => {
                               markAsRead(notification.id);
                               setShowNotifications(false);
                             }}
                             className="text-xs px-2 sm:px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors duration-200 font-medium"
                           >
-                            <span className="hidden sm:inline">View Snippet</span>
+                            <span className="hidden sm:inline">
+                              View Snippet
+                            </span>
                             <span className="sm:hidden">View</span>
                           </Link>
                         )}
@@ -419,7 +424,9 @@ const NotificationCenter = ({ userRoll }) => {
                 <div className="text-2xl sm:text-4xl mb-3 sm:mb-4">
                   <i className="fas fa-bell-slash"></i>
                 </div>
-                <p className="text-base sm:text-lg mb-2">No notifications found</p>
+                <p className="text-base sm:text-lg mb-2">
+                  No notifications found
+                </p>
                 <p className="text-sm px-2">
                   You'll be notified when someone interacts with your content
                 </p>

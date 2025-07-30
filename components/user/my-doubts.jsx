@@ -17,7 +17,7 @@ const MyDoubts = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("pending");
   const [expandedSnippets, setExpandedSnippets] = useState({});
-  
+
   const maxCodeLines = 20;
 
   useEffect(() => {
@@ -33,7 +33,7 @@ const MyDoubts = () => {
 
   useEffect(() => {
     // Highlight code blocks after component renders
-    const codeBlocks = document.querySelectorAll('pre code');
+    const codeBlocks = document.querySelectorAll("pre code");
     codeBlocks.forEach((block) => {
       hljs.highlightElement(block);
     });
@@ -41,7 +41,7 @@ const MyDoubts = () => {
 
   const loadUserDoubts = (userRoll) => {
     setLoading(true);
-    
+
     // Load pending/assigned doubts
     const doubtsRef = ref(db, "doubts");
     const userDoubtsQuery = query(
@@ -49,14 +49,14 @@ const MyDoubts = () => {
       orderByChild("userDetails/roll"),
       equalTo(userRoll)
     );
-    
+
     onValue(userDoubtsQuery, (snapshot) => {
       const data = snapshot.val();
       if (data) {
         const doubtsArray = Object.keys(data)
-          .map(key => ({
+          .map((key) => ({
             id: key,
-            ...data[key]
+            ...data[key],
           }))
           .sort((a, b) => b.timestamp - a.timestamp);
         setDoubts(doubtsArray);
@@ -72,16 +72,20 @@ const MyDoubts = () => {
       orderByChild("userDetails/roll"),
       equalTo(userRoll)
     );
-    
+
     onValue(userResolvedQuery, (snapshot) => {
       const data = snapshot.val();
       if (data) {
         const resolvedArray = Object.keys(data)
-          .map(key => ({
+          .map((key) => ({
             id: key,
-            ...data[key]
+            ...data[key],
           }))
-          .sort((a, b) => (b.solution?.solvedAt || b.timestamp) - (a.solution?.solvedAt || a.timestamp));
+          .sort(
+            (a, b) =>
+              (b.solution?.solvedAt || b.timestamp) -
+              (a.solution?.solvedAt || a.timestamp)
+          );
         setResolvedDoubts(resolvedArray);
       } else {
         setResolvedDoubts([]);
@@ -105,9 +109,11 @@ const MyDoubts = () => {
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
-        toast.success("Thank you for your feedback! This doubt has been archived.");
+        toast.success(
+          "Thank you for your feedback! This doubt has been archived."
+        );
       } else {
         toast.error("Failed to mark as satisfied. Please try again.");
       }
@@ -132,9 +138,11 @@ const MyDoubts = () => {
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
-        toast.success("Doubt reopened for further assistance. A reviewer will be notified.");
+        toast.success(
+          "Doubt reopened for further assistance. A reviewer will be notified."
+        );
       } else {
         toast.error("Failed to reopen doubt. Please try again.");
       }
@@ -156,16 +164,16 @@ const MyDoubts = () => {
       "Debug my code": "bg-blue-100 text-blue-800",
       "Give me hint": "bg-green-100 text-green-800",
       "Explain the idea": "bg-purple-100 text-purple-800",
-      "Explain the code": "bg-pink-100 text-pink-800"
+      "Explain the code": "bg-pink-100 text-pink-800",
     };
     return colors[category] || "bg-gray-100 text-gray-800";
   };
 
   const getStatusColor = (status) => {
     const colors = {
-      "pending": "bg-yellow-100 text-yellow-800",
-      "assigned": "bg-blue-100 text-blue-800",
-      "resolved": "bg-green-100 text-green-800"
+      pending: "bg-yellow-100 text-yellow-800",
+      assigned: "bg-blue-100 text-blue-800",
+      resolved: "bg-green-100 text-green-800",
     };
     return colors[status] || "bg-gray-100 text-gray-800";
   };
@@ -175,14 +183,14 @@ const MyDoubts = () => {
       ...prev,
       [id]: !prev[id],
     }));
-    
+
     // Re-highlight after state change and DOM update
     setTimeout(() => {
-      const codeBlocks = document.querySelectorAll('pre code');
+      const codeBlocks = document.querySelectorAll("pre code");
       codeBlocks.forEach((block) => {
         // Remove existing highlighting classes
-        block.removeAttribute('data-highlighted');
-        block.className = block.className.replace(/hljs[^\s]*/g, '').trim();
+        block.removeAttribute("data-highlighted");
+        block.className = block.className.replace(/hljs[^\s]*/g, "").trim();
         // Re-apply highlighting
         hljs.highlightElement(block);
       });
@@ -194,17 +202,25 @@ const MyDoubts = () => {
   };
 
   if (!user) {
-    return <div className="flex justify-center items-center min-h-screen text-gray-600 dark:text-gray-400">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen text-gray-600 dark:text-gray-400">
+        Loading...
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-4 sm:py-8 sm:px-4 lg:px-6">
-      <Toaster position="top-right" />
+    <div className="min-h-screen  py-4 sm:py-8 sm:px-4 lg:px-6">
+      <Toaster />
       <div className="max-w-[95%] lg:max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">My Doubts</h1>
-          <p className="text-gray-600 dark:text-gray-400">Track your submitted doubts and their solutions</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">
+            My Doubts
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Track your submitted doubts and their solutions
+          </p>
         </div>
 
         {/* Tabs */}
@@ -238,7 +254,9 @@ const MyDoubts = () => {
         {/* Content */}
         {loading ? (
           <div className="flex justify-center items-center py-12">
-            <div className="text-lg text-gray-600 dark:text-gray-400">Loading your doubts...</div>
+            <div className="text-lg text-gray-600 dark:text-gray-400">
+              Loading your doubts...
+            </div>
           </div>
         ) : (
           <>
@@ -247,8 +265,12 @@ const MyDoubts = () => {
               <div className="space-y-4 sm:space-y-6">
                 {doubts.length === 0 ? (
                   <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 sm:p-8 text-center">
-                    <h2 className="text-lg sm:text-xl font-semibold text-gray-700 dark:text-gray-200 mb-2">No pending doubts</h2>
-                    <p className="text-gray-500 dark:text-gray-400 mb-4">You haven't submitted any doubts yet.</p>
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-700 dark:text-gray-200 mb-2">
+                      No pending doubts
+                    </h2>
+                    <p className="text-gray-500 dark:text-gray-400 mb-4">
+                      You haven't submitted any doubts yet.
+                    </p>
                     <Link
                       href="/user/help"
                       className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
@@ -258,18 +280,33 @@ const MyDoubts = () => {
                   </div>
                 ) : (
                   doubts.map((doubt) => (
-                    <div key={doubt.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 border-l-4 border-blue-500">
+                    <div
+                      key={doubt.id}
+                      className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 border-l-4 border-blue-500"
+                    >
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 space-y-2 sm:space-y-0">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2 truncate pr-2">{doubt.title}</h3>
+                          <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2 truncate pr-2">
+                            {doubt.title}
+                          </h3>
                           <div className="flex flex-wrap gap-2 mb-2">
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${getCategoryColor(doubt.category)}`}>
+                            <span
+                              className={`px-2 py-1 rounded text-xs font-medium ${getCategoryColor(
+                                doubt.category
+                              )}`}
+                            >
                               {doubt.category}
                             </span>
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(doubt.status)}`}>
-                              {doubt.status === "pending" ? "Waiting for reviewer" : 
-                               doubt.status === "assigned" ? `Assigned to ${doubt.assignedTo?.name}` : 
-                               "Resolved"}
+                            <span
+                              className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(
+                                doubt.status
+                              )}`}
+                            >
+                              {doubt.status === "pending"
+                                ? "Waiting for reviewer"
+                                : doubt.status === "assigned"
+                                ? `Assigned to ${doubt.assignedTo?.name}`
+                                : "Resolved"}
                             </span>
                           </div>
                         </div>
@@ -278,7 +315,9 @@ const MyDoubts = () => {
                         </div>
                       </div>
 
-                      <p className="text-gray-700 dark:text-gray-300 mb-4 text-sm sm:text-base">{doubt.description}</p>
+                      <p className="text-gray-700 dark:text-gray-300 mb-4 text-sm sm:text-base">
+                        {doubt.description}
+                      </p>
 
                       {doubt.attachment && (
                         <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded">
@@ -291,8 +330,10 @@ const MyDoubts = () => {
                       {doubt.status === "assigned" && (
                         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded p-3">
                           <p className="text-sm text-blue-800 dark:text-blue-300">
-                            <strong>Good news!</strong> Your doubt has been assigned to {doubt.assignedTo?.name}. 
-                            They are working on solving it. You'll be notified when a solution is ready.
+                            <strong>Good news!</strong> Your doubt has been
+                            assigned to {doubt.assignedTo?.name}. They are
+                            working on solving it. You'll be notified when a
+                            solution is ready.
                           </p>
                         </div>
                       )}
@@ -307,17 +348,30 @@ const MyDoubts = () => {
               <div className="space-y-4 sm:space-y-6">
                 {resolvedDoubts.length === 0 ? (
                   <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 sm:p-8 text-center">
-                    <h2 className="text-lg sm:text-xl font-semibold text-gray-700 dark:text-gray-200 mb-2">No resolved doubts</h2>
-                    <p className="text-gray-500 dark:text-gray-400">Your resolved doubts will appear here.</p>
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-700 dark:text-gray-200 mb-2">
+                      No resolved doubts
+                    </h2>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Your resolved doubts will appear here.
+                    </p>
                   </div>
                 ) : (
                   resolvedDoubts.map((doubt) => (
-                    <div key={doubt.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 border-l-4 border-green-500">
+                    <div
+                      key={doubt.id}
+                      className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 border-l-4 border-green-500"
+                    >
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 space-y-2 sm:space-y-0">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2 truncate pr-2">{doubt.title}</h3>
+                          <h3 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2 truncate pr-2">
+                            {doubt.title}
+                          </h3>
                           <div className="flex flex-wrap gap-2 mb-2">
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${getCategoryColor(doubt.category)}`}>
+                            <span
+                              className={`px-2 py-1 rounded text-xs font-medium ${getCategoryColor(
+                                doubt.category
+                              )}`}
+                            >
                               {doubt.category}
                             </span>
                             <span className="px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
@@ -332,9 +386,13 @@ const MyDoubts = () => {
 
                       {/* Problem */}
                       <div className="mb-4">
-                        <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Your Problem:</h4>
+                        <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Your Problem:
+                        </h4>
                         <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded border border-gray-200 dark:border-gray-600">
-                          <p className="text-gray-700 dark:text-gray-300 text-sm sm:text-base">{doubt.description}</p>
+                          <p className="text-gray-700 dark:text-gray-300 text-sm sm:text-base">
+                            {doubt.description}
+                          </p>
                         </div>
                       </div>
 
@@ -344,80 +402,126 @@ const MyDoubts = () => {
                           Solution by {doubt.solution?.solvedBy?.name}:
                         </h4>
                         <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded border border-green-200 dark:border-green-800">
-                          <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap text-sm sm:text-base">{doubt.solution?.content}</p>
-                          
-                          {/* Solution Attachments */}
-                          {doubt.solution?.attachments && doubt.solution.attachments.length > 0 && (
-                            <div className="mt-3">
-                              <h5 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Attachments:</h5>
-                              <div className="grid grid-cols-1 gap-2">
-                                {doubt.solution.attachments.map((attachment, index) => (
-                                  <div key={index} className="border border-gray-200 dark:border-gray-600 rounded p-2 bg-white dark:bg-gray-800">
-                                    {attachment.type === 'image' ? (
-                                      <div>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{attachment.name}</p>
-                                        <img 
-                                          src={attachment.data} 
-                                          alt={attachment.name}
-                                          className="max-w-full h-auto max-h-48 sm:max-h-64 rounded cursor-pointer hover:opacity-80"
-                                          onClick={() => window.open(attachment.data, '_blank')}
-                                        />
-                                      </div>
-                                    ) : (
-                                      <div>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{attachment.name}</p>
-                                        <div className="code-container dark:bg-gray-900 bg-gray-200 rounded-lg overflow-hidden relative group">
-                                          <pre
-                                            className={`p-4 overflow-x-auto transition-transform duration-500 ${
-                                              isCodeLong(attachment.content) &&
-                                              !expandedSnippets[`${doubt.id}-${index}`]
-                                                ? "max-h-70"
-                                                : ""
-                                            }`}
-                                          >
-                                            <code
-                                              className={`language-javascript`}
-                                            >
-                                              {isCodeLong(attachment.content) &&
-                                              !expandedSnippets[`${doubt.id}-${index}`]
-                                                ? attachment.content
-                                                    .split("\n")
-                                                    .slice(0, maxCodeLines)
-                                                    .join("\n") + "\n..."
-                                                : attachment.content}
-                                            </code>
-                                          </pre>
+                          <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap text-sm sm:text-base">
+                            {doubt.solution?.content}
+                          </p>
 
-                                          {/* Code expand button */}
-                                          {isCodeLong(attachment.content) && (
-                                            <div className="flex justify-center p-2">
-                                              <button
-                                                className="px-6 py-2 text-sm font-medium rounded-full mx-auto dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300 bg-gray-300 hover:bg-gray-400 text-gray-600 transition-colors duration-300"
-                                                onClick={() => {
-                                                  // Remove highlighting before animation
-                                                  const codeBlocks = document.querySelectorAll('pre code');
-                                                  codeBlocks.forEach((block) => {
-                                                    block.removeAttribute('data-highlighted');
-                                                    block.className = block.className.replace(/hljs[^\s]*/g, '').trim();
-                                                  });
-                                                  toggleExpand(`${doubt.id}-${index}`);
-                                                }}
+                          {/* Solution Attachments */}
+                          {doubt.solution?.attachments &&
+                            doubt.solution.attachments.length > 0 && (
+                              <div className="mt-3">
+                                <h5 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                                  Attachments:
+                                </h5>
+                                <div className="grid grid-cols-1 gap-2">
+                                  {doubt.solution.attachments.map(
+                                    (attachment, index) => (
+                                      <div
+                                        key={index}
+                                        className="border border-gray-200 dark:border-gray-600 rounded p-2 bg-white dark:bg-gray-800"
+                                      >
+                                        {attachment.type === "image" ? (
+                                          <div>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                              {attachment.name}
+                                            </p>
+                                            <img
+                                              src={attachment.data}
+                                              alt={attachment.name}
+                                              className="max-w-full h-auto max-h-48 sm:max-h-64 rounded cursor-pointer hover:opacity-80"
+                                              onClick={() =>
+                                                window.open(
+                                                  attachment.data,
+                                                  "_blank"
+                                                )
+                                              }
+                                            />
+                                          </div>
+                                        ) : (
+                                          <div>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                              {attachment.name}
+                                            </p>
+                                            <div className="code-container dark:bg-gray-900 bg-gray-200 rounded-lg overflow-hidden relative group">
+                                              <pre
+                                                className={`p-4 overflow-x-auto transition-transform duration-500 ${
+                                                  isCodeLong(
+                                                    attachment.content
+                                                  ) &&
+                                                  !expandedSnippets[
+                                                    `${doubt.id}-${index}`
+                                                  ]
+                                                    ? "max-h-70"
+                                                    : ""
+                                                }`}
                                               >
-                                                {expandedSnippets[`${doubt.id}-${index}`]
-                                                  ? "Collapse "
-                                                  : "Expand "}
-                                                Code
-                                              </button>
+                                                <code
+                                                  className={`language-javascript`}
+                                                >
+                                                  {isCodeLong(
+                                                    attachment.content
+                                                  ) &&
+                                                  !expandedSnippets[
+                                                    `${doubt.id}-${index}`
+                                                  ]
+                                                    ? attachment.content
+                                                        .split("\n")
+                                                        .slice(0, maxCodeLines)
+                                                        .join("\n") + "\n..."
+                                                    : attachment.content}
+                                                </code>
+                                              </pre>
+
+                                              {/* Code expand button */}
+                                              {isCodeLong(
+                                                attachment.content
+                                              ) && (
+                                                <div className="flex justify-center p-2">
+                                                  <button
+                                                    className="px-6 py-2 text-sm font-medium rounded-full mx-auto dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300 bg-gray-300 hover:bg-gray-400 text-gray-600 transition-colors duration-300"
+                                                    onClick={() => {
+                                                      // Remove highlighting before animation
+                                                      const codeBlocks =
+                                                        document.querySelectorAll(
+                                                          "pre code"
+                                                        );
+                                                      codeBlocks.forEach(
+                                                        (block) => {
+                                                          block.removeAttribute(
+                                                            "data-highlighted"
+                                                          );
+                                                          block.className =
+                                                            block.className
+                                                              .replace(
+                                                                /hljs[^\s]*/g,
+                                                                ""
+                                                              )
+                                                              .trim();
+                                                        }
+                                                      );
+                                                      toggleExpand(
+                                                        `${doubt.id}-${index}`
+                                                      );
+                                                    }}
+                                                  >
+                                                    {expandedSnippets[
+                                                      `${doubt.id}-${index}`
+                                                    ]
+                                                      ? "Collapse "
+                                                      : "Expand "}
+                                                    Code
+                                                  </button>
+                                                </div>
+                                              )}
                                             </div>
-                                          )}
-                                        </div>
+                                          </div>
+                                        )}
                                       </div>
-                                    )}
-                                  </div>
-                                ))}
+                                    )
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )}
                         </div>
                       </div>
 
@@ -439,7 +543,9 @@ const MyDoubts = () => {
                             </button>
                           </div>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Mark as satisfied to add this doubt to the public archive, or request more help if the solution isn't clear.
+                            Mark as satisfied to add this doubt to the public
+                            archive, or request more help if the solution isn't
+                            clear.
                           </p>
                         </div>
                       )}
@@ -447,10 +553,14 @@ const MyDoubts = () => {
                       {doubt.userSatisfied && (
                         <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                           <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm text-green-700 dark:text-green-300">
-                            <span className="bg-green-100 dark:bg-green-900 px-2 py-1 rounded inline-block">✓ Satisfied</span>
-                            <span>This doubt has been added to the public archive.</span>
-                            <Link 
-                              href="/all/doubts" 
+                            <span className="bg-green-100 dark:bg-green-900 px-2 py-1 rounded inline-block">
+                              ✓ Satisfied
+                            </span>
+                            <span>
+                              This doubt has been added to the public archive.
+                            </span>
+                            <Link
+                              href="/all/doubts"
                               className="text-blue-600 dark:text-blue-400 hover:underline"
                             >
                               View in archive

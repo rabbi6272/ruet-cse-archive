@@ -83,19 +83,19 @@ function DesktopNavbarLinks() {
           </button>
           <div className="dropdown morphic-effect absolute left-0 mt-3 w-44 rounded-md shadow-lg bg-white dark:bg-[#071a26] z-50">
             <Link
-              href="/user/help"
+              href="/contact&help/help"
               className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-indigo-600"
             >
               Get Help
             </Link>
             <Link
-              href="/all/doubts"
+              href="/contact&help/doubts"
               className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-indigo-600"
             >
               Browse Doubts
             </Link>
             <Link
-              href="/statistics"
+              href="/contact&help/statistics"
               className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-indigo-600"
             >
               Statistics
@@ -108,13 +108,13 @@ function DesktopNavbarLinks() {
               Official Website
             </Link>
             <Link
-              href="#"
+              href=""
               className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-indigo-600"
             >
               Facebook Page
             </Link>
             <Link
-              href="/contact/developers"
+              href="/contact&help/developers"
               className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-indigo-600"
             >
               Contributors
@@ -126,17 +126,7 @@ function DesktopNavbarLinks() {
         <div className="nav-item relative">
           <button className="text-gray-700 dark:text-gray-200 hover:text-indigo-600 hover:bg-gray-200 dark:hover:bg-gray-800 px-3.5 py-2.5 rounded-md text-sm font-medium flex items-center transition-all duration-500">
             Apps
-            <i className="fas fa-chevron-down ml-1 text-xs"></i>
           </button>
-          <div className="dropdown morphic-effect absolute left-0 mt-3 w-44 rounded-md shadow-lg bg-white dark:bg-[#071a26] z-50">
-            <Link
-              href="#"
-              target="_blank"
-              className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-indigo-600"
-            >
-              Coming Soon
-            </Link>
-          </div>
         </div>
 
         {/* <!-- Nav Item 7 --> */}
