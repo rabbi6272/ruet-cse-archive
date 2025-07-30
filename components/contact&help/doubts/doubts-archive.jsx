@@ -158,9 +158,9 @@ const DoubtsArchive = () => {
   };
 
   return (
-    <div className="min-h-screen py-4 sm:py-8">
+    <div className="min-h-screen py-8">
       <Toaster />
-      <div className="max-w-[95%] sm:max-w-6xl mx-auto px-4">
+      <div className="w-full lg:max-w-6xl mx-auto px-4">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-200 mb-2">

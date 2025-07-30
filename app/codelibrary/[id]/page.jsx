@@ -7,6 +7,7 @@ import Link from "next/link";
 import hljs from "highlight.js";
 import "highlight.js/styles/monokai.css";
 import toast, { Toaster } from "react-hot-toast";
+import CommentSection from "@/components/codelibrary/CommentSection";
 
 export default function CodeSnapPage() {
   const { id } = useParams();
@@ -145,7 +146,7 @@ export default function CodeSnapPage() {
                 </div>
 
                 {codeSnap.description && (
-                  <p className="text-gray-600 dark:text-gray-400 text-lg leading-relaxed">
+                  <p className="text-gray-600 dark:text-gray-400 text-lg leading-relaxed text-wrap">
                     {codeSnap.description}
                   </p>
                 )}
@@ -229,6 +230,13 @@ export default function CodeSnapPage() {
             </pre>
           </div>
         </div>
+
+        {/* Comments Section - Advanced Component */}
+        <CommentSection
+          snippetId={id}
+          snippetAuthor={codeSnap.rollNumber}
+          snippetTitle={codeSnap.title}
+        />
       </div>
     </div>
   );
