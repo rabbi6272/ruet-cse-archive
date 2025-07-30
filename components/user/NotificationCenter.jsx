@@ -250,11 +250,11 @@ const NotificationCenter = ({ userRoll }) => {
 
       {/* Notifications Dropdown */}
       {showNotifications && (
-        <div className="absolute right-0 mt-2 w-[400px] lg:w-[450px]  bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 max-h-[32rem] overflow-y-auto">
+        <div className="fixed sm:absolute top-16 sm:top-auto right-2 sm:right-0 sm:mt-2 w-[calc(100vw-16px)] sm:w-80 md:w-96 lg:w-[450px] max-w-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 max-h-[calc(100vh-80px)] sm:max-h-[32rem] overflow-y-auto">
           {/* Header */}
-          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-700 rounded-t-lg">
+          <div className="px-3 sm:px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-700 rounded-t-lg">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
                 Notifications
               </h3>
               {unreadCount > 0 && (
@@ -267,9 +267,10 @@ const NotificationCenter = ({ userRoll }) => {
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
-                className="text-xs px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors duration-200 font-medium"
+                className="text-xs px-2 sm:px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors duration-200 font-medium"
               >
-                Mark All Read
+                <span className="hidden sm:inline">Mark All Read</span>
+                <span className="sm:hidden">Read All</span>
               </button>
             )}
           </div>
@@ -281,17 +282,17 @@ const NotificationCenter = ({ userRoll }) => {
                 {notifications.slice(0, 10).map((notification) => (
                   <div
                     key={notification.id}
-                    className={`px-4 py-3 border-b border-gray-100 dark:border-gray-700 transition-all duration-200 relative ${
+                    className={`px-3 sm:px-4 py-3 border-b border-gray-100 dark:border-gray-700 transition-all duration-200 relative ${
                       !notification.read
                         ? "bg-blue-50 dark:bg-blue-900/20 border-l-3 border-blue-500"
                         : ""
                     }`}
                   >
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-2 sm:space-x-3">
                       {/* Notification Icon */}
                       <div className="flex-shrink-0 mt-1">
-                        <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center text-white shadow-md">
-                          <span className="text-lg">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-800 rounded-full flex items-center justify-center text-white shadow-md">
+                          <span className="text-sm sm:text-lg">
                             {getNotificationIcon(notification.type)}
                           </span>
                         </div>
@@ -300,7 +301,7 @@ const NotificationCenter = ({ userRoll }) => {
                       {/* Notification Content */}
                       <div className="flex-1 min-w-0">
                         <div className="mb-2">
-                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 leading-relaxed">
+                          <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 leading-relaxed">
                             {formatNotificationMessage(notification).main}
                           </p>
 
@@ -314,8 +315,8 @@ const NotificationCenter = ({ userRoll }) => {
                             <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-700 rounded border-l-2 border-gray-300 dark:border-gray-600">
                               <p className="text-xs text-gray-700 dark:text-gray-300 italic">
                                 "
-                                {notification.commentText.length > 80
-                                  ? notification.commentText.substring(0, 80) +
+                                {notification.commentText.length > 60
+                                  ? notification.commentText.substring(0, 60) +
                                     "..."
                                   : notification.commentText}
                                 "
@@ -371,7 +372,7 @@ const NotificationCenter = ({ userRoll }) => {
                       </div>
 
                       {/* Actions */}
-                      <div className="flex-shrink-0 flex flex-col items-end space-y-2">
+                      <div className="flex-shrink-0 flex flex-col items-end space-y-1 sm:space-y-2">
                         {/* View Snippet Button */}
                         {notification.relatedSnippetId && (
                           <Link
@@ -380,25 +381,28 @@ const NotificationCenter = ({ userRoll }) => {
                               markAsRead(notification.id);
                               setShowNotifications(false);
                             }}
-                            className="text-xs px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors duration-200 font-medium"
+                            className="text-xs px-2 sm:px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors duration-200 font-medium"
                           >
-                            View Snippet
+                            <span className="hidden sm:inline">View Snippet</span>
+                            <span className="sm:hidden">View</span>
                           </Link>
                         )}
 
                         {!notification.read && (
                           <button
                             onClick={() => markAsRead(notification.id)}
-                            className="text-xs px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors duration-200 font-medium"
+                            className="text-xs px-2 sm:px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-colors duration-200 font-medium"
                           >
-                            Mark read
+                            <span className="hidden sm:inline">Mark read</span>
+                            <span className="sm:hidden">Read</span>
                           </button>
                         )}
                         <button
                           onClick={() => deleteNotification(notification.id)}
-                          className="text-xs px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors duration-200 font-medium"
+                          className="text-xs px-2 sm:px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors duration-200 font-medium"
                         >
-                          ✕ Delete
+                          <span className="hidden sm:inline">✕ Delete</span>
+                          <span className="sm:hidden">✕</span>
                         </button>
                       </div>
                     </div>
@@ -411,12 +415,12 @@ const NotificationCenter = ({ userRoll }) => {
                 ))}
               </div>
             ) : (
-              <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                <div className="text-4xl mb-4">
+              <div className="px-3 sm:px-4 py-6 sm:py-8 text-center text-gray-500 dark:text-gray-400">
+                <div className="text-2xl sm:text-4xl mb-3 sm:mb-4">
                   <i className="fas fa-bell-slash"></i>
                 </div>
-                <p className="text-lg mb-2">No notifications found</p>
-                <p className="text-sm">
+                <p className="text-base sm:text-lg mb-2">No notifications found</p>
+                <p className="text-sm px-2">
                   You'll be notified when someone interacts with your content
                 </p>
               </div>
@@ -425,7 +429,7 @@ const NotificationCenter = ({ userRoll }) => {
 
           {/* Footer */}
           {notifications.length > 0 && (
-            <div className="px-4 py-2 bg-gray-50 dark:bg-gray-700 text-center">
+            <div className="px-3 sm:px-4 py-2 bg-gray-50 dark:bg-gray-700 text-center">
               <button
                 onClick={() => setShowNotifications(false)}
                 className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
