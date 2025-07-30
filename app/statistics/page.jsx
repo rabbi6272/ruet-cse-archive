@@ -90,20 +90,34 @@ const StatisticsPage = () => {
         })
         .reduce((sum, entry) => sum + (entry.nutrinos || 0), 0);
 
-      // Get proper name - prioritize stored name, then student mapping, then fallback
-      const displayName = data.name
-        ? formatName(data.name)
-        : studentMapping[roll] || getStudentName(roll);
+      // Get proper name - prioritize student database, then stored name, then fallback
+      const displayName = studentMapping[roll] || 
+                         (data.name ? formatName(data.name) : null) || 
+                         getStudentName(roll);
 
       return {
         roll,
         name: displayName,
+        originalName: displayName,
         totalNutrinos: data.totalNutrinos || 0,
         thisMonthNutrinos,
         rank: data.rank || "Explorer",
         level: data.level || 1,
         history: data.nutrinosHistory || [],
       };
+    });
+
+    // Check for duplicate names and append roll numbers to make them unique
+    const nameCount = {};
+    users.forEach(user => {
+      nameCount[user.name] = (nameCount[user.name] || 0) + 1;
+    });
+
+    // Update names for duplicates
+    users.forEach(user => {
+      if (nameCount[user.name] > 1) {
+        user.name = `${user.originalName} (${user.roll})`;
+      }
     });
 
     // Sort for all-time leaderboard
