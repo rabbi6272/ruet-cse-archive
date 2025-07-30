@@ -29,6 +29,9 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
   const [mentionQuery, setMentionQuery] = useState("");
   const [cursorPosition, setCursorPosition] = useState(0);
   const [expandedReplies, setExpandedReplies] = useState({});
+  const [activeMentionInput, setActiveMentionInput] = useState(null); // Track which input is active for mentions
+  const [suggestionPosition, setSuggestionPosition] = useState({ top: 0, left: 0 }); // Track cursor position for suggestions
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0); // Track selected suggestion for keyboard navigation
   const commentInputRef = useRef(null);
   const replyInputRef = useRef(null);
   const maxRepliesPreview = 2;
@@ -64,12 +67,47 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
     return () => off(commentsRef, "value", fetchComments);
   }, [snippetId]);
 
+  // Keyboard navigation for mention suggestions
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!showMentions || mentionSuggestions.length === 0) return;
+      
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => 
+          prev < mentionSuggestions.length - 1 ? prev + 1 : 0
+        );
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => 
+          prev > 0 ? prev - 1 : mentionSuggestions.length - 1
+        );
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const selectedUser = mentionSuggestions[selectedSuggestionIndex];
+        if (selectedUser) {
+          insertMention(selectedUser, activeMentionInput === 'reply');
+        }
+      } else if (e.key === 'Escape') {
+        setShowMentions(false);
+        setActiveMentionInput(null);
+      }
+    };
+
+    if (showMentions) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [showMentions, mentionSuggestions, selectedSuggestionIndex, activeMentionInput]);
+
   // Handle mention detection and suggestions
   const handleInputChange = (value, isReply = false) => {
     if (isReply) {
       setReplyText(value);
+      setActiveMentionInput('reply');
     } else {
       setNewComment(value);
+      setActiveMentionInput('comment');
     }
 
     // Check for @ mentions
@@ -87,8 +125,29 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
       setMentionSuggestions(suggestions);
       setMentionQuery(query);
       setShowMentions(true);
+      setSelectedSuggestionIndex(0); // Reset selection index
+      
+      // Calculate cursor position for suggestion box
+      const textareaRef = isReply ? replyInputRef : commentInputRef;
+      if (textareaRef.current) {
+        const textarea = textareaRef.current;
+        const cursorPos = textarea.selectionStart;
+        const textBeforeCursor = value.substring(0, cursorPos);
+        const lines = textBeforeCursor.split('\n');
+        const currentLine = lines.length - 1;
+        const currentColumn = lines[currentLine].length;
+        
+        // Calculate approximate position (this is a rough estimate)
+        const lineHeight = 20; // Approximate line height
+        const charWidth = 8; // Approximate character width
+        setSuggestionPosition({
+          top: currentLine * lineHeight + 40, // Add some offset
+          left: currentColumn * charWidth + 20
+        });
+      }
     } else {
       setShowMentions(false);
+      setActiveMentionInput(null);
     }
   };
 
@@ -106,6 +165,7 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
       commentInputRef.current?.focus();
     }
     setShowMentions(false);
+    setActiveMentionInput(null);
   };
 
   const addComment = async () => {
@@ -443,7 +503,7 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
             
             {/* Reply form for latest comment */}
             {replyingTo === comments[0].id && user && (
-              <div className="mt-4 ml-4 pl-4 border-l-2 border-blue-500">
+              <div className="mt-4 ml-4 pl-4 border-l-2 border-blue-500 relative">
                 <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all duration-200">
                   <div className="flex space-x-3 p-3">
                     <div className="flex-shrink-0">
@@ -462,6 +522,56 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                       />
                     </div>
                   </div>
+                  
+                  {/* Mention suggestions for reply */}
+                  {showMentions && activeMentionInput === 'reply' && mentionSuggestions.length > 0 && (
+                    <div 
+                      className="absolute z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-2xl overflow-hidden min-w-[280px] max-w-[320px]"
+                      style={{
+                        top: `${suggestionPosition.top}px`,
+                        left: `${Math.min(suggestionPosition.left, 200)}px`, // Prevent overflow
+                        transform: suggestionPosition.left > 200 ? 'translateX(-100%)' : 'none'
+                      }}
+                    >
+                      <div className="py-2">
+                        <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                            Mention Suggestions
+                          </span>
+                        </div>
+                        {mentionSuggestions.map((suggestedUser, index) => (
+                          <button
+                            key={suggestedUser.roll}
+                            onClick={() => insertMention(suggestedUser, true)}
+                            className={`w-full px-4 py-3 text-left hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all duration-150 flex items-center space-x-3 ${
+                              index === 0 ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                            }`}
+                          >
+                            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                              {getNameFromRoll(suggestedUser.roll).charAt(0)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
+                                {getNameFromRoll(suggestedUser.roll)}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                Roll: {suggestedUser.roll}
+                              </div>
+                            </div>
+                            <div className="text-purple-500 dark:text-purple-400">
+                              <i className="fas fa-at text-xs"></i>
+                            </div>
+                          </button>
+                        ))}
+                        <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            <i className="fas fa-keyboard mr-1"></i>
+                            Press Enter to select, Esc to dismiss
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="flex justify-end space-x-2 px-3 py-2 border-t border-gray-200 dark:border-gray-700">
                     <button
@@ -514,7 +624,7 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
           </div>
         ) : (
           /* Add comment form */
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all duration-200">
+          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all duration-200 relative">
             <div className="flex space-x-3 p-4">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
@@ -532,6 +642,56 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                 />
               </div>
             </div>
+            
+            {/* Mention suggestions for main comment */}
+            {showMentions && activeMentionInput === 'comment' && mentionSuggestions.length > 0 && (
+              <div 
+                className="absolute z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-2xl overflow-hidden min-w-[280px] max-w-[320px]"
+                style={{
+                  top: `${suggestionPosition.top}px`,
+                  left: `${Math.min(suggestionPosition.left, 200)}px`, // Prevent overflow
+                  transform: suggestionPosition.left > 200 ? 'translateX(-100%)' : 'none'
+                }}
+              >
+                <div className="py-2">
+                  <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                      Mention Suggestions
+                    </span>
+                  </div>
+                  {mentionSuggestions.map((suggestedUser, index) => (
+                    <button
+                      key={suggestedUser.roll}
+                      onClick={() => insertMention(suggestedUser, false)}
+                      className={`w-full px-4 py-3 text-left hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all duration-150 flex items-center space-x-3 ${
+                        index === selectedSuggestionIndex ? 'bg-blue-100 dark:bg-blue-900/40 border-l-4 border-blue-500' : ''
+                      }`}
+                    >
+                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                        {getNameFromRoll(suggestedUser.roll).charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
+                          {getNameFromRoll(suggestedUser.roll)}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          Roll: {suggestedUser.roll}
+                        </div>
+                      </div>
+                      <div className="text-blue-500 dark:text-blue-400">
+                        <i className="fas fa-at text-xs"></i>
+                      </div>
+                    </button>
+                  ))}
+                  <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      <i className="fas fa-keyboard mr-1"></i>
+                      Press Enter to select, Esc to dismiss
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
             
             <div className="flex justify-between items-center px-4 py-3 border-t border-gray-200 dark:border-gray-700">
               <div className="flex items-center space-x-2">
@@ -558,33 +718,6 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
           </div>
         )}
       </div>
-
-      {/* Mention suggestions */}
-      {showMentions && mentionSuggestions.length > 0 && (
-        <div className="absolute z-10 mt-1 w-full max-w-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl">
-          {mentionSuggestions.map((suggestedUser) => (
-            <button
-              key={suggestedUser.roll}
-              onClick={() => insertMention(suggestedUser, replyingTo ? true : false)}
-              className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg transition-colors duration-150"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                  {getNameFromRoll(suggestedUser.roll).charAt(0)}
-                </div>
-                <div>
-                  <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">
-                    {getNameFromRoll(suggestedUser.roll)}
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {suggestedUser.roll}
-                  </div>
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* All Comments Section (when expanded) */}
       {showAllComments && comments.length > 1 && (
@@ -668,7 +801,7 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
 
                 {/* Reply form */}
                 {replyingTo === comment.id && user && (
-                  <div className="mt-4 ml-4 pl-4 border-l-2 border-blue-500">
+                  <div className="mt-4 ml-4 pl-4 border-l-2 border-blue-500 relative">
                     <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all duration-200">
                       <div className="flex space-x-3 p-3">
                         <div className="flex-shrink-0">
@@ -687,6 +820,56 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                           />
                         </div>
                       </div>
+                      
+                      {/* Mention suggestions for expanded comment replies */}
+                      {showMentions && activeMentionInput === 'reply' && mentionSuggestions.length > 0 && (
+                        <div 
+                          className="absolute z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-2xl overflow-hidden min-w-[280px] max-w-[320px]"
+                          style={{
+                            top: `${suggestionPosition.top}px`,
+                            left: `${Math.min(suggestionPosition.left, 200)}px`, // Prevent overflow
+                            transform: suggestionPosition.left > 200 ? 'translateX(-100%)' : 'none'
+                          }}
+                        >
+                          <div className="py-2">
+                            <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+                              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                                Mention Suggestions
+                              </span>
+                            </div>
+                            {mentionSuggestions.map((suggestedUser, index) => (
+                              <button
+                                key={suggestedUser.roll}
+                                onClick={() => insertMention(suggestedUser, true)}
+                                className={`w-full px-4 py-3 text-left hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all duration-150 flex items-center space-x-3 ${
+                                  index === selectedSuggestionIndex ? 'bg-blue-100 dark:bg-blue-900/40 border-l-4 border-green-500' : ''
+                                }`}
+                              >
+                                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                                  {getNameFromRoll(suggestedUser.roll).charAt(0)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
+                                    {getNameFromRoll(suggestedUser.roll)}
+                                  </div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                                    Roll: {suggestedUser.roll}
+                                  </div>
+                                </div>
+                                <div className="text-green-500 dark:text-green-400">
+                                  <i className="fas fa-at text-xs"></i>
+                                </div>
+                              </button>
+                            ))}
+                            <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                <i className="fas fa-keyboard mr-1"></i>
+                                Press Enter to select, Esc to dismiss
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       
                       <div className="flex justify-end space-x-2 px-3 py-2 border-t border-gray-200 dark:border-gray-700">
                         <button
