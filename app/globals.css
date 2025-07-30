@@ -418,3 +418,66 @@ code {
 .fab:hover {
   top: -5px;
 }
+
+/* Nutrinos Animation Styles */
+@keyframes nutrinos-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.6), 0 0 20px rgba(34, 197, 94, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.8), 0 0 30px rgba(34, 197, 94, 0.6);
+  }
+}
+
+@keyframes nutrinos-glow-reduced {
+  0%,
+  100% {
+    box-shadow: 0 0 3px rgba(34, 197, 94, 0.2), 0 0 6px rgba(34, 197, 94, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 5px rgba(34, 197, 94, 0.25), 0 0 8px rgba(34, 197, 94, 0.15);
+  }
+}
+
+@keyframes lightning-pulse {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.1) rotate(-5deg);
+  }
+  50% {
+    transform: scale(1.2) rotate(5deg);
+  }
+  75% {
+    transform: scale(1.1) rotate(-3deg);
+  }
+}
+
+@keyframes role-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.nutrinos-badge {
+  animation: nutrinos-glow 2s ease-in-out infinite;
+}
+
+.nutrinos-badge-reduced {
+  animation: nutrinos-glow-reduced 2s ease-in-out infinite;
+}
+
+.lightning-icon {
+  animation: lightning-pulse 3s ease-in-out infinite;
+}
+
+.role-badge {
+  background-size: 200% 100%;
+  animation: role-shimmer 3s ease-in-out infinite;
+}

@@ -95,6 +95,12 @@ function DesktopNavbarLinks() {
               Browse Doubts
             </Link>
             <Link
+              href="/statistics"
+              className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-indigo-600"
+            >
+              Statistics
+            </Link>
+            <Link
               href="https://www.ruet.ac.bd/"
               target="_blank"
               className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-indigo-600"
@@ -107,7 +113,6 @@ function DesktopNavbarLinks() {
             >
               Facebook Page
             </Link>
-
             <Link
               href="/contact/developers"
               className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-indigo-600"

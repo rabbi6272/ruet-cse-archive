@@ -12,7 +12,7 @@ import {
   update,
   remove,
 } from "firebase/database";
-import { isAuthorizedReviewer } from "@/lib/auth-utils";
+import { isAuthorizedReviewer, getUserDisplayRole } from "@/lib/auth-utils";
 import toast, { Toaster } from "react-hot-toast";
 import NotificationCenter from "./NotificationCenter";
 import Link from "next/link";
@@ -252,22 +252,34 @@ const Dashboard = () => {
                 </p>
                 
                 {/* Nutrinos Display */}
-                <div className="flex items-center gap-3 mt-2">
-                  <div className="flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-sm">
-                    <span>⚡</span>
-                    <span>{userNutrinos.totalNutrinos.toFixed(2)} Nutrinos</span>
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  {/* User Role Badge */}
+                  <div className="flex items-center gap-1 bg-gradient-to-r from-purple-500 via-indigo-600 to-purple-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg role-badge">
+                    <span>🛡️</span>
+                    <span>{getUserDisplayRole(user)}</span>
                   </div>
-                  <div className="flex items-center gap-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-2 py-1 rounded-full text-xs font-medium shadow-sm">
+                  
+                  {/* Nutrinos Count - More Lively */}
+                  <div className="flex items-center gap-1 bg-gradient-to-r from-green-400 to-emerald-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg transform hover:scale-110 transition-all duration-300 nutrinos-badge cursor-pointer">
+                    <span className="lightning-icon">⚡</span>
+                    <span className="font-extrabold bg-gradient-to-r from-white to-green-100 bg-clip-text text-transparent">
+                      {userNutrinos.totalNutrinos.toFixed(2)} Nutrinos
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-2 py-1 rounded-full text-xs font-medium shadow-sm hover:shadow-lg transition-all duration-200 hover:scale-105">
                     <span>🏆</span>
                     <span>{userNutrinos.rank}</span>
                   </div>
-                  <div className="flex items-center gap-1 bg-gradient-to-r from-green-500 to-teal-600 text-white px-2 py-1 rounded-full text-xs font-medium shadow-sm">
+                  
+                  <div className="flex items-center gap-1 bg-gradient-to-r from-green-500 to-teal-600 text-white px-2 py-1 rounded-full text-xs font-medium shadow-sm hover:shadow-lg transition-all duration-200 hover:scale-105">
                     <span>📊</span>
                     <span>Level {userNutrinos.level}</span>
                   </div>
+                  
                   <button
                     onClick={() => setShowNutrinosHistory(!showNutrinosHistory)}
-                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors"
+                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-all duration-200 hover:scale-105 transform px-2 py-1 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
                   >
                     <i className="fas fa-history mr-1"></i>
                     History
