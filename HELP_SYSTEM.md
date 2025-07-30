@@ -2,13 +2,13 @@
 
 ## Overview
 
-The help system allows students to submit coding doubts and get help from code reviewers. It includes doubt submission, review, resolution, and archiving.
+The help system allows coders/programmers to submit coding doubts and get help from code reviewers. It includes doubt submission, review, resolution, and archiving.
 
 ## Features
 
 ### 1. User Help Page (`/user/help`)
 
-- Students can submit coding doubts
+- Coders/Programmers can submit coding doubts
 - Form includes:
   - Title (required)
   - Category selection (Environment bug, Code not running, etc.)
@@ -25,7 +25,7 @@ The help system allows students to submit coding doubts and get help from code r
 
 ### 3. User's Doubts Tracking (`/user/my-doubts`)
 
-- Students can track their submitted doubts
+- Coders/Programmers can track their submitted doubts
 - View pending and resolved doubts
 - Mark solutions as satisfactory
 - "I am satisfied" button to archive doubts
@@ -136,7 +136,7 @@ Actions:
 
 ## Workflow
 
-1. Student submits doubt via `/user/help`
+1. Coder/Programmer submits doubt via `/user/help`
 2. Reviewers are notified
 3. Reviewer assigns doubt to themselves
 4. Reviewer provides solution

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import { ref, onValue, update, remove } from "firebase/database";
 import { isAuthorizedReviewer } from "@/lib/auth-utils";
+import { calculateSolverPoints } from "@/lib/points-system";
 import toast, { Toaster } from "react-hot-toast";
 
 const ReviewerDashboard = () => {
@@ -178,6 +179,18 @@ const ReviewerDashboard = () => {
         return cleanAttachment;
       });
 
+      const solvedAt = Date.now();
+      const assignedAt = selectedDoubt.assignedTo?.assignedAt || solvedAt;
+      
+      // Calculate initial points (will be updated when user marks as satisfied)
+      const initialPoints = calculateSolverPoints(
+        solution.trim(),
+        cleanAttachments,
+        assignedAt,
+        solvedAt,
+        false // Initial calculation assumes not satisfied yet
+      );
+
       const doubtRef = ref(db, `doubts/${selectedDoubt.id}`);
       
       // Update doubt with solution
@@ -190,7 +203,10 @@ const ReviewerDashboard = () => {
             name: user.name,
             roll: user.roll
           },
-          solvedAt: Date.now()
+          solvedAt: solvedAt,
+          assignedAt: assignedAt,
+          initialPoints: initialPoints,
+          finalPoints: null // Will be set when user marks as satisfied
         }
       });
 
@@ -206,7 +222,10 @@ const ReviewerDashboard = () => {
             name: user.name,
             roll: user.roll
           },
-          solvedAt: Date.now()
+          solvedAt: solvedAt,
+          assignedAt: assignedAt,
+          initialPoints: initialPoints,
+          finalPoints: null
         }
       };
       
@@ -260,58 +279,58 @@ const ReviewerDashboard = () => {
   };
 
   if (!user) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+    return <div className="flex justify-center items-center min-h-screen dark:bg-gray-900 dark:text-gray-200">Loading...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-4 sm:py-8">
       <Toaster position="top-right" />
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Code Reviewers Dashboard</h1>
-          <p className="text-gray-600 mt-2">Help students with their coding doubts</p>
+      <div className="max-w-[95%] sm:max-w-7xl mx-auto px-4">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-200">Code Reviewers Dashboard</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">Help coders/programmers with their coding doubts</p>
         </div>
 
         {loading ? (
           <div className="flex justify-center items-center py-12">
-            <div className="text-lg text-gray-600">Loading doubts...</div>
+            <div className="text-lg text-gray-600 dark:text-gray-400">Loading doubts...</div>
           </div>
         ) : doubts.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
-            <h2 className="text-xl font-semibold text-gray-700 mb-2">No pending doubts</h2>
-            <p className="text-gray-500">All doubts have been resolved. Great work!</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 sm:p-8 text-center">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-700 dark:text-gray-200 mb-2">No pending doubts</h2>
+            <p className="text-gray-500 dark:text-gray-400">All doubts have been resolved. Great work!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Doubts List */}
             <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
                 Pending Doubts ({doubts.length})
               </h2>
               
               {doubts.map((doubt) => (
-                <div key={doubt.id} className="bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-500">
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="font-semibold text-gray-800 text-lg">{doubt.title}</h3>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getCategoryColor(doubt.category)}`}>
+                <div key={doubt.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border-l-4 border-blue-500">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 space-y-2 sm:space-y-0">
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-base sm:text-lg truncate pr-2">{doubt.title}</h3>
+                    <span className={`px-2 py-1 rounded text-xs font-medium self-start ${getCategoryColor(doubt.category)}`}>
                       {doubt.category}
                     </span>
                   </div>
                   
-                  <div className="mb-3">
-                    <p className="text-sm text-gray-600 mb-2">
-                      <strong>Student:</strong> {doubt.userDetails.name} ({doubt.userDetails.roll})
+                  <div className="mb-3 space-y-1">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <strong>Coder:</strong> {doubt.userDetails.name} ({doubt.userDetails.roll})
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       <strong>Submitted:</strong> {formatDate(doubt.timestamp)}
                     </p>
                   </div>
 
-                  <p className="text-gray-700 mb-4 line-clamp-3">{doubt.description}</p>
+                  <p className="text-gray-700 dark:text-gray-300 mb-4 line-clamp-3 text-sm sm:text-base">{doubt.description}</p>
 
                   {doubt.attachment && (
-                    <div className="mb-4 p-2 bg-gray-50 border rounded">
-                      <p className="text-sm font-medium text-gray-700 mb-1">
+                    <div className="mb-4 p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded">
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         📎 Attachment: {doubt.attachment.name}
                       </p>
                       {doubt.attachment.type === 'image' ? (
@@ -324,37 +343,37 @@ const ReviewerDashboard = () => {
                           />
                         </div>
                       ) : (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           {doubt.attachment.type === 'code' ? '📄 Code file' : '📄 Text file'}
                         </p>
                       )}
                     </div>
                   )}
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     {doubt.status === "pending" ? (
                       <button
                         onClick={() => assignDoubtToMe(doubt.id)}
-                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-sm"
                       >
                         Take This Doubt
                       </button>
                     ) : doubt.assignedTo?.roll === user.roll ? (
                       <button
                         onClick={() => setSelectedDoubt(doubt)}
-                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-sm"
                       >
                         Solve This Doubt
                       </button>
                     ) : (
-                      <span className="px-4 py-2 bg-yellow-100 text-yellow-800 rounded text-sm">
+                      <span className="px-4 py-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded text-sm text-center">
                         Assigned to {doubt.assignedTo?.name}
                       </span>
                     )}
                     
                     <button
                       onClick={() => setSelectedDoubt(doubt)}
-                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
+                      className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-500 text-sm"
                     >
                       View Details
                     </button>
@@ -365,27 +384,27 @@ const ReviewerDashboard = () => {
 
             {/* Solution Panel */}
             {selectedDoubt && (
-              <div className="bg-white rounded-lg shadow-md p-6 h-fit sticky top-4">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Solve Doubt</h2>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 h-fit lg:sticky lg:top-4">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Solve Doubt</h2>
                 
                 <div className="mb-4">
-                  <h3 className="font-semibold text-gray-700">{selectedDoubt.title}</h3>
+                  <h3 className="font-semibold text-gray-700 dark:text-gray-300 text-sm sm:text-base">{selectedDoubt.title}</h3>
                   <span className={`inline-block px-2 py-1 rounded text-xs font-medium mt-2 ${getCategoryColor(selectedDoubt.category)}`}>
                     {selectedDoubt.category}
                   </span>
                 </div>
 
                 <div className="mb-4">
-                  <h4 className="font-medium text-gray-700 mb-2">Student Details:</h4>
-                  <p className="text-sm text-gray-600">
+                  <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">Coder Details:</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     {selectedDoubt.userDetails.name} ({selectedDoubt.userDetails.roll})
                   </p>
                 </div>
 
                 <div className="mb-4">
-                  <h4 className="font-medium text-gray-700 mb-2">Problem Description:</h4>
-                  <div className="bg-gray-50 p-3 rounded border max-h-32 overflow-y-auto">
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                  <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">Problem Description:</h4>
+                  <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded border border-gray-200 dark:border-gray-600 max-h-32 overflow-y-auto">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                       {selectedDoubt.description}
                     </p>
                   </div>
@@ -393,24 +412,24 @@ const ReviewerDashboard = () => {
 
                 {selectedDoubt.attachment && (
                   <div className="mb-4">
-                    <h4 className="font-medium text-gray-700 mb-2">Student's Attachment:</h4>
-                    <div className="bg-gray-50 p-3 rounded border">
-                      <p className="text-sm font-medium text-gray-700 mb-2">
+                    <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">Coder's Attachment:</h4>
+                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded border border-gray-200 dark:border-gray-600">
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         📎 {selectedDoubt.attachment.name}
                       </p>
-                      <div className="bg-white p-2 rounded border">
+                      <div className="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-600">
                         {selectedDoubt.attachment.type === 'image' ? (
                           <div>
                             <img 
                               src={selectedDoubt.attachment.data || `data:image/*;base64,${selectedDoubt.attachment.content}`} 
                               alt={selectedDoubt.attachment.name}
-                              className="max-w-full h-auto max-h-64 rounded cursor-pointer hover:opacity-80"
+                              className="max-w-full h-auto max-h-48 sm:max-h-64 rounded cursor-pointer hover:opacity-80"
                               onClick={() => window.open(selectedDoubt.attachment.data || `data:image/*;base64,${selectedDoubt.attachment.content}`, '_blank')}
                             />
                           </div>
                         ) : (
-                          <div className="max-h-48 overflow-y-auto">
-                            <pre className="text-xs text-gray-600 whitespace-pre-wrap">
+                          <div className="max-h-32 sm:max-h-48 overflow-y-auto">
+                            <pre className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
                               {selectedDoubt.attachment.content}
                             </pre>
                           </div>
@@ -421,7 +440,7 @@ const ReviewerDashboard = () => {
                 )}
 
                 <div className="mb-4">
-                  <label htmlFor="solution" className="block font-medium text-gray-700 mb-2">
+                  <label htmlFor="solution" className="block font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">
                     Your Solution:
                   </label>
                   <textarea
@@ -430,13 +449,13 @@ const ReviewerDashboard = () => {
                     value={solution}
                     onChange={(e) => setSolution(e.target.value)}
                     placeholder="Provide a detailed solution, explanation, or code fix..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
                   />
                 </div>
 
                 {/* File Upload Section */}
                 <div className="mb-4">
-                  <label htmlFor="solution-files" className="block font-medium text-gray-700 mb-2">
+                  <label htmlFor="solution-files" className="block font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">
                     Attachments (Optional):
                   </label>
                   <input
@@ -445,39 +464,39 @@ const ReviewerDashboard = () => {
                     multiple
                     onChange={handleFileUpload}
                     accept="image/*,.txt,.js,.jsx,.ts,.tsx,.py,.cpp,.c,.java,.html,.css,.json,.xml,.sql,.php,.rb,.go,.rs,.swift,.kt,.scala,.sh,.bat,.ps1"
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-sm file:bg-blue-50 dark:file:bg-blue-900 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-100 dark:hover:file:bg-blue-800"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Upload images or code files (max 100KB each). Supports: JPG, PNG, GIF, WebP, TXT, JS, Python, C++, etc.
                   </p>
                   
                   {/* Display uploaded attachments */}
                   {solutionAttachments.length > 0 && (
                     <div className="mt-3 space-y-2">
-                      <h5 className="text-sm font-medium text-gray-700">Uploaded Files:</h5>
+                      <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">Uploaded Files:</h5>
                       {solutionAttachments.map((attachment) => (
-                        <div key={attachment.id} className="flex items-center justify-between bg-gray-50 p-2 rounded border">
-                          <div className="flex items-center space-x-2">
+                        <div key={attachment.id} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 p-2 rounded border border-gray-200 dark:border-gray-600">
+                          <div className="flex items-center space-x-2 min-w-0 flex-1">
                             {attachment.type === 'image' ? (
                               <>
-                                <i className="fas fa-image text-green-500"></i>
+                                <i className="fas fa-image text-green-500 flex-shrink-0"></i>
                                 <img 
                                   src={attachment.content} 
                                   alt={attachment.name}
-                                  className="w-8 h-8 object-cover rounded"
+                                  className="w-6 h-6 sm:w-8 sm:h-8 object-cover rounded flex-shrink-0"
                                 />
                               </>
                             ) : (
-                              <i className="fas fa-file-code text-blue-500"></i>
+                              <i className="fas fa-file-code text-blue-500 flex-shrink-0"></i>
                             )}
-                            <div>
-                              <p className="text-sm font-medium text-gray-700">{attachment.name}</p>
-                              <p className="text-xs text-gray-500">{Math.round(attachment.size / 1024)}KB</p>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{attachment.name}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">{Math.round(attachment.size / 1024)}KB</p>
                             </div>
                           </div>
                           <button
                             onClick={() => removeAttachment(attachment.id)}
-                            className="text-red-500 hover:text-red-700 p-1"
+                            className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 flex-shrink-0 ml-2"
                             title="Remove attachment"
                           >
                             <i className="fas fa-times"></i>
@@ -488,14 +507,14 @@ const ReviewerDashboard = () => {
                   )}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <button
                     onClick={submitSolution}
                     disabled={submittingSolution || !solution.trim()}
-                    className={`flex-1 py-2 px-4 rounded text-white font-medium ${
+                    className={`flex-1 py-2 px-4 rounded text-white font-medium text-sm ${
                       submittingSolution || !solution.trim()
                         ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-blue-600 hover:bg-blue-700"
+                        : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
                     }`}
                   >
                     {submittingSolution ? "Submitting..." : "Submit Solution"}
@@ -507,7 +526,7 @@ const ReviewerDashboard = () => {
                       setSolution("");
                       setSolutionAttachments([]);
                     }}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                    className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-500 text-sm"
                   >
                     Cancel
                   </button>

@@ -3,13 +3,17 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
-import { ref, push } from "firebase/database";
+import { ref, push, onValue } from "firebase/database";
 import toast, { Toaster } from "react-hot-toast";
+import { hasReachedDailyLimit, getRemainingDoubts, getTimeUntilNextDoubt, DAILY_DOUBT_LIMIT } from "@/lib/points-system";
 
 const HelpForm = () => {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [userDoubts, setUserDoubts] = useState([]);
+  const [dailyLimitReached, setDailyLimitReached] = useState(false);
+  const [remainingDoubts, setRemainingDoubts] = useState(DAILY_DOUBT_LIMIT);
   const [formData, setFormData] = useState({
     title: "",
     category: "",
@@ -35,6 +39,34 @@ const HelpForm = () => {
       setUser(JSON.parse(userData));
     }
   }, [router]);
+
+  // Check daily limits when user is loaded
+  useEffect(() => {
+    if (user?.roll) {
+      loadUserDoubts();
+    }
+  }, [user]);
+
+  const loadUserDoubts = () => {
+    const doubtsRef = ref(db, "doubts");
+    onValue(doubtsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const userDoubtsArray = Object.keys(data)
+          .map(key => ({ id: key, ...data[key] }))
+          .filter(doubt => doubt.userDetails?.roll === user.roll);
+        
+        setUserDoubts(userDoubtsArray);
+        
+        // Check daily limits
+        const limitReached = hasReachedDailyLimit(userDoubtsArray);
+        const remaining = getRemainingDoubts(userDoubtsArray);
+        
+        setDailyLimitReached(limitReached);
+        setRemainingDoubts(remaining);
+      }
+    });
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -104,6 +136,13 @@ const HelpForm = () => {
     
     if (!formData.title.trim() || !formData.category || !formData.description.trim()) {
       toast.error("Please fill in all required fields");
+      return;
+    }
+
+    // Check daily limit
+    if (dailyLimitReached) {
+      const timeLeft = getTimeUntilNextDoubt();
+      toast.error(`Daily limit reached! You can submit ${DAILY_DOUBT_LIMIT} doubts per day. Next doubt available in ${timeLeft}`);
       return;
     }
 
@@ -194,16 +233,49 @@ const HelpForm = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 sm:px-4 lg:px-6">
       <Toaster position="top-right" />
-      <div className="max-w-2xl mx-auto px-4">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h1 className="text-2xl font-bold text-gray-800 mb-6">Get Help with Your Code</h1>
+      <div className="max-w-[95%] lg:max-w-4xl mx-auto">
+        <div className="bg-white dark:bg-slate-700 rounded-lg shadow-md p-4 lg:p-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">Get Help with Your Code</h1>
           
-          <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Daily Limit Indicator */}
+          <div className="mb-6">
+            {dailyLimitReached ? (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 sm:p-4">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <i className="fas fa-exclamation-triangle text-red-500 dark:text-red-400 text-lg sm:text-xl"></i>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-red-800 dark:text-red-300">Daily Limit Reached</h3>
+                    <p className="text-xs sm:text-sm text-red-700 dark:text-red-400 mt-1">
+                      You've submitted {DAILY_DOUBT_LIMIT} doubts today. Next doubt available in {getTimeUntilNextDoubt()}.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <i className="fas fa-info-circle text-blue-500 dark:text-blue-400 text-lg sm:text-xl"></i>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300">Daily Doubts</h3>
+                    <p className="text-xs sm:text-sm text-blue-700 dark:text-blue-400 mt-1">
+                      You can submit {remainingDoubts} more doubt{remainingDoubts !== 1 ? 's' : ''} today ({remainingDoubts}/{DAILY_DOUBT_LIMIT} remaining).
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <form onSubmit={handleSubmit} className={`space-y-4 sm:space-y-6 ${dailyLimitReached ? 'opacity-50 pointer-events-none' : ''}`}>
             {/* Title */}
             <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Title *
               </label>
               <input
@@ -213,14 +285,14 @@ const HelpForm = () => {
                 value={formData.title}
                 onChange={handleInputChange}
                 placeholder="Brief description of your problem"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                 required
               />
             </div>
 
             {/* Category */}
             <div>
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Category *
               </label>
               <select
@@ -228,7 +300,7 @@ const HelpForm = () => {
                 name="category"
                 value={formData.category}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                 required
               >
                 <option value="">Select a category</option>
@@ -242,29 +314,29 @@ const HelpForm = () => {
 
             {/* User Details (Auto-detected) */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 User Details (Auto-detected)
               </label>
-              <div className="bg-gray-100 p-3 rounded-md">
-                <p className="text-sm"><strong>Name:</strong> {user.name}</p>
-                <p className="text-sm"><strong>Roll:</strong> {user.roll}</p>
-                {user.email && <p className="text-sm"><strong>Email:</strong> {user.email}</p>}
+              <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
+                <p className="text-sm text-gray-700 dark:text-gray-300"><strong>Name:</strong> {user.name}</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300"><strong>Roll:</strong> {user.roll}</p>
+                {user.email && <p className="text-sm text-gray-700 dark:text-gray-300"><strong>Email:</strong> {user.email}</p>}
               </div>
             </div>
 
             {/* Time (Auto-detected) */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Submission Time (Auto-detected)
               </label>
-              <div className="bg-gray-100 p-3 rounded-md">
-                <p className="text-sm">{new Date().toLocaleString()}</p>
+              <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
+                <p className="text-sm text-gray-700 dark:text-gray-300">{new Date().toLocaleString()}</p>
               </div>
             </div>
 
             {/* File Attachment */}
             <div>
-              <label htmlFor="attachment" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="attachment" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 File Attachment (Optional - Max 100KB, images and code files)
               </label>
               <input
@@ -272,11 +344,11 @@ const HelpForm = () => {
                 id="attachment"
                 onChange={handleFileChange}
                 accept=".txt,.js,.jsx,.ts,.tsx,.py,.cpp,.c,.java,.html,.css,.json,.xml,.sql,.php,.rb,.go,.rs,.swift,.kt,.scala,.sh,.bat,.ps1,.jpg,.jpeg,.png,.gif,.webp"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
               />
               {formData.attachment && (
-                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-                  <p className="text-sm text-green-700">
+                <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded">
+                  <p className="text-sm text-green-700 dark:text-green-300">
                     File attached: {formData.attachment.name} ({Math.round(formData.attachment.size / 1024)}KB)
                     {formData.attachment.type === 'image' && ' - Image'}
                     {formData.attachment.type === 'code' && ' - Code/Text'}
@@ -294,7 +366,7 @@ const HelpForm = () => {
 
             {/* Description */}
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Description *
               </label>
               <textarea
@@ -304,7 +376,7 @@ const HelpForm = () => {
                 value={formData.description}
                 onChange={handleInputChange}
                 placeholder="Describe your problem in detail. Include error messages, what you've tried, and what you expect to happen."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                 required
               />
             </div>
@@ -314,10 +386,10 @@ const HelpForm = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full py-2 px-4 rounded-md text-white font-medium ${
+                className={`w-full py-2 sm:py-3 px-4 rounded-md text-white font-medium transition-colors ${
                   loading
                     ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                 }`}
               >
                 {loading ? "Submitting..." : "Submit Doubt"}
@@ -326,9 +398,9 @@ const HelpForm = () => {
           </form>
 
           {/* Help Text */}
-          <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-md">
-            <h3 className="font-medium text-blue-800 mb-2">How it works:</h3>
-            <ul className="text-sm text-blue-700 space-y-1">
+          <div className="mt-6 sm:mt-8 p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+            <h3 className="font-medium text-blue-800 dark:text-blue-300 mb-2">How it works:</h3>
+            <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1">
               <li>• Submit your coding doubt using this form</li>
               <li>• Our code reviewers will be notified and work on solving it</li>
               <li>• You'll be notified when a solution is available</li>

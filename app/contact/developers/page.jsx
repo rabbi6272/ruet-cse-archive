@@ -236,7 +236,7 @@ export default function Developers() {
                 </h4>
               </div>
               <p className="text-sm text-blue-600 dark:text-blue-300 mb-4 max-w-md">
-                Welcome back, <strong>{user?.name}</strong>! Help students by resolving their coding doubts and contributing to the community.
+                Welcome back, <strong>{user?.name}</strong>! Help coders/programmers by resolving their coding doubts and contributing to the community.
               </p>
               <Link
                 href="/reviewers/dashboard"
@@ -247,7 +247,7 @@ export default function Developers() {
                 <i className="fas fa-arrow-right ml-2"></i>
               </Link>
               <div className="mt-3 text-xs text-blue-500 dark:text-blue-400">
-                View and solve pending student doubts
+                View and solve pending coder doubts
               </div>
             </div>
           </div>
