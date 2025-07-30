@@ -6,6 +6,7 @@ import { db } from "@/lib/firebase";
 import { ref, onValue, update, remove } from "firebase/database";
 import { isAuthorizedReviewer } from "@/lib/auth-utils";
 import { calculateSolverPoints } from "@/lib/points-system";
+import { addNutrinos } from "@/lib/nutrinos-system";
 import toast, { Toaster } from "react-hot-toast";
 import hljs from "highlight.js";
 import "highlight.js/styles/monokai.css";
@@ -243,6 +244,18 @@ const ReviewerDashboard = () => {
       };
       
       await update(archiveRef, archiveData);
+
+      // Award Nutrinos points for doubt solution
+      try {
+        await addNutrinos(user.roll, 'doubt_solve', "Solved doubt in reviewer dashboard", {
+          title: selectedDoubt.title,
+          category: selectedDoubt.category,
+          askedBy: selectedDoubt.userDetails?.roll
+        });
+      } catch (nutritosError) {
+        console.error("Failed to award Nutrinos points:", nutritosError);
+        // Don't break the flow, just log the error
+      }
 
       // Notify the user that their doubt has been solved
       try {

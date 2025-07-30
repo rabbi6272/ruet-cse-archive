@@ -18,6 +18,12 @@ import NotificationCenter from "./NotificationCenter";
 import Link from "next/link";
 import hljs from "highlight.js";
 import "highlight.js/styles/monokai.css";
+import { 
+  getUserNutrinos, 
+  recordDailyVisit, 
+  awardSnippetNutrinos,
+  getUserNutrinosHistory 
+} from "@/lib/nutrinos-system";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -32,6 +38,9 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [isCodeReviewer, setIsCodeReviewer] = useState(false);
   const [expandedSnippets, setExpandedSnippets] = useState({});
+  const [userNutrinos, setUserNutrinos] = useState({ totalNutrinos: 0, rank: 'Newbie', level: 1 });
+  const [nutrinosHistory, setNutrinosHistory] = useState([]);
+  const [showNutrinosHistory, setShowNutrinosHistory] = useState(false);
   
   const maxCodeLines = 20;
 
@@ -45,8 +54,24 @@ const Dashboard = () => {
       setUser(parsedUser);
       setIsCodeReviewer(isAuthorizedReviewer(parsedUser));
       loadUserSnippets(parsedUser.roll);
+      loadUserNutrinosData(parsedUser.roll);
+      // Record daily visit for Nutrinos
+      recordDailyVisit(parsedUser.roll);
     }
   }, [router]);
+
+  // Load user's Nutrinos data
+  const loadUserNutrinosData = async (rollNumber) => {
+    try {
+      const nutrinosData = await getUserNutrinos(rollNumber);
+      setUserNutrinos(nutrinosData);
+      
+      const history = await getUserNutrinosHistory(rollNumber, 5);
+      setNutrinosHistory(history);
+    } catch (error) {
+      console.error("Error loading Nutrinos data:", error);
+    }
+  };
 
   // Highlight code blocks after component renders
   useEffect(() => {
@@ -117,7 +142,14 @@ const Dashboard = () => {
         lastUpdated: new Date().toISOString(),
       });
       setEditingId(null);
-      toast.success("Snippet updated successfully!");
+      
+      // Award Nutrinos for editing snippet
+      await awardSnippetNutrinos.edit(user.roll, snippetId);
+      
+      // Refresh Nutrinos data
+      await loadUserNutrinosData(user.roll);
+      
+      toast.success("Snippet updated successfully! +1.5 Nutrinos earned!");
     } catch (err) {
       setError("Failed to update snippet. Please try again.");
       toast.error("Failed to update snippet. Please try again.");
@@ -127,11 +159,18 @@ const Dashboard = () => {
 
   // Delete snippet
   const handleDeleteSnippet = async (snippetId) => {
-    if (confirm("Are you sure you want to delete this snippet?")) {
+    if (confirm("Are you sure you want to delete this snippet? You will lose 3 Nutrinos.")) {
       try {
         const snippetRef = ref(db, `codeSnippets/${snippetId}`);
         await remove(snippetRef);
-        toast.success("Snippet deleted successfully!");
+        
+        // Award negative Nutrinos for deleting snippet
+        await awardSnippetNutrinos.delete(user.roll, snippetId);
+        
+        // Refresh Nutrinos data
+        await loadUserNutrinosData(user.roll);
+        
+        toast.success("Snippet deleted successfully! -3 Nutrinos deducted.");
       } catch (err) {
         setError("Failed to delete snippet. Please try again.");
         toast.error("Failed to delete snippet. Please try again.");
@@ -211,6 +250,29 @@ const Dashboard = () => {
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {snippets.length} {snippets.length === 1 ? "snippet" : "snippets"}
                 </p>
+                
+                {/* Nutrinos Display */}
+                <div className="flex items-center gap-3 mt-2">
+                  <div className="flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-sm">
+                    <span>⚡</span>
+                    <span>{userNutrinos.totalNutrinos.toFixed(2)} Nutrinos</span>
+                  </div>
+                  <div className="flex items-center gap-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-2 py-1 rounded-full text-xs font-medium shadow-sm">
+                    <span>🏆</span>
+                    <span>{userNutrinos.rank}</span>
+                  </div>
+                  <div className="flex items-center gap-1 bg-gradient-to-r from-green-500 to-teal-600 text-white px-2 py-1 rounded-full text-xs font-medium shadow-sm">
+                    <span>📊</span>
+                    <span>Level {userNutrinos.level}</span>
+                  </div>
+                  <button
+                    onClick={() => setShowNutrinosHistory(!showNutrinosHistory)}
+                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors"
+                  >
+                    <i className="fas fa-history mr-1"></i>
+                    History
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -226,6 +288,50 @@ const Dashboard = () => {
               </Link>
             </div>
           </div>
+
+          {/* Nutrinos History Dropdown */}
+          {showNutrinosHistory && (
+            <div className="relative">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Recent Nutrinos Activity</h3>
+                </div>
+                <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                  {nutrinosHistory.length > 0 ? (
+                    nutrinosHistory.map((entry) => (
+                      <div key={entry.id} className="px-4 py-3">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="text-sm text-gray-900 dark:text-gray-100">
+                              {typeof entry.reason === 'string' ? entry.reason : 'Activity completed'}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {new Date(entry.timestamp).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className={`text-sm font-bold ${entry.nutrinos >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {entry.nutrinos >= 0 ? '+' : ''}{entry.nutrinos.toFixed(2)}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-4 py-6 text-center text-gray-500 dark:text-gray-400">
+                      <p className="text-sm">No Nutrinos activity yet</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Overlay to close Nutrinos history when clicking outside */}
+          {showNutrinosHistory && (
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setShowNutrinosHistory(false)}
+            />
+          )}
 
           {/* Action Buttons */}
           <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">

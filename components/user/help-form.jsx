@@ -6,6 +6,7 @@ import { db } from "@/lib/firebase";
 import { ref, push, onValue } from "firebase/database";
 import toast, { Toaster } from "react-hot-toast";
 import { hasReachedDailyLimit, getRemainingDoubts, getTimeUntilNextDoubt, DAILY_DOUBT_LIMIT } from "@/lib/points-system";
+import { addNutrinos } from "@/lib/nutrinos-system";
 
 const HelpForm = () => {
   const router = useRouter();
@@ -184,6 +185,17 @@ const HelpForm = () => {
       // Save to Firebase
       const doubtsRef = ref(db, "doubts");
       const doubtResult = await push(doubtsRef, doubtData);
+
+      // Award Nutrinos points for doubt submission
+      try {
+        await addNutrinos(user.roll, 'doubt_ask', 'Asked Doubt', {
+          title: formData.title,
+          category: formData.category
+        });
+      } catch (nutritosError) {
+        console.error("Failed to award Nutrinos points:", nutritosError);
+        // Don't break the flow, just log the error
+      }
 
       // Notify reviewers about new doubt
       try {

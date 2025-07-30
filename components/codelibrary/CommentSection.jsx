@@ -1,9 +1,11 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { db } from "@/lib/firebase";
-import { ref, push, onValue, off, update, query, orderByChild } from "firebase/database";
+import { ref, push, onValue, off, update, remove, query, orderByChild } from "firebase/database";
 import { users } from "@/lib/mino";
 import { formatDistanceToNow } from "date-fns";
+import { addNutrinos } from "@/lib/nutrinos-system";
+import toast from "react-hot-toast";
 
 function getNameFromRoll(roll) {
   const user = users.find((u) => u.roll === roll);
@@ -32,6 +34,10 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
   const [activeMentionInput, setActiveMentionInput] = useState(null); // Track which input is active for mentions
   const [suggestionPosition, setSuggestionPosition] = useState({ top: 0, left: 0 }); // Track cursor position for suggestions
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0); // Track selected suggestion for keyboard navigation
+  const [editingComment, setEditingComment] = useState(null);
+  const [editingReply, setEditingReply] = useState(null);
+  const [editCommentText, setEditCommentText] = useState("");
+  const [editReplyText, setEditReplyText] = useState("");
   const commentInputRef = useRef(null);
   const replyInputRef = useRef(null);
   const maxRepliesPreview = 2;
@@ -194,6 +200,28 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
         );
       }
 
+      // Award Nutrinos points for comments
+      try {
+        // Commenter gets 2.5 points
+        await addNutrinos(user.roll, 'comment_made', 'Made Comment', {
+          snippetId,
+          commentText: newComment.trim(),
+          snippetAuthor
+        });
+
+        // Snippet author gets 1.5 points (only if commenter is different)
+        if (user.roll !== snippetAuthor) {
+          await addNutrinos(snippetAuthor, 'comment_received', 'Received Comment', {
+            snippetId,
+            commentText: newComment.trim(),
+            commenter: user.roll
+          });
+        }
+      } catch (nutritosError) {
+        console.error("Failed to award Nutrinos points for comment:", nutritosError);
+        // Don't break the flow, just log the error
+      }
+
       // Check for mentions and create notifications
       const mentionRegex = /@([^(]+)\((\d+)\)/g;
       let match;
@@ -207,6 +235,17 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
             snippetId,
             newComment.trim()
           );
+
+          // Award Nutrinos points for mention
+          try {
+            await addNutrinos(mentionedRoll, 'mention_received', 'Got Mentioned', {
+              snippetId,
+              commentText: newComment.trim(),
+              mentioner: user.roll
+            });
+          } catch (nutritosError) {
+            console.error("Failed to award Nutrinos points for mention:", nutritosError);
+          }
         }
       }
 
@@ -245,6 +284,30 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
         );
       }
 
+      // Award Nutrinos points for replies
+      try {
+        // Replier gets 1.5 points
+        await addNutrinos(user.roll, 'reply_made', 'Made Reply', {
+          snippetId,
+          commentId,
+          replyText: replyText.trim(),
+          originalCommenter: comment?.authorRoll
+        });
+
+        // Original commenter gets 0.25 points (only if replier is different)
+        if (comment && user.roll !== comment.authorRoll) {
+          await addNutrinos(comment.authorRoll, 'reply_received', 'Received Reply', {
+            snippetId,
+            commentId,
+            replyText: replyText.trim(),
+            replier: user.roll
+          });
+        }
+      } catch (nutritosError) {
+        console.error("Failed to award Nutrinos points for reply:", nutritosError);
+        // Don't break the flow, just log the error
+      }
+
       // Check for mentions in reply
       const mentionRegex = /@([^(]+)\((\d+)\)/g;
       let match;
@@ -258,6 +321,18 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
             snippetId,
             replyText.trim()
           );
+
+          // Award Nutrinos points for mention in reply
+          try {
+            await addNutrinos(mentionedRoll, 'mention_received', 'Got Mentioned in Reply', {
+              snippetId,
+              commentId,
+              replyText: replyText.trim(),
+              mentioner: user.roll
+            });
+          } catch (nutritosError) {
+            console.error("Failed to award Nutrinos points for mention in reply:", nutritosError);
+          }
         }
       }
 
@@ -265,6 +340,134 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
       setReplyingTo(null);
     } catch (error) {
       console.error("Error adding reply:", error);
+    }
+    setLoading(false);
+  };
+
+  // Edit comment function
+  const editComment = async (commentId) => {
+    if (!user || !editCommentText.trim()) return;
+    
+    setLoading(true);
+    try {
+      const commentRef = ref(db, `comments/${snippetId}/${commentId}`);
+      await update(commentRef, {
+        text: editCommentText.trim(),
+        editedAt: new Date().toISOString(),
+        isEdited: true
+      });
+
+      // Award Nutrinos points for comment edit
+      try {
+        await addNutrinos(user.roll, 'comment_edit', 'Edited Comment', {
+          snippetId,
+          commentId,
+          editedText: editCommentText.trim()
+        });
+      } catch (nutritosError) {
+        console.error("Failed to award Nutrinos points for comment edit:", nutritosError);
+      }
+
+      setEditingComment(null);
+      setEditCommentText("");
+      toast.success("Comment updated successfully!");
+    } catch (error) {
+      console.error("Error editing comment:", error);
+      toast.error("Failed to update comment. Please try again.");
+    }
+    setLoading(false);
+  };
+
+  // Delete comment function
+  const deleteComment = async (commentId) => {
+    if (!user) return;
+    
+    if (!confirm("Are you sure you want to delete this comment?")) return;
+    
+    setLoading(true);
+    try {
+      const commentRef = ref(db, `comments/${snippetId}/${commentId}`);
+      await remove(commentRef); // Properly remove the comment
+
+      // Deduct Nutrinos points for comment deletion
+      try {
+        await addNutrinos(user.roll, 'comment_delete', 'Comment Deleted', {
+          snippetId,
+          commentId
+        });
+      } catch (nutritosError) {
+        console.error("Failed to deduct Nutrinos points for comment deletion:", nutritosError);
+      }
+
+      toast.success("Comment deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      toast.error("Failed to delete comment. Please try again.");
+    }
+    setLoading(false);
+  };
+
+  // Edit reply function
+  const editReply = async (commentId, replyId) => {
+    if (!user || !editReplyText.trim()) return;
+    
+    setLoading(true);
+    try {
+      const replyRef = ref(db, `comments/${snippetId}/${commentId}/replies/${replyId}`);
+      await update(replyRef, {
+        text: editReplyText.trim(),
+        editedAt: new Date().toISOString(),
+        isEdited: true
+      });
+
+      // Award Nutrinos points for reply edit
+      try {
+        await addNutrinos(user.roll, 'reply_edit', 'Edited Reply', {
+          snippetId,
+          commentId,
+          replyId,
+          editedText: editReplyText.trim()
+        });
+      } catch (nutritosError) {
+        console.error("Failed to award Nutrinos points for reply edit:", nutritosError);
+      }
+
+      setEditingReply(null);
+      setEditReplyText("");
+      toast.success("Reply updated successfully!");
+    } catch (error) {
+      console.error("Error editing reply:", error);
+      toast.error("Failed to update reply. Please try again.");
+    }
+    setLoading(false);
+  };
+
+  // Delete reply function
+  const deleteReply = async (commentId, replyId) => {
+    if (!user) return;
+    
+    if (!confirm("Are you sure you want to delete this reply?")) return;
+    
+    setLoading(true);
+    try {
+      const replyRef = ref(db, `comments/${snippetId}/${commentId}/replies/${replyId}`);
+      await remove(replyRef); // Properly remove the reply
+
+      // Deduct Nutrinos points for reply deletion
+      try {
+        await addNutrinos(user.roll, 'reply_delete', 'Reply Deleted', {
+          snippetId,
+          commentId,
+          replyId
+        });
+      } catch (nutritosError) {
+        console.error("Failed to deduct Nutrinos points for reply deletion:", nutritosError);
+      }
+
+      toast.success("Reply deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting reply:", error);
+      toast.error("Failed to delete reply. Please try again.");
     }
     setLoading(false);
   };
@@ -384,10 +587,47 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
               </div>
             </div>
             
-            <div 
-              className="text-gray-800 dark:text-gray-200 text-sm mb-3 leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: renderText(comments[0].text) }}
-            />
+            {/* Latest comment text or edit form */}
+            {editingComment === comments[0].id ? (
+              <div className="mb-3">
+                <textarea
+                  value={editCommentText}
+                  onChange={(e) => setEditCommentText(e.target.value)}
+                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  rows="3"
+                />
+                <div className="flex items-center space-x-2 mt-2">
+                  <button
+                    onClick={() => editComment(comments[0].id)}
+                    className="px-3 py-1 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
+                    disabled={loading}
+                  >
+                    {loading ? 'Saving...' : 'Save'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingComment(null);
+                      setEditCommentText("");
+                    }}
+                    className="px-3 py-1 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="mb-3">
+                <div 
+                  className="text-gray-800 dark:text-gray-200 text-sm leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: renderText(comments[0].text) }}
+                />
+                {comments[0].isEdited && (
+                  <span className="text-xs text-gray-500 dark:text-gray-400 italic mt-1 block">
+                    (edited)
+                  </span>
+                )}
+              </div>
+            )}
             
             {/* Latest comment actions */}
             <div className="flex items-center justify-between">
@@ -416,6 +656,30 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                     <i className="fas fa-reply"></i>
                     <span className="font-medium">Reply</span>
                   </button>
+                )}
+
+                {/* Edit and Delete buttons for latest comment author */}
+                {user && user.roll === comments[0].authorRoll && (
+                  <>
+                    <button
+                      onClick={() => {
+                        setEditingComment(comments[0].id);
+                        setEditCommentText(comments[0].text);
+                      }}
+                      className="flex items-center space-x-1 px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:text-yellow-600 dark:hover:text-yellow-400 transition-all duration-200 text-sm"
+                    >
+                      <i className="fas fa-edit"></i>
+                      <span className="font-medium">Edit</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => deleteComment(comments[0].id)}
+                      className="flex items-center space-x-1 px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 text-sm"
+                    >
+                      <i className="fas fa-trash"></i>
+                      <span className="font-medium">Delete</span>
+                    </button>
+                  </>
                 )}
               </div>
               
@@ -458,26 +722,89 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                               </span>
                             </div>
                             
-                            <div 
-                              className="text-gray-800 dark:text-gray-200 text-xs mb-2 leading-relaxed"
-                              dangerouslySetInnerHTML={{ __html: renderText(reply.text) }}
-                            />
+                            {/* Reply text or edit form (preview section) */}
+                            {editingReply === reply.id ? (
+                              <div className="mb-2">
+                                <textarea
+                                  value={editReplyText}
+                                  onChange={(e) => setEditReplyText(e.target.value)}
+                                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-xs resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  rows="2"
+                                />
+                                <div className="flex items-center space-x-2 mt-2">
+                                  <button
+                                    onClick={() => editReply(comments[0].id, reply.id)}
+                                    className="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
+                                    disabled={loading}
+                                  >
+                                    {loading ? 'Saving...' : 'Save'}
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingReply(null);
+                                      setEditReplyText("");
+                                    }}
+                                    className="px-2 py-1 bg-gray-500 text-white text-xs rounded hover:bg-gray-600 transition-colors"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="mb-2">
+                                <div 
+                                  className="text-gray-800 dark:text-gray-200 text-xs leading-relaxed"
+                                  dangerouslySetInnerHTML={{ __html: renderText(reply.text) }}
+                                />
+                                {reply.isEdited && (
+                                  <span className="text-xs text-gray-500 dark:text-gray-400 italic mt-1 block">
+                                    (edited)
+                                  </span>
+                                )}
+                              </div>
+                            )}
                             
-                            <button
-                              onClick={() => toggleCommentLike(reply.id, true, comments[0].id)}
-                              className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-all duration-200 ${
-                                reply.likedBy && reply.likedBy[user?.roll]
-                                  ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
-                                  : "bg-gray-100 dark:bg-gray-600 text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500"
-                              }`}
-                            >
-                              <i
-                                className={`${
-                                  reply.likedBy && reply.likedBy[user?.roll] ? "fas" : "far"
-                                } fa-heart`}
-                              ></i>
-                              <span className="font-medium">{reply.likes || 0}</span>
-                            </button>
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => toggleCommentLike(reply.id, true, comments[0].id)}
+                                className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-all duration-200 ${
+                                  reply.likedBy && reply.likedBy[user?.roll]
+                                    ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+                                    : "bg-gray-100 dark:bg-gray-600 text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500"
+                                }`}
+                              >
+                                <i
+                                  className={`${
+                                    reply.likedBy && reply.likedBy[user?.roll] ? "fas" : "far"
+                                  } fa-heart`}
+                                ></i>
+                                <span className="font-medium">{reply.likes || 0}</span>
+                              </button>
+
+                              {/* Edit and Delete buttons for reply author (preview section) */}
+                              {user && user.roll === reply.authorRoll && (
+                                <>
+                                  <button
+                                    onClick={() => {
+                                      setEditingReply(reply.id);
+                                      setEditReplyText(reply.text);
+                                    }}
+                                    className="flex items-center space-x-1 px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:text-yellow-600 dark:hover:text-yellow-400 transition-all duration-200"
+                                  >
+                                    <i className="fas fa-edit"></i>
+                                    <span className="font-medium">Edit</span>
+                                  </button>
+                                  
+                                  <button
+                                    onClick={() => deleteReply(comments[0].id, reply.id)}
+                                    className="flex items-center space-x-1 px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                                  >
+                                    <i className="fas fa-trash"></i>
+                                    <span className="font-medium">Delete</span>
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -756,11 +1083,47 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                   </div>
                 </div>
 
-                {/* Comment text */}
-                <div 
-                  className="text-gray-800 dark:text-gray-200 mb-4 leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: renderText(comment.text) }}
-                />
+                {/* Comment text or edit form */}
+                {editingComment === comment.id ? (
+                  <div className="mb-4">
+                    <textarea
+                      value={editCommentText}
+                      onChange={(e) => setEditCommentText(e.target.value)}
+                      className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      rows="3"
+                    />
+                    <div className="flex items-center space-x-2 mt-2">
+                      <button
+                        onClick={() => editComment(comment.id)}
+                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                        disabled={loading}
+                      >
+                        {loading ? 'Saving...' : 'Save'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingComment(null);
+                          setEditCommentText("");
+                        }}
+                        className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mb-4">
+                    <div 
+                      className="text-gray-800 dark:text-gray-200 leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: renderText(comment.text) }}
+                    />
+                    {comment.isEdited && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400 italic mt-1 block">
+                        (edited)
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 {/* Comment actions */}
                 <div className="flex items-center justify-between">
@@ -789,6 +1152,30 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                         <i className="fas fa-reply"></i>
                         <span className="text-sm font-medium">Reply</span>
                       </button>
+                    )}
+
+                    {/* Edit and Delete buttons for comment author */}
+                    {user && user.roll === comment.authorRoll && (
+                      <>
+                        <button
+                          onClick={() => {
+                            setEditingComment(comment.id);
+                            setEditCommentText(comment.text);
+                          }}
+                          className="flex items-center space-x-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:text-yellow-600 dark:hover:text-yellow-400 transition-all duration-200"
+                        >
+                          <i className="fas fa-edit"></i>
+                          <span className="text-sm font-medium">Edit</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => deleteComment(comment.id)}
+                          className="flex items-center space-x-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                        >
+                          <i className="fas fa-trash"></i>
+                          <span className="text-sm font-medium">Delete</span>
+                        </button>
+                      </>
                     )}
                   </div>
                   
@@ -919,26 +1306,89 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                                   </span>
                                 </div>
                                 
-                                <div 
-                                  className="text-gray-800 dark:text-gray-200 text-sm mb-3 leading-relaxed"
-                                  dangerouslySetInnerHTML={{ __html: renderText(reply.text) }}
-                                />
+                                {/* Reply text or edit form */}
+                                {editingReply === reply.id ? (
+                                  <div className="mb-3">
+                                    <textarea
+                                      value={editReplyText}
+                                      onChange={(e) => setEditReplyText(e.target.value)}
+                                      className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                      rows="2"
+                                    />
+                                    <div className="flex items-center space-x-2 mt-2">
+                                      <button
+                                        onClick={() => editReply(comment.id, reply.id)}
+                                        className="px-3 py-1 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-600 transition-colors"
+                                        disabled={loading}
+                                      >
+                                        {loading ? 'Saving...' : 'Save'}
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          setEditingReply(null);
+                                          setEditReplyText("");
+                                        }}
+                                        className="px-3 py-1 bg-gray-500 text-white text-xs rounded-lg hover:bg-gray-600 transition-colors"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="mb-3">
+                                    <div 
+                                      className="text-gray-800 dark:text-gray-200 text-sm leading-relaxed"
+                                      dangerouslySetInnerHTML={{ __html: renderText(reply.text) }}
+                                    />
+                                    {reply.isEdited && (
+                                      <span className="text-xs text-gray-500 dark:text-gray-400 italic mt-1 block">
+                                        (edited)
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
                                 
-                                <button
-                                  onClick={() => toggleCommentLike(reply.id, true, comment.id)}
-                                  className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-all duration-200 ${
-                                    reply.likedBy && reply.likedBy[user?.roll]
-                                      ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
-                                      : "bg-gray-100 dark:bg-gray-600 text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500"
-                                  }`}
-                                >
-                                  <i
-                                    className={`${
-                                      reply.likedBy && reply.likedBy[user?.roll] ? "fas" : "far"
-                                    } fa-heart`}
-                                  ></i>
-                                  <span className="font-medium">{reply.likes || 0}</span>
-                                </button>
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    onClick={() => toggleCommentLike(reply.id, true, comment.id)}
+                                    className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-all duration-200 ${
+                                      reply.likedBy && reply.likedBy[user?.roll]
+                                        ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+                                        : "bg-gray-100 dark:bg-gray-600 text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500"
+                                    }`}
+                                  >
+                                    <i
+                                      className={`${
+                                        reply.likedBy && reply.likedBy[user?.roll] ? "fas" : "far"
+                                      } fa-heart`}
+                                    ></i>
+                                    <span className="font-medium">{reply.likes || 0}</span>
+                                  </button>
+
+                                  {/* Edit and Delete buttons for reply author */}
+                                  {user && user.roll === reply.authorRoll && (
+                                    <>
+                                      <button
+                                        onClick={() => {
+                                          setEditingReply(reply.id);
+                                          setEditReplyText(reply.text);
+                                        }}
+                                        className="flex items-center space-x-1 px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:text-yellow-600 dark:hover:text-yellow-400 transition-all duration-200"
+                                      >
+                                        <i className="fas fa-edit"></i>
+                                        <span className="font-medium">Edit</span>
+                                      </button>
+                                      
+                                      <button
+                                        onClick={() => deleteReply(comment.id, reply.id)}
+                                        className="flex items-center space-x-1 px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                                      >
+                                        <i className="fas fa-trash"></i>
+                                        <span className="font-medium">Delete</span>
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>

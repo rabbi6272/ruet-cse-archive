@@ -6,6 +6,7 @@ import { ref, push } from "firebase/database";
 import { useRouter } from "next/navigation";
 import ReCAPTCHA from "react-google-recaptcha";
 import toast from "react-hot-toast";
+import { addNutrinos } from "@/lib/nutrinos-system";
 
 export function CodeSnippetForm() {
   const router = useRouter();
@@ -161,6 +162,17 @@ export function CodeSnippetForm() {
         ...formData,
         createdAt: new Date().toISOString(),
       });
+
+      // Award Nutrinos points for code snippet submission
+      try {
+        await addNutrinos(formData.rollNumber, 'snippet_add', 'Code Snippet Added', {
+          title: formData.title,
+          language: formData.language
+        });
+      } catch (nutritosError) {
+        console.error("Failed to award Nutrinos points:", nutritosError);
+        // Don't break the flow, just log the error
+      }
 
       // Reset form (except roll number and auth-related fields)
       setFormData({
