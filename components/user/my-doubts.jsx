@@ -100,6 +100,7 @@ const MyDoubts = () => {
         body: JSON.stringify({
           action: "mark_satisfied",
           doubtId: doubtId,
+          userRoll: user.roll, // Add user roll for verification
         }),
       });
 
@@ -126,6 +127,7 @@ const MyDoubts = () => {
         body: JSON.stringify({
           action: "mark_not_satisfied",
           doubtId: doubtId,
+          userRoll: user.roll, // Add user roll for verification
         }),
       });
 

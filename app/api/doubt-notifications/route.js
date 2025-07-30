@@ -1,10 +1,22 @@
 import { db } from "@/lib/firebase";
 import { ref, onValue, push, update, remove } from "firebase/database";
 import { calculateSolverPoints } from "@/lib/points-system";
+import { isAuthorizedReviewer } from "@/lib/auth-utils";
 
 export async function POST(request) {
   try {
-    const { doubtId, action, userId } = await request.json();
+    const { doubtId, action, userId, userRoll } = await request.json();
+
+    // Check authorization for reviewer-only actions
+    const reviewerOnlyActions = ["notify_solution"];
+    if (reviewerOnlyActions.includes(action)) {
+      if (!userRoll || !isAuthorizedReviewer({ roll: userRoll })) {
+        return Response.json(
+          { success: false, message: "Unauthorized: Only code reviewers can perform this action" },
+          { status: 403 }
+        );
+      }
+    }
 
     if (action === "notify_solution") {
       // Create notification for user when solution is available
@@ -45,28 +57,45 @@ export async function POST(request) {
     }
 
     if (action === "mark_satisfied") {
+      // Verify that the user owns this doubt
+      if (!userRoll) {
+        return Response.json(
+          { success: false, message: "User roll required for verification" },
+          { status: 400 }
+        );
+      }
+
       // Mark doubt as satisfied by user and move to archive
       const doubtRef = ref(db, `doubts/${doubtId}`);
       const archiveRef = ref(db, `resolvedDoubts/${doubtId}`);
       
       // Get current doubt data
-      const doubtSnapshot = await new Promise((resolve) => {
+      const satisfiedDoubtSnapshot = await new Promise((resolve) => {
         onValue(doubtRef, resolve, { onlyOnce: true });
       });
       
-      const doubtData = doubtSnapshot.val();
-      if (doubtData && doubtData.solution) {
+      const satisfiedDoubtData = satisfiedDoubtSnapshot.val();
+      
+      // Verify ownership
+      if (!satisfiedDoubtData || satisfiedDoubtData.userDetails?.roll !== userRoll) {
+        return Response.json(
+          { success: false, message: "Unauthorized: You can only mark your own doubts" },
+          { status: 403 }
+        );
+      }
+      
+      if (satisfiedDoubtData && satisfiedDoubtData.solution) {
         // Calculate final points with satisfaction bonus
         const finalPoints = calculateSolverPoints(
-          doubtData.solution.content,
-          doubtData.solution.attachments || [],
-          doubtData.solution.assignedAt,
-          doubtData.solution.solvedAt,
+          satisfiedDoubtData.solution.content,
+          satisfiedDoubtData.solution.attachments || [],
+          satisfiedDoubtData.solution.assignedAt,
+          satisfiedDoubtData.solution.solvedAt,
           true // User is satisfied
         );
         
         // Update solver's total points
-        const solverRoll = doubtData.solution.solvedBy.roll;
+        const solverRoll = satisfiedDoubtData.solution.solvedBy.roll;
         const pointsRef = ref(db, `solverPoints/${solverRoll}`);
         
         // Get current points
@@ -83,17 +112,17 @@ export async function POST(request) {
           totalPoints: newTotalPoints,
           doubtsResolved: newDoubtsResolved,
           lastUpdated: Date.now(),
-          solverName: doubtData.solution.solvedBy.name
+          solverName: satisfiedDoubtData.solution.solvedBy.name
         });
         
         // Add satisfaction confirmation and final points
         const finalData = {
-          ...doubtData,
+          ...satisfiedDoubtData,
           userSatisfied: true,
           satisfiedAt: Date.now(),
           status: "completed",
           solution: {
-            ...doubtData.solution,
+            ...satisfiedDoubtData.solution,
             finalPoints: finalPoints
           }
         };
@@ -115,12 +144,20 @@ export async function POST(request) {
     }
 
     if (action === "mark_not_satisfied") {
+      // Verify that the user owns this doubt
+      if (!userRoll) {
+        return Response.json(
+          { success: false, message: "User roll required for verification" },
+          { status: 400 }
+        );
+      }
+
       // Mark doubt as not satisfied and reopen it for more help
       const doubtRef = ref(db, `doubts/${doubtId}`);
       const archiveRef = ref(db, `resolvedDoubts/${doubtId}`);
       
       // Get current doubt data (might be in archive or main doubts)
-      let doubtData = null;
+      let notSatisfiedDoubtData = null;
       
       // First check if it's in archive
       const archiveSnapshot = await new Promise((resolve) => {
@@ -128,25 +165,42 @@ export async function POST(request) {
       });
       
       if (archiveSnapshot.val()) {
-        doubtData = archiveSnapshot.val();
+        notSatisfiedDoubtData = archiveSnapshot.val();
+        
+        // Verify ownership
+        if (notSatisfiedDoubtData.userDetails?.roll !== userRoll) {
+          return Response.json(
+            { success: false, message: "Unauthorized: You can only mark your own doubts" },
+            { status: 403 }
+          );
+        }
+        
         // Remove from archive
         await remove(archiveRef);
       } else {
         // Check in main doubts
-        const doubtSnapshot = await new Promise((resolve) => {
+        const mainDoubtSnapshot = await new Promise((resolve) => {
           onValue(doubtRef, resolve, { onlyOnce: true });
         });
-        doubtData = doubtSnapshot.val();
+        notSatisfiedDoubtData = mainDoubtSnapshot.val();
+        
+        // Verify ownership
+        if (!notSatisfiedDoubtData || notSatisfiedDoubtData.userDetails?.roll !== userRoll) {
+          return Response.json(
+            { success: false, message: "Unauthorized: You can only mark your own doubts" },
+            { status: 403 }
+          );
+        }
       }
       
-      if (doubtData && doubtData.solution) {
+      if (notSatisfiedDoubtData && notSatisfiedDoubtData.solution) {
         // Award reduced points for the initial attempt
-        const solverRoll = doubtData.solution.solvedBy.roll;
+        const solverRoll = notSatisfiedDoubtData.solution.solvedBy.roll;
         const reducedPoints = calculateSolverPoints(
-          doubtData.solution.content,
-          doubtData.solution.attachments || [],
-          doubtData.solution.assignedAt,
-          doubtData.solution.solvedAt,
+          notSatisfiedDoubtData.solution.content,
+          notSatisfiedDoubtData.solution.attachments || [],
+          notSatisfiedDoubtData.solution.assignedAt,
+          notSatisfiedDoubtData.solution.solvedAt,
           false // Not satisfied
         );
         
@@ -162,19 +216,19 @@ export async function POST(request) {
           totalPoints: newTotalPoints,
           doubtsResolved: currentData.doubtsResolved, // Don't increment since not fully resolved
           lastUpdated: Date.now(),
-          solverName: doubtData.solution.solvedBy.name
+          solverName: notSatisfiedDoubtData.solution.solvedBy.name
         });
         
         // Reset doubt status and add feedback
         const reopenedData = {
-          ...doubtData,
+          ...notSatisfiedDoubtData,
           status: "needs_clarification",
           userSatisfied: false,
           needsMoreHelp: true,
           reopenedAt: Date.now(),
-          previousAttempts: (doubtData.previousAttempts || 0) + 1,
+          previousAttempts: (notSatisfiedDoubtData.previousAttempts || 0) + 1,
           solution: {
-            ...doubtData.solution,
+            ...notSatisfiedDoubtData.solution,
             finalPoints: reducedPoints,
             needsImprovement: true
           }

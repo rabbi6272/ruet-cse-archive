@@ -268,6 +268,7 @@ const ReviewerDashboard = () => {
             action: "notify_solution",
             doubtId: selectedDoubt.id,
             userId: selectedDoubt.userDetails.roll,
+            userRoll: user.roll, // Add user roll for authorization
           }),
         });
       } catch (notifError) {
