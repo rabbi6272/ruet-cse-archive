@@ -96,6 +96,10 @@ const NotificationCenter = ({ userRoll }) => {
         return <i className="fas fa-at text-purple-500"></i>;
       case "like":
         return <i className="fas fa-heart text-red-500"></i>;
+      case "doubt_solved":
+        return <i className="fas fa-check-circle text-green-500"></i>;
+      case "doubt_assigned":
+        return <i className="fas fa-user-check text-blue-500"></i>;
       default:
         return <i className="fas fa-bell text-gray-500"></i>;
     }
@@ -110,7 +114,7 @@ const NotificationCenter = ({ userRoll }) => {
   };
 
   const formatNotificationMessage = (notification) => {
-    const timeAgo = formatTimeAgo(notification.createdAt);
+    const timeAgo = formatTimeAgo(notification.createdAt || notification.timestamp);
     const snippetTitle = notification.snippetTitle || "Untitled Code";
     const fromUser =
       notification.fromUserName || getNameFromRoll(notification.fromUserRoll);
@@ -134,9 +138,19 @@ const NotificationCenter = ({ userRoll }) => {
           main: `${fromUser} mentioned you in ${snippetAuthor}'s code "${snippetTitle}"`,
           time: timeAgo,
         };
+      case "doubt_solved":
+        return {
+          main: notification.title || "Your doubt has been solved!",
+          time: timeAgo,
+        };
+      case "doubt_assigned":
+        return {
+          main: notification.title || "Your doubt has been assigned to a reviewer",
+          time: timeAgo,
+        };
       default:
         return {
-          main: notification.message,
+          main: notification.message || notification.title,
           time: timeAgo,
         };
     }

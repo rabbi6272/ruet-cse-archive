@@ -12,6 +12,7 @@ import {
   update,
   remove,
 } from "firebase/database";
+import { isAuthorizedReviewer } from "@/lib/auth-utils";
 import toast, { Toaster } from "react-hot-toast";
 import NotificationCenter from "./NotificationCenter";
 import Link from "next/link";
@@ -27,6 +28,7 @@ const Dashboard = () => {
   const [editForm, setEditForm] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState(null);
+  const [isCodeReviewer, setIsCodeReviewer] = useState(false);
 
   // Check authentication and load user data
   useEffect(() => {
@@ -36,6 +38,7 @@ const Dashboard = () => {
     } else {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
+      setIsCodeReviewer(isAuthorizedReviewer(parsedUser));
       loadUserSnippets(parsedUser.roll);
     }
   }, [router]);
@@ -178,14 +181,43 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* New Snippet Button */}
-            <button
-              onClick={handleNewSnippet}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white my-4 px-6 py-2.5 rounded-lg shadow transition duration-200 flex items-center"
-            >
-              <i className="fas fa-plus mr-2"></i>
-              Post New Snippet
-            </button>
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={handleNewSnippet}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center"
+              >
+                <i className="fas fa-plus mr-2"></i>
+                Post New Snippet
+              </button>
+              
+              <Link
+                href="/user/help"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center"
+              >
+                <i className="fas fa-question-circle mr-2"></i>
+                Get Help
+              </Link>
+              
+              <Link
+                href="/user/my-doubts"
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center"
+              >
+                <i className="fas fa-list mr-2"></i>
+                My Doubts
+              </Link>
+
+              {/* Code Reviewer Button - Only show for authorized reviewers */}
+              {isCodeReviewer && (
+                <Link
+                  href="/reviewers/dashboard"
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center border-2 border-orange-300"
+                >
+                  <i className="fas fa-clipboard-check mr-2"></i>
+                  Resolve Doubts
+                </Link>
+              )}
+            </div>
           </div>
 
           {/* Notification Center */}

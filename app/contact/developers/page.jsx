@@ -1,4 +1,9 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import { ProfileCard } from "@/components/developers/profileCard";
+import { isAuthorizedReviewer, getCurrentUser } from "@/lib/auth-utils";
 
 import { avengero, lato, avegance } from "@/app/ui/fonts";
 
@@ -27,6 +32,7 @@ const developers = [
     role: "Frontend & Backend, Code Reviewer",
     location: "Khulna, Bangladesh",
     image: rabbi2,
+    roll:"2403172",
     github: "https://github.com/rabbi6272",
     linkedin: "https://www.linkedin.com/in/fazle-rabbi-b48a722a2/",
     facebook: "https://www.facebook.com/frabbi6272",
@@ -35,6 +41,7 @@ const developers = [
     name: "Bitto Saha",
     role: "Frontend & Backend, Code Reviewer",
     image: bitto2,
+    roll:"2403142",
     location: "Bogura, Bangladesh",
     github: "https://github.com/idcnys/",
     linkedin: "https://www.linkedin.com/in/bittosaha/",
@@ -44,6 +51,7 @@ const developers = [
     name: "Morchhalin Alam Amio",
     role: "Security & Tester",
     image: amio,
+    roll:"2403154",
     location: "Kurigram, Bangladesh",
     github: "https://github.com/Amio75",
     linkedin: "https://www.linkedin.com/in/morchhalin-alam-amio-bb35a8360",
@@ -53,6 +61,7 @@ const developers = [
      name: "Sumon Majumder",
      role: "Code Reviewer & Tester",
      image: sumon,
+     roll:"2403129",
      location: "Khulna, Bangladesh",
      github: "https://github.com/spiderNerd007",
      linkedin: "https://www.linkedin.com/in/sumon-majumder-6a6b81371",
@@ -80,6 +89,7 @@ const developers = [
     name: "Nilay Paul Partha",
     role: "Code Reviewer & Tester",
     image: nilay,
+    roll:"2403160",
     location: "Cox's Bazar, Bangladesh",
     github: "https://github.com/nilaypaulpartha",
     linkedin: "https://bd.linkedin.com/in/nilay-paul-partho-064654259",
@@ -89,6 +99,7 @@ const developers = [
     name: "Mirajul Islam",
     role: "Code Reviewer & Tester",
     image: miraj,
+    roll:"2403147",
     location: "Kushtia, Bangladesh",
     github: "#",
     linkedin: "https://www.linkedin.com/in/md-mirajul-islam-98071624b/",
@@ -98,6 +109,7 @@ const developers = [
     name: "Tasaouf Ahnaf",
     role: "Code Reviewer & Tester",
     image: ahnaf,
+    roll:"2403140",
     location: "Jessore, Bangladesh",
     github: "#",
     linkedin: "https://www.linkedin.com/in/tasaoufahnaf/",
@@ -125,6 +137,7 @@ const developers = [
     name: "Arnob Benedict Tudu",
     role: "Code Reviewer & Tester",
     image: arnob,
+    roll:"2403155",
     location: "Rajshahi, Bangladesh",
     github: "https://github.com/Arnob001607",
     linkedin: "https://www.linkedin.com/in/arnob-b-tudu-616045360",
@@ -186,6 +199,17 @@ const groupedDevelopers = {
 };
 
 export default function Developers() {
+  const [user, setUser] = useState(null);
+  const [isCodeReviewer, setIsCodeReviewer] = useState(false);
+
+  useEffect(() => {
+    const currentUser = getCurrentUser();
+    if (currentUser) {
+      setUser(currentUser);
+      setIsCodeReviewer(isAuthorizedReviewer(currentUser));
+    }
+  }, []);
+
   return (
     <div className="p-4 md:p-6">
       <div className="p-3 md:p-6 w-full bg-[#ffffffa4] dark:bg-slate-700 rounded-lg">
@@ -198,6 +222,36 @@ export default function Developers() {
           The Avengers
         </h3>
         <br />
+
+        {/* Code Reviewer Access Button */}
+        {isCodeReviewer && (
+          <div className="mb-8 text-center">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 inline-block shadow-lg">
+              <div className="flex items-center justify-center mb-3">
+                <div className="bg-blue-100 dark:bg-blue-800 rounded-full p-3 mr-3">
+                  <i className="fas fa-code text-blue-600 dark:text-blue-300 text-xl"></i>
+                </div>
+                <h4 className="text-xl font-bold text-blue-800 dark:text-blue-200">
+                  Code Reviewer Dashboard
+                </h4>
+              </div>
+              <p className="text-sm text-blue-600 dark:text-blue-300 mb-4 max-w-md">
+                Welcome back, <strong>{user?.name}</strong>! Help students by resolving their coding doubts and contributing to the community.
+              </p>
+              <Link
+                href="/reviewers/dashboard"
+                className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200"
+              >
+                <i className="fas fa-clipboard-check mr-2"></i>
+                Resolve Doubts
+                <i className="fas fa-arrow-right ml-2"></i>
+              </Link>
+              <div className="mt-3 text-xs text-blue-500 dark:text-blue-400">
+                View and solve pending student doubts
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Frontend & Backend Developers Section */}
         <div className="mb-12 ">
