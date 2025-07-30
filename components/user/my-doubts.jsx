@@ -6,6 +6,8 @@ import { db } from "@/lib/firebase";
 import { ref, onValue, query, orderByChild, equalTo } from "firebase/database";
 import toast, { Toaster } from "react-hot-toast";
 import Link from "next/link";
+import hljs from "highlight.js";
+import "highlight.js/styles/monokai.css";
 
 const MyDoubts = () => {
   const router = useRouter();
@@ -14,6 +16,9 @@ const MyDoubts = () => {
   const [resolvedDoubts, setResolvedDoubts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("pending");
+  const [expandedSnippets, setExpandedSnippets] = useState({});
+  
+  const maxCodeLines = 20;
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -25,6 +30,14 @@ const MyDoubts = () => {
       loadUserDoubts(parsedUser.roll);
     }
   }, [router]);
+
+  useEffect(() => {
+    // Highlight code blocks after component renders
+    const codeBlocks = document.querySelectorAll('pre code');
+    codeBlocks.forEach((block) => {
+      hljs.highlightElement(block);
+    });
+  });
 
   const loadUserDoubts = (userRoll) => {
     setLoading(true);
@@ -153,6 +166,29 @@ const MyDoubts = () => {
       "resolved": "bg-green-100 text-green-800"
     };
     return colors[status] || "bg-gray-100 text-gray-800";
+  };
+
+  const toggleExpand = (id) => {
+    setExpandedSnippets((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+    
+    // Re-highlight after state change and DOM update
+    setTimeout(() => {
+      const codeBlocks = document.querySelectorAll('pre code');
+      codeBlocks.forEach((block) => {
+        // Remove existing highlighting classes
+        block.removeAttribute('data-highlighted');
+        block.className = block.className.replace(/hljs[^\s]*/g, '').trim();
+        // Re-apply highlighting
+        hljs.highlightElement(block);
+      });
+    }, 100);
+  };
+
+  const isCodeLong = (code) => {
+    return code?.split("\n").length > maxCodeLines;
   };
 
   if (!user) {
@@ -328,9 +364,51 @@ const MyDoubts = () => {
                                     ) : (
                                       <div>
                                         <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{attachment.name}</p>
-                                        <pre className="text-xs bg-gray-100 dark:bg-gray-700 p-2 rounded overflow-x-auto max-h-32 sm:max-h-40 overflow-y-auto">
-                                          <code className="text-gray-800 dark:text-gray-200">{attachment.content}</code>
-                                        </pre>
+                                        <div className="code-container dark:bg-gray-900 bg-gray-200 rounded-lg overflow-hidden relative group">
+                                          <pre
+                                            className={`p-4 overflow-x-auto transition-transform duration-500 ${
+                                              isCodeLong(attachment.content) &&
+                                              !expandedSnippets[`${doubt.id}-${index}`]
+                                                ? "max-h-70"
+                                                : ""
+                                            }`}
+                                          >
+                                            <code
+                                              className={`language-javascript`}
+                                            >
+                                              {isCodeLong(attachment.content) &&
+                                              !expandedSnippets[`${doubt.id}-${index}`]
+                                                ? attachment.content
+                                                    .split("\n")
+                                                    .slice(0, maxCodeLines)
+                                                    .join("\n") + "\n..."
+                                                : attachment.content}
+                                            </code>
+                                          </pre>
+
+                                          {/* Code expand button */}
+                                          {isCodeLong(attachment.content) && (
+                                            <div className="flex justify-center p-2">
+                                              <button
+                                                className="px-6 py-2 text-sm font-medium rounded-full mx-auto dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300 bg-gray-300 hover:bg-gray-400 text-gray-600 transition-colors duration-300"
+                                                onClick={() => {
+                                                  // Remove highlighting before animation
+                                                  const codeBlocks = document.querySelectorAll('pre code');
+                                                  codeBlocks.forEach((block) => {
+                                                    block.removeAttribute('data-highlighted');
+                                                    block.className = block.className.replace(/hljs[^\s]*/g, '').trim();
+                                                  });
+                                                  toggleExpand(`${doubt.id}-${index}`);
+                                                }}
+                                              >
+                                                {expandedSnippets[`${doubt.id}-${index}`]
+                                                  ? "Collapse "
+                                                  : "Expand "}
+                                                Code
+                                              </button>
+                                            </div>
+                                          )}
+                                        </div>
                                       </div>
                                     )}
                                   </div>

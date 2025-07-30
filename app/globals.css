@@ -49,6 +49,12 @@ body {
   animation: pulse 0.5s ease-in-out;
 }
 
+/* Code snippet max height for expand/collapse */
+.max-h-70 {
+  max-height: 280px; /* Equivalent to max-h-70 in Tailwind (70 * 4px = 280px) */
+  overflow: hidden;
+}
+
 /* Notification pulse animation */
 .notification-pulse {
   animation: notification-pulse 2s infinite;

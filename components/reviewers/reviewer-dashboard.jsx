@@ -7,6 +7,8 @@ import { ref, onValue, update, remove } from "firebase/database";
 import { isAuthorizedReviewer } from "@/lib/auth-utils";
 import { calculateSolverPoints } from "@/lib/points-system";
 import toast, { Toaster } from "react-hot-toast";
+import hljs from "highlight.js";
+import "highlight.js/styles/monokai.css";
 
 const ReviewerDashboard = () => {
   const router = useRouter();
@@ -17,6 +19,9 @@ const ReviewerDashboard = () => {
   const [solution, setSolution] = useState("");
   const [submittingSolution, setSubmittingSolution] = useState(false);
   const [solutionAttachments, setSolutionAttachments] = useState([]);
+  const [expandedSnippets, setExpandedSnippets] = useState({});
+  
+  const maxCodeLines = 20;
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -37,6 +42,14 @@ const ReviewerDashboard = () => {
     setUser(parsedUser);
     loadDoubts();
   }, [router]);
+
+  useEffect(() => {
+    // Highlight code blocks after component renders
+    const codeBlocks = document.querySelectorAll('pre code');
+    codeBlocks.forEach((block) => {
+      hljs.highlightElement(block);
+    });
+  });
 
   const loadDoubts = () => {
     setLoading(true);
@@ -278,6 +291,29 @@ const ReviewerDashboard = () => {
     return colors[category] || "bg-gray-100 text-gray-800";
   };
 
+  const toggleExpand = (id) => {
+    setExpandedSnippets((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+    
+    // Re-highlight after state change and DOM update
+    setTimeout(() => {
+      const codeBlocks = document.querySelectorAll('pre code');
+      codeBlocks.forEach((block) => {
+        // Remove existing highlighting classes
+        block.removeAttribute('data-highlighted');
+        block.className = block.className.replace(/hljs[^\s]*/g, '').trim();
+        // Re-apply highlighting
+        hljs.highlightElement(block);
+      });
+    }, 100);
+  };
+
+  const isCodeLong = (code) => {
+    return code?.split("\n").length > maxCodeLines;
+  };
+
   if (!user) {
     return <div className="flex justify-center items-center min-h-screen dark:bg-gray-900 dark:text-gray-200">Loading...</div>;
   }
@@ -428,10 +464,50 @@ const ReviewerDashboard = () => {
                             />
                           </div>
                         ) : (
-                          <div className="max-h-32 sm:max-h-48 overflow-y-auto">
-                            <pre className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
-                              {selectedDoubt.attachment.content}
+                          <div className="code-container dark:bg-gray-900 bg-gray-200 rounded-lg overflow-hidden relative group">
+                            <pre
+                              className={`p-4 overflow-x-auto transition-transform duration-500 ${
+                                isCodeLong(selectedDoubt.attachment.content) &&
+                                !expandedSnippets[`doubt-${selectedDoubt.id}`]
+                                  ? "max-h-70"
+                                  : ""
+                              }`}
+                            >
+                              <code
+                                className={`language-javascript`}
+                              >
+                                {isCodeLong(selectedDoubt.attachment.content) &&
+                                !expandedSnippets[`doubt-${selectedDoubt.id}`]
+                                  ? selectedDoubt.attachment.content
+                                      .split("\n")
+                                      .slice(0, maxCodeLines)
+                                      .join("\n") + "\n..."
+                                  : selectedDoubt.attachment.content}
+                              </code>
                             </pre>
+
+                            {/* Code expand button */}
+                            {isCodeLong(selectedDoubt.attachment.content) && (
+                              <div className="flex justify-center p-2">
+                                <button
+                                  className="px-6 py-2 text-sm font-medium rounded-full mx-auto dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300 bg-gray-300 hover:bg-gray-400 text-gray-600 transition-colors duration-300"
+                                  onClick={() => {
+                                    // Remove highlighting before animation
+                                    const codeBlocks = document.querySelectorAll('pre code');
+                                    codeBlocks.forEach((block) => {
+                                      block.removeAttribute('data-highlighted');
+                                      block.className = block.className.replace(/hljs[^\s]*/g, '').trim();
+                                    });
+                                    toggleExpand(`doubt-${selectedDoubt.id}`);
+                                  }}
+                                >
+                                  {expandedSnippets[`doubt-${selectedDoubt.id}`]
+                                    ? "Collapse "
+                                    : "Expand "}
+                                  Code
+                                </button>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

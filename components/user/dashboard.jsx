@@ -16,6 +16,8 @@ import { isAuthorizedReviewer } from "@/lib/auth-utils";
 import toast, { Toaster } from "react-hot-toast";
 import NotificationCenter from "./NotificationCenter";
 import Link from "next/link";
+import hljs from "highlight.js";
+import "highlight.js/styles/monokai.css";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -29,6 +31,9 @@ const Dashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState(null);
   const [isCodeReviewer, setIsCodeReviewer] = useState(false);
+  const [expandedSnippets, setExpandedSnippets] = useState({});
+  
+  const maxCodeLines = 20;
 
   // Check authentication and load user data
   useEffect(() => {
@@ -42,6 +47,14 @@ const Dashboard = () => {
       loadUserSnippets(parsedUser.roll);
     }
   }, [router]);
+
+  // Highlight code blocks after component renders
+  useEffect(() => {
+    const codeBlocks = document.querySelectorAll('pre code');
+    codeBlocks.forEach((block) => {
+      hljs.highlightElement(block);
+    });
+  }, [snippets, editingId]);
 
   // Load user's snippets from Firebase
   const loadUserSnippets = (rollNumber) => {
@@ -132,6 +145,29 @@ const Dashboard = () => {
     setEditingId(null);
   };
 
+  const toggleExpand = (id) => {
+    setExpandedSnippets((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+    
+    // Re-highlight after state change and DOM update
+    setTimeout(() => {
+      const codeBlocks = document.querySelectorAll('pre code');
+      codeBlocks.forEach((block) => {
+        // Remove existing highlighting classes
+        block.removeAttribute('data-highlighted');
+        block.className = block.className.replace(/hljs[^\s]*/g, '').trim();
+        // Re-apply highlighting
+        hljs.highlightElement(block);
+      });
+    }, 100);
+  };
+
+  const isCodeLong = (code) => {
+    return code?.split("\n").length > maxCodeLines;
+  };
+
   // Pagination logic
   const totalPages = Math.ceil(snippets.length / ITEMS_PER_PAGE);
   const paginatedSnippets = snippets.slice(
@@ -152,122 +188,125 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen py-8 sm:px-4 lg:px-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-4 px-4">
       <Toaster />
-      <div className="max-w-[95%] lg:max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* User Profile Section */}
-        <div className="flex justify-between items-center bg-white dark:bg-slate-700 shadow rounded-lg p-4 lg:p-6 mb-8">
-          <div className="flex flex-col items-start">
-            <div className="flex items-center space-x-3 lg:space-x-4">
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl p-4 lg:p-6 mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex items-center gap-4">
               {/* Name icon */}
-              <div className="flex-shrink-0">
-                <div className="h-16 w-16 rounded-full bg-indigo-100 dark:bg-indigo-300 flex items-center justify-center text-indigo-600 text-2xl font-bold">
-                  {user.name.charAt(0)}
-                </div>
+              <div className="h-12 w-12 lg:h-16 lg:w-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-lg lg:text-2xl font-bold shadow-lg">
+                {user.name.charAt(0)}
               </div>
 
               {/* User Info */}
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-200">
+                <h1 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {user.name}
                 </h1>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Roll: {user.roll}
                 </p>
-                <p className="text-gray-600 dark:text-gray-400 ">
-                  {snippets.length}{" "}
-                  {snippets.length === 1 ? "snippet" : "snippets"} posted
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {snippets.length} {snippets.length === 1 ? "snippet" : "snippets"}
                 </p>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-2">
+            {/* Notification Center */}
+            <div className="flex items-center gap-4">
+              <NotificationCenter userRoll={user?.roll} />
+              <Link
+                href="/user/notifications"
+                className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors flex items-center gap-1"
+              >
+                <i className="fas fa-external-link-alt"></i>
+                <span className="hidden sm:inline">View All</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3">
               <button
                 onClick={handleNewSnippet}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
               >
-                <i className="fas fa-plus mr-2"></i>
-                Post New Snippet
+                <i className="fas fa-plus text-xs"></i>
+                <span className="hidden sm:inline">Add Code</span>
+                <span className="sm:hidden">Add</span>
               </button>
               
               <Link
                 href="/user/help"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
               >
-                <i className="fas fa-question-circle mr-2"></i>
-                Get Help
+                <i className="fas fa-question-circle text-xs"></i>
+                <span className="hidden sm:inline">Post Doubt</span>
+                <span className="sm:hidden">Doubt</span>
               </Link>
               
               <Link
                 href="/user/my-doubts"
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center"
+                className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
               >
-                <i className="fas fa-list mr-2"></i>
-                My Doubts
+                <i className="fas fa-list text-xs"></i>
+                <span className="hidden sm:inline">My Doubts</span>
+                <span className="sm:hidden">Doubts</span>
               </Link>
 
               {/* Code Reviewer Button - Only show for authorized reviewers */}
               {isCodeReviewer && (
                 <Link
                   href="/reviewers/dashboard"
-                  className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center border-2 border-orange-300"
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                 >
-                  <i className="fas fa-clipboard-check mr-2"></i>
-                  Resolve Doubts
+                  <i className="fas fa-clipboard-check text-xs"></i>
+                  <span className="hidden sm:inline">Resolve Doubts</span>
+                  <span className="sm:hidden">Resolve</span>
                 </Link>
               )}
             </div>
-          </div>
-
-          {/* Notification Center */}
-          <div className="flex flex-col items-center space-y-3">
-            <div className="relative cursor-pointer">
-              <NotificationCenter userRoll={user?.roll} />
-            </div>
-
-            {/* View All Notifications Link */}
-            <Link
-              href="/user/notifications"
-              className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium transition-colors duration-200 flex items-center"
-            >
-              <i className="fas fa-external-link-alt mr-1"></i>
-              View All
-            </Link>
           </div>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 text-red-900 rounded-lg border border-red-200">
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 rounded-lg border border-red-200 dark:border-red-800 text-sm">
             {error}
           </div>
         )}
 
         {/* Snippets Section */}
-        <div className="bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-300 shadow rounded-lg overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden">
           {/* Snippets Header */}
-          <div className="px-6 py-5 border-b border-gray-400 dark:border-gray-200">
-            <h2 className="text-lg font-medium ">Your Code Snippets</h2>
+          <div className="px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Your Code Snippets</h2>
           </div>
 
           {loading ? (
-            <div className="p-6 flex justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
+            <div className="p-8 flex justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent"></div>
             </div>
           ) : snippets.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">
-              You haven't posted any code snippets yet.
+            <div className="p-8 text-center">
+              <div className="text-gray-400 mb-2">
+                <i className="fas fa-code text-3xl"></i>
+              </div>
+              <p className="text-gray-500 dark:text-gray-400">No code snippets yet</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Start by posting your first snippet!</p>
             </div>
           ) : (
-            <ul className="divide-y divide-gray-200">
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
               {paginatedSnippets.map((snippet) => (
-                <li key={snippet.id} className="p-6">
+                <div key={snippet.id} className="p-4 lg:p-6">
                   {editingId === snippet.id ? (
                     // Edit Form
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Title
                         </label>
                         <input
@@ -275,12 +314,12 @@ const Dashboard = () => {
                           name="title"
                           value={editForm.title}
                           onChange={handleEditChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-gray-100"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Description
                         </label>
                         <textarea
@@ -288,12 +327,12 @@ const Dashboard = () => {
                           value={editForm.description}
                           onChange={handleEditChange}
                           rows="3"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-gray-100"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Code
                         </label>
                         <textarea
@@ -301,20 +340,20 @@ const Dashboard = () => {
                           value={editForm.codeSnippet}
                           onChange={handleEditChange}
                           rows="20"
-                          className="w-full px-3 py-2 font-mono text-sm border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                          className="w-full px-3 py-2 font-mono text-sm border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-gray-100"
                         />
                       </div>
 
-                      <div className="flex space-x-3">
+                      <div className="flex gap-3">
                         <button
                           onClick={() => handleSaveEdit(snippet.id)}
-                          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
                         >
                           Save
                         </button>
                         <button
                           onClick={handleCancelEdit}
-                          className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                          className="px-4 py-2 bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors"
                         >
                           Cancel
                         </button>
@@ -323,46 +362,101 @@ const Dashboard = () => {
                   ) : (
                     // Snippet Display
                     <div>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="text-lg font-medium text-gray-800 dark:text-gray-300">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
                             {snippet.title}
                           </h3>
-                          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                            {snippet.language} • {snippet.difficulty} •{" "}
-                            {new Date(snippet.date).toLocaleDateString()}
-                          </p>
+                          <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                            <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full text-xs font-medium">
+                              {snippet.language}
+                            </span>
+                            <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-1 rounded-full text-xs font-medium">
+                              {snippet.difficulty}
+                            </span>
+                            <span className="text-xs">
+                              {new Date(snippet.date).toLocaleDateString()}
+                            </span>
+                          </div>
                         </div>
 
-                        <div className="flex space-x-2">
+                        <div className="flex gap-2 self-start">
                           <button
                             onClick={() => handleEditClick(snippet)}
-                            className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                            className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 text-sm font-medium px-3 py-1 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
                           >
+                            <i className="fas fa-edit mr-1"></i>
                             Edit
                           </button>
                           <button
                             onClick={() => handleDeleteSnippet(snippet.id)}
-                            className="text-red-600 hover:text-red-900 text-sm font-medium"
+                            className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-medium px-3 py-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                           >
+                            <i className="fas fa-trash mr-1"></i>
                             Delete
                           </button>
                         </div>
                       </div>
-                      <p className="mt-2 text-gray-500 dark:text-gray-400">
+                      
+                      <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
                         {snippet.description}
                       </p>
-                      <div className="mt-4 bg-gray-100 dark:bg-gray-800 p-4 rounded-md">
-                        <pre className="text-sm text-gray-900 dark:text-gray-300 overflow-x-auto">
-                          <code>{snippet.codeSnippet}</code>
+                      
+                      <div className="code-container dark:bg-gray-900 bg-gray-200 rounded-xl overflow-hidden relative group">
+                        {/* Code snippet */}
+                        <pre
+                          className={`p-4 overflow-x-auto transition-transform duration-500 ${
+                            isCodeLong(snippet.codeSnippet) &&
+                            !expandedSnippets[snippet.id]
+                              ? "max-h-70"
+                              : ""
+                          }`}
+                        >
+                          <code
+                            className={`language-${
+                              snippet.language?.toLowerCase() || "text"
+                            }`}
+                          >
+                            {isCodeLong(snippet.codeSnippet) &&
+                            !expandedSnippets[snippet.id]
+                              ? snippet.codeSnippet
+                                  .split("\n")
+                                  .slice(0, maxCodeLines)
+                                  .join("\n") + "\n..."
+                              : snippet.codeSnippet}
+                          </code>
                         </pre>
+
+                        {/* Code expand button */}
+                        {isCodeLong(snippet.codeSnippet) && (
+                          <div className="flex justify-center p-3">
+                            <button
+                              className="px-4 py-2 text-sm font-medium rounded-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors shadow-sm"
+                              onClick={() => {
+                                // Remove highlighting before animation
+                                const codeBlocks = document.querySelectorAll('pre code');
+                                codeBlocks.forEach((block) => {
+                                  block.removeAttribute('data-highlighted');
+                                  block.className = block.className.replace(/hljs[^\s]*/g, '').trim();
+                                });
+                                toggleExpand(snippet.id);
+                              }}
+                            >
+                              {expandedSnippets[snippet.id]
+                                ? "Collapse"
+                                : "Expand"}{" "}
+                              Code
+                            </button>
+                          </div>
+                        )}
                       </div>
+                      
                       {snippet.tags && snippet.tags.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-2">
+                        <div className="mt-4 flex flex-wrap gap-2">
                           {snippet.tags.map((tag) => (
                             <span
                               key={tag}
-                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                              className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
                             >
                               {tag}
                             </span>
@@ -371,55 +465,58 @@ const Dashboard = () => {
                       )}
                     </div>
                   )}
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
 
           {/* Pagination */}
           {snippets.length > ITEMS_PER_PAGE && (
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Showing{" "}
-                  <span className="font-medium">
-                    {(currentPage - 1) * ITEMS_PER_PAGE + 1}
-                  </span>{" "}
-                  to{" "}
-                  <span className="font-medium">
-                    {Math.min(currentPage * ITEMS_PER_PAGE, snippets.length)}
-                  </span>{" "}
-                  of <span className="font-medium">{snippets.length}</span>{" "}
-                  snippets
-                </p>
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                  className={`px-3 py-1 rounded-md ${
-                    currentPage === 1
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                  }`}
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                  className={`px-3 py-1 rounded-md ${
-                    currentPage === totalPages
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                  }`}
-                >
-                  Next
-                </button>
+            <div className="px-4 lg:px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Showing{" "}
+                    <span className="font-medium">
+                      {(currentPage - 1) * ITEMS_PER_PAGE + 1}
+                    </span>{" "}
+                    to{" "}
+                    <span className="font-medium">
+                      {Math.min(currentPage * ITEMS_PER_PAGE, snippets.length)}
+                    </span>{" "}
+                    of <span className="font-medium">{snippets.length}</span> snippets
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={currentPage === 1}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      currentPage === 1
+                        ? "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                        : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
+                    }`}
+                  >
+                    <i className="fas fa-chevron-left mr-1"></i>
+                    Previous
+                  </button>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
+                    disabled={currentPage === totalPages}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      currentPage === totalPages
+                        ? "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                        : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
+                    }`}
+                  >
+                    Next
+                    <i className="fas fa-chevron-right ml-1"></i>
+                  </button>
+                </div>
               </div>
             </div>
           )}

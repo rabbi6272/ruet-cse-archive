@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { ref, onValue } from "firebase/database";
 import toast, { Toaster } from "react-hot-toast";
+import hljs from "highlight.js";
+import "highlight.js/styles/monokai.css";
 
 const DoubtsArchive = () => {
   const [doubts, setDoubts] = useState([]);
@@ -13,8 +15,10 @@ const DoubtsArchive = () => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedDoubt, setExpandedDoubt] = useState(null);
+  const [expandedSnippets, setExpandedSnippets] = useState({});
 
   const ITEMS_PER_PAGE = 5;
+  const maxCodeLines = 20;
 
   const categories = [
     "Environment bug",
@@ -33,6 +37,14 @@ const DoubtsArchive = () => {
   useEffect(() => {
     filterDoubts();
   }, [doubts, searchQuery, selectedCategory]);
+
+  useEffect(() => {
+    // Highlight code blocks after component renders
+    const codeBlocks = document.querySelectorAll('pre code');
+    codeBlocks.forEach((block) => {
+      hljs.highlightElement(block);
+    });
+  });
 
   const loadResolvedDoubts = () => {
     setLoading(true);
@@ -100,6 +112,29 @@ const DoubtsArchive = () => {
       "Explain the code": "bg-pink-100 text-pink-800"
     };
     return colors[category] || "bg-gray-100 text-gray-800";
+  };
+
+  const toggleExpand = (id) => {
+    setExpandedSnippets((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+    
+    // Re-highlight after state change and DOM update
+    setTimeout(() => {
+      const codeBlocks = document.querySelectorAll('pre code');
+      codeBlocks.forEach((block) => {
+        // Remove existing highlighting classes
+        block.removeAttribute('data-highlighted');
+        block.className = block.className.replace(/hljs[^\s]*/g, '').trim();
+        // Re-apply highlighting
+        hljs.highlightElement(block);
+      });
+    }, 100);
+  };
+
+  const isCodeLong = (code) => {
+    return code?.split("\n").length > maxCodeLines;
   };
 
   // Pagination
@@ -281,10 +316,50 @@ const DoubtsArchive = () => {
                                     onClick={() => window.open(doubt.attachment.data || `data:image/*;base64,${doubt.attachment.content}`, '_blank')}
                                   />
                                 ) : (
-                                  <div className="max-h-48 sm:max-h-64 overflow-y-auto">
-                                    <pre className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
-                                      {doubt.attachment.content}
+                                  <div className="code-container dark:bg-gray-900 bg-gray-200 rounded-lg overflow-hidden relative group">
+                                    <pre
+                                      className={`p-4 overflow-x-auto transition-transform duration-500 ${
+                                        isCodeLong(doubt.attachment.content) &&
+                                        !expandedSnippets[`doubt-attachment-${doubt.id}`]
+                                          ? "max-h-70"
+                                          : ""
+                                      }`}
+                                    >
+                                      <code
+                                        className={`language-javascript`}
+                                      >
+                                        {isCodeLong(doubt.attachment.content) &&
+                                        !expandedSnippets[`doubt-attachment-${doubt.id}`]
+                                          ? doubt.attachment.content
+                                              .split("\n")
+                                              .slice(0, maxCodeLines)
+                                              .join("\n") + "\n..."
+                                          : doubt.attachment.content}
+                                      </code>
                                     </pre>
+
+                                    {/* Code expand button */}
+                                    {isCodeLong(doubt.attachment.content) && (
+                                      <div className="flex justify-center p-2">
+                                        <button
+                                          className="px-6 py-2 text-sm font-medium rounded-full mx-auto dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300 bg-gray-300 hover:bg-gray-400 text-gray-600 transition-colors duration-300"
+                                          onClick={() => {
+                                            // Remove highlighting before animation
+                                            const codeBlocks = document.querySelectorAll('pre code');
+                                            codeBlocks.forEach((block) => {
+                                              block.removeAttribute('data-highlighted');
+                                              block.className = block.className.replace(/hljs[^\s]*/g, '').trim();
+                                            });
+                                            toggleExpand(`doubt-attachment-${doubt.id}`);
+                                          }}
+                                        >
+                                          {expandedSnippets[`doubt-attachment-${doubt.id}`]
+                                            ? "Collapse "
+                                            : "Expand "}
+                                          Code
+                                        </button>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -330,10 +405,50 @@ const DoubtsArchive = () => {
                                             <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">({Math.round(attachment.size / 1024)}KB)</span>
                                           )}
                                         </div>
-                                        <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded border border-gray-200 dark:border-gray-600 max-h-32 sm:max-h-40 overflow-y-auto">
-                                          <pre className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
-                                            {attachment.content}
+                                        <div className="code-container dark:bg-gray-900 bg-gray-200 rounded-lg overflow-hidden relative group">
+                                          <pre
+                                            className={`p-4 overflow-x-auto transition-transform duration-500 ${
+                                              isCodeLong(attachment.content) &&
+                                              !expandedSnippets[`solution-${doubt.id}-${index}`]
+                                                ? "max-h-70"
+                                                : ""
+                                            }`}
+                                          >
+                                            <code
+                                              className={`language-javascript`}
+                                            >
+                                              {isCodeLong(attachment.content) &&
+                                              !expandedSnippets[`solution-${doubt.id}-${index}`]
+                                                ? attachment.content
+                                                    .split("\n")
+                                                    .slice(0, maxCodeLines)
+                                                    .join("\n") + "\n..."
+                                                : attachment.content}
+                                            </code>
                                           </pre>
+
+                                          {/* Code expand button */}
+                                          {isCodeLong(attachment.content) && (
+                                            <div className="flex justify-center p-2">
+                                              <button
+                                                className="px-6 py-2 text-sm font-medium rounded-full mx-auto dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300 bg-gray-300 hover:bg-gray-400 text-gray-600 transition-colors duration-300"
+                                                onClick={() => {
+                                                  // Remove highlighting before animation
+                                                  const codeBlocks = document.querySelectorAll('pre code');
+                                                  codeBlocks.forEach((block) => {
+                                                    block.removeAttribute('data-highlighted');
+                                                    block.className = block.className.replace(/hljs[^\s]*/g, '').trim();
+                                                  });
+                                                  toggleExpand(`solution-${doubt.id}-${index}`);
+                                                }}
+                                              >
+                                                {expandedSnippets[`solution-${doubt.id}-${index}`]
+                                                  ? "Collapse "
+                                                  : "Expand "}
+                                                Code
+                                              </button>
+                                            </div>
+                                          )}
                                         </div>
                                       </div>
                                     )}
