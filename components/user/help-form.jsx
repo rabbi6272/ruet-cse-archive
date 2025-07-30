@@ -55,7 +55,11 @@ const HelpForm = () => {
         return;
       }
 
-      // Check file type (text files and common code extensions)
+      // Check if it's an image
+      const imageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      const isImage = imageTypes.includes(file.type);
+
+      // Check if it's a code/text file
       const allowedTypes = [
         'text/plain',
         '.txt', '.js', '.jsx', '.ts', '.tsx', '.py', '.cpp', '.c', '.java',
@@ -64,10 +68,10 @@ const HelpForm = () => {
       ];
 
       const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-      const isAllowed = allowedTypes.includes(file.type) || allowedTypes.includes(fileExtension);
+      const isCodeFile = allowedTypes.includes(file.type) || allowedTypes.includes(fileExtension);
 
-      if (!isAllowed) {
-        toast.error("Only text files and code files are allowed");
+      if (!isImage && !isCodeFile) {
+        toast.error("Only images (JPEG, PNG, GIF, WebP) and code/text files are allowed");
         e.target.value = "";
         return;
       }
@@ -80,11 +84,18 @@ const HelpForm = () => {
           attachment: {
             name: file.name,
             content: event.target.result,
-            size: file.size
+            size: file.size,
+            type: isImage ? 'image' : 'code',
+            data: isImage ? event.target.result : undefined
           }
         }));
       };
-      reader.readAsText(file);
+      
+      if (isImage) {
+        reader.readAsDataURL(file);
+      } else {
+        reader.readAsText(file);
+      }
     }
   };
 
@@ -99,11 +110,26 @@ const HelpForm = () => {
     setLoading(true);
 
     try {
+      // Clean attachment data to remove undefined properties
+      let cleanAttachment = null;
+      if (formData.attachment) {
+        cleanAttachment = {
+          name: formData.attachment.name,
+          content: formData.attachment.content,
+          size: formData.attachment.size,
+          type: formData.attachment.type
+        };
+        // Only add data property if it exists (for images)
+        if (formData.attachment.data) {
+          cleanAttachment.data = formData.attachment.data;
+        }
+      }
+
       const doubtData = {
         title: formData.title.trim(),
         category: formData.category,
         description: formData.description.trim(),
-        attachment: formData.attachment,
+        attachment: cleanAttachment,
         userDetails: {
           name: user.name,
           roll: user.roll,
@@ -149,6 +175,11 @@ const HelpForm = () => {
       // Clear file input
       const fileInput = document.getElementById("attachment");
       if (fileInput) fileInput.value = "";
+
+      // Redirect to My Doubts section
+      setTimeout(() => {
+        router.push("/user/dashboard?tab=my-doubts");
+      }, 1500); // Wait for toast to be visible
 
     } catch (error) {
       console.error("Error submitting doubt:", error);
@@ -234,20 +265,29 @@ const HelpForm = () => {
             {/* File Attachment */}
             <div>
               <label htmlFor="attachment" className="block text-sm font-medium text-gray-700 mb-2">
-                File Attachment (Optional - Max 100KB, text/code files only)
+                File Attachment (Optional - Max 100KB, images and code files)
               </label>
               <input
                 type="file"
                 id="attachment"
                 onChange={handleFileChange}
-                accept=".txt,.js,.jsx,.ts,.tsx,.py,.cpp,.c,.java,.html,.css,.json,.xml,.sql,.php,.rb,.go,.rs,.swift,.kt,.scala,.sh,.bat,.ps1"
+                accept=".txt,.js,.jsx,.ts,.tsx,.py,.cpp,.c,.java,.html,.css,.json,.xml,.sql,.php,.rb,.go,.rs,.swift,.kt,.scala,.sh,.bat,.ps1,.jpg,.jpeg,.png,.gif,.webp"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               {formData.attachment && (
                 <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
                   <p className="text-sm text-green-700">
                     File attached: {formData.attachment.name} ({Math.round(formData.attachment.size / 1024)}KB)
+                    {formData.attachment.type === 'image' && ' - Image'}
+                    {formData.attachment.type === 'code' && ' - Code/Text'}
                   </p>
+                  {formData.attachment.type === 'image' && (
+                    <img 
+                      src={formData.attachment.data} 
+                      alt={formData.attachment.name}
+                      className="mt-2 max-w-32 h-auto max-h-20 rounded border"
+                    />
+                  )}
                 </div>
               )}
             </div>

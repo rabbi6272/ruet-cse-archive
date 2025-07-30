@@ -281,6 +281,37 @@ const MyDoubts = () => {
                         </h4>
                         <div className="bg-green-50 p-3 rounded border border-green-200">
                           <p className="text-gray-700 whitespace-pre-wrap">{doubt.solution?.content}</p>
+                          
+                          {/* Solution Attachments */}
+                          {doubt.solution?.attachments && doubt.solution.attachments.length > 0 && (
+                            <div className="mt-3">
+                              <h5 className="text-sm font-medium text-gray-600 mb-2">Attachments:</h5>
+                              <div className="grid grid-cols-1 gap-2">
+                                {doubt.solution.attachments.map((attachment, index) => (
+                                  <div key={index} className="border rounded p-2 bg-white">
+                                    {attachment.type === 'image' ? (
+                                      <div>
+                                        <p className="text-xs text-gray-500 mb-1">{attachment.name}</p>
+                                        <img 
+                                          src={attachment.data} 
+                                          alt={attachment.name}
+                                          className="max-w-full h-auto max-h-64 rounded cursor-pointer hover:opacity-80"
+                                          onClick={() => window.open(attachment.data, '_blank')}
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div>
+                                        <p className="text-xs text-gray-500 mb-1">{attachment.name}</p>
+                                        <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto max-h-40 overflow-y-auto">
+                                          <code>{attachment.content}</code>
+                                        </pre>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
 

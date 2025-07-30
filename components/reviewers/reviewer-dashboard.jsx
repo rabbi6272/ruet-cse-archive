@@ -15,6 +15,7 @@ const ReviewerDashboard = () => {
   const [selectedDoubt, setSelectedDoubt] = useState(null);
   const [solution, setSolution] = useState("");
   const [submittingSolution, setSubmittingSolution] = useState(false);
+  const [solutionAttachments, setSolutionAttachments] = useState([]);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -82,6 +83,78 @@ const ReviewerDashboard = () => {
     }
   };
 
+  const handleFileUpload = (e) => {
+    const files = Array.from(e.target.files);
+    
+    files.forEach(file => {
+      // Check file size (100KB = 100 * 1024 bytes)
+      if (file.size > 100 * 1024) {
+        toast.error(`File ${file.name} is too large. Maximum size is 100KB.`);
+        return;
+      }
+
+      // Check file type
+      const allowedTypes = [
+        'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+        'text/plain'
+      ];
+      
+      const allowedExtensions = [
+        '.txt', '.js', '.jsx', '.ts', '.tsx', '.py', '.cpp', '.c', '.java',
+        '.html', '.css', '.json', '.xml', '.sql', '.php', '.rb', '.go',
+        '.rs', '.swift', '.kt', '.scala', '.sh', '.bat', '.ps1'
+      ];
+
+      const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+      const isAllowed = allowedTypes.includes(file.type) || allowedExtensions.includes(fileExtension);
+
+      if (!isAllowed) {
+        toast.error(`File ${file.name} type is not allowed. Only images and code files are supported.`);
+        return;
+      }
+
+      // Read file content
+      const reader = new FileReader();
+      
+      if (file.type.startsWith('image/')) {
+        // For images, read as data URL
+        reader.onload = (event) => {
+          const newAttachment = {
+            id: Date.now() + Math.random(),
+            name: file.name,
+            type: 'image',
+            content: event.target.result,
+            size: file.size,
+            mimeType: file.type
+          };
+          setSolutionAttachments(prev => [...prev, newAttachment]);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // For text/code files, read as text
+        reader.onload = (event) => {
+          const newAttachment = {
+            id: Date.now() + Math.random(),
+            name: file.name,
+            type: 'code',
+            content: event.target.result,
+            size: file.size,
+            mimeType: file.type
+          };
+          setSolutionAttachments(prev => [...prev, newAttachment]);
+        };
+        reader.readAsText(file);
+      }
+    });
+
+    // Clear the input
+    e.target.value = '';
+  };
+
+  const removeAttachment = (attachmentId) => {
+    setSolutionAttachments(prev => prev.filter(att => att.id !== attachmentId));
+  };
+
   const submitSolution = async () => {
     if (!solution.trim()) {
       toast.error("Please provide a solution");
@@ -90,6 +163,21 @@ const ReviewerDashboard = () => {
 
     setSubmittingSolution(true);
     try {
+      // Clean solution attachments to remove undefined properties
+      const cleanAttachments = solutionAttachments.map(attachment => {
+        const cleanAttachment = {
+          id: attachment.id,
+          name: attachment.name,
+          content: attachment.content,
+          type: attachment.type
+        };
+        // Only add data property if it exists (for images)
+        if (attachment.data) {
+          cleanAttachment.data = attachment.data;
+        }
+        return cleanAttachment;
+      });
+
       const doubtRef = ref(db, `doubts/${selectedDoubt.id}`);
       
       // Update doubt with solution
@@ -97,6 +185,7 @@ const ReviewerDashboard = () => {
         status: "resolved",
         solution: {
           content: solution.trim(),
+          attachments: cleanAttachments,
           solvedBy: {
             name: user.name,
             roll: user.roll
@@ -112,6 +201,7 @@ const ReviewerDashboard = () => {
         status: "resolved",
         solution: {
           content: solution.trim(),
+          attachments: cleanAttachments,
           solvedBy: {
             name: user.name,
             roll: user.roll
@@ -142,6 +232,7 @@ const ReviewerDashboard = () => {
       toast.success("Solution submitted successfully! User will be notified.");
       setSelectedDoubt(null);
       setSolution("");
+      setSolutionAttachments([]);
       
     } catch (error) {
       console.error("Error submitting solution:", error);
@@ -220,9 +311,23 @@ const ReviewerDashboard = () => {
 
                   {doubt.attachment && (
                     <div className="mb-4 p-2 bg-gray-50 border rounded">
-                      <p className="text-sm font-medium text-gray-700">
+                      <p className="text-sm font-medium text-gray-700 mb-1">
                         📎 Attachment: {doubt.attachment.name}
                       </p>
+                      {doubt.attachment.type === 'image' ? (
+                        <div className="mt-2">
+                          <img 
+                            src={doubt.attachment.data || `data:image/*;base64,${doubt.attachment.content}`} 
+                            alt={doubt.attachment.name}
+                            className="w-full max-w-32 h-auto max-h-20 rounded object-cover cursor-pointer hover:opacity-80"
+                            onClick={() => setSelectedDoubt(doubt)}
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {doubt.attachment.type === 'code' ? '📄 Code file' : '📄 Text file'}
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -288,15 +393,28 @@ const ReviewerDashboard = () => {
 
                 {selectedDoubt.attachment && (
                   <div className="mb-4">
-                    <h4 className="font-medium text-gray-700 mb-2">Attachment:</h4>
+                    <h4 className="font-medium text-gray-700 mb-2">Student's Attachment:</h4>
                     <div className="bg-gray-50 p-3 rounded border">
                       <p className="text-sm font-medium text-gray-700 mb-2">
                         📎 {selectedDoubt.attachment.name}
                       </p>
-                      <div className="bg-white p-2 rounded border max-h-48 overflow-y-auto">
-                        <pre className="text-xs text-gray-600 whitespace-pre-wrap">
-                          {selectedDoubt.attachment.content}
-                        </pre>
+                      <div className="bg-white p-2 rounded border">
+                        {selectedDoubt.attachment.type === 'image' ? (
+                          <div>
+                            <img 
+                              src={selectedDoubt.attachment.data || `data:image/*;base64,${selectedDoubt.attachment.content}`} 
+                              alt={selectedDoubt.attachment.name}
+                              className="max-w-full h-auto max-h-64 rounded cursor-pointer hover:opacity-80"
+                              onClick={() => window.open(selectedDoubt.attachment.data || `data:image/*;base64,${selectedDoubt.attachment.content}`, '_blank')}
+                            />
+                          </div>
+                        ) : (
+                          <div className="max-h-48 overflow-y-auto">
+                            <pre className="text-xs text-gray-600 whitespace-pre-wrap">
+                              {selectedDoubt.attachment.content}
+                            </pre>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -316,6 +434,60 @@ const ReviewerDashboard = () => {
                   />
                 </div>
 
+                {/* File Upload Section */}
+                <div className="mb-4">
+                  <label htmlFor="solution-files" className="block font-medium text-gray-700 mb-2">
+                    Attachments (Optional):
+                  </label>
+                  <input
+                    type="file"
+                    id="solution-files"
+                    multiple
+                    onChange={handleFileUpload}
+                    accept="image/*,.txt,.js,.jsx,.ts,.tsx,.py,.cpp,.c,.java,.html,.css,.json,.xml,.sql,.php,.rb,.go,.rs,.swift,.kt,.scala,.sh,.bat,.ps1"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Upload images or code files (max 100KB each). Supports: JPG, PNG, GIF, WebP, TXT, JS, Python, C++, etc.
+                  </p>
+                  
+                  {/* Display uploaded attachments */}
+                  {solutionAttachments.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <h5 className="text-sm font-medium text-gray-700">Uploaded Files:</h5>
+                      {solutionAttachments.map((attachment) => (
+                        <div key={attachment.id} className="flex items-center justify-between bg-gray-50 p-2 rounded border">
+                          <div className="flex items-center space-x-2">
+                            {attachment.type === 'image' ? (
+                              <>
+                                <i className="fas fa-image text-green-500"></i>
+                                <img 
+                                  src={attachment.content} 
+                                  alt={attachment.name}
+                                  className="w-8 h-8 object-cover rounded"
+                                />
+                              </>
+                            ) : (
+                              <i className="fas fa-file-code text-blue-500"></i>
+                            )}
+                            <div>
+                              <p className="text-sm font-medium text-gray-700">{attachment.name}</p>
+                              <p className="text-xs text-gray-500">{Math.round(attachment.size / 1024)}KB</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => removeAttachment(attachment.id)}
+                            className="text-red-500 hover:text-red-700 p-1"
+                            title="Remove attachment"
+                          >
+                            <i className="fas fa-times"></i>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex gap-2">
                   <button
                     onClick={submitSolution}
@@ -333,6 +505,7 @@ const ReviewerDashboard = () => {
                     onClick={() => {
                       setSelectedDoubt(null);
                       setSolution("");
+                      setSolutionAttachments([]);
                     }}
                     className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
                   >

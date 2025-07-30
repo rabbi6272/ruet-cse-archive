@@ -277,6 +277,45 @@ const DoubtsArchive = () => {
                               {doubt.solution?.content}
                             </p>
                           </div>
+                          
+                          {/* Solution Attachments */}
+                          {doubt.solution?.attachments && doubt.solution.attachments.length > 0 && (
+                            <div className="mt-4">
+                              <h4 className="font-medium text-gray-700 mb-2">Solution Attachments:</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {doubt.solution.attachments.map((attachment, index) => (
+                                  <div key={index} className="bg-white p-3 rounded border">
+                                    {attachment.type === 'image' ? (
+                                      <div>
+                                        <div className="flex items-center mb-2">
+                                          <i className="fas fa-image text-green-500 mr-2"></i>
+                                          <span className="text-sm font-medium text-gray-700">{attachment.name}</span>
+                                        </div>
+                                        <img 
+                                          src={attachment.content} 
+                                          alt={attachment.name}
+                                          className="w-full max-w-sm h-auto rounded border shadow-sm"
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div>
+                                        <div className="flex items-center mb-2">
+                                          <i className="fas fa-file-code text-blue-500 mr-2"></i>
+                                          <span className="text-sm font-medium text-gray-700">{attachment.name}</span>
+                                          <span className="text-xs text-gray-500 ml-2">({Math.round(attachment.size / 1024)}KB)</span>
+                                        </div>
+                                        <div className="bg-gray-50 p-2 rounded border max-h-40 overflow-y-auto">
+                                          <pre className="text-xs text-gray-600 whitespace-pre-wrap">
+                                            {attachment.content}
+                                          </pre>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         {/* Solution Details */}
