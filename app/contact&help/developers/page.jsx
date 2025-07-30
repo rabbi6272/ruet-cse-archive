@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ProfileCard } from "@/components/developers/profileCard";
+import { ProfileCard } from "@/components/contact&help/developers/profileCard";
 import { isAuthorizedReviewer, getCurrentUser } from "@/lib/auth-utils";
 
 import { avengero, lato, avegance } from "@/app/ui/fonts";
@@ -32,7 +32,7 @@ const developers = [
     role: "Frontend & Backend, Code Reviewer",
     location: "Khulna, Bangladesh",
     image: rabbi2,
-    roll:"2403172",
+    roll: "2403172",
     github: "https://github.com/rabbi6272",
     linkedin: "https://www.linkedin.com/in/fazle-rabbi-b48a722a2/",
     facebook: "https://www.facebook.com/frabbi6272",
@@ -41,7 +41,7 @@ const developers = [
     name: "Bitto Saha",
     role: "Frontend & Backend, Code Reviewer",
     image: bitto2,
-    roll:"2403142",
+    roll: "2403142",
     location: "Bogura, Bangladesh",
     github: "https://github.com/idcnys/",
     linkedin: "https://www.linkedin.com/in/bittosaha/",
@@ -51,22 +51,22 @@ const developers = [
     name: "Morchhalin Alam Amio",
     role: "Security & Tester",
     image: amio,
-    roll:"2403154",
+    roll: "2403154",
     location: "Kurigram, Bangladesh",
     github: "https://github.com/Amio75",
     linkedin: "https://www.linkedin.com/in/morchhalin-alam-amio-bb35a8360",
     facebook: "https://www.facebook.com/share/1FP1VwSFvd/",
   },
-   {
-     name: "Sumon Majumder",
-     role: "Code Reviewer & Tester",
-     image: sumon,
-     roll:"2403129",
-     location: "Khulna, Bangladesh",
-     github: "https://github.com/spiderNerd007",
-     linkedin: "https://www.linkedin.com/in/sumon-majumder-6a6b81371",
-     facebook: "https://www.facebook.com/share/1Gc3FqZf1L/",
-   },
+  {
+    name: "Sumon Majumder",
+    role: "Code Reviewer & Tester",
+    image: sumon,
+    roll: "2403129",
+    location: "Khulna, Bangladesh",
+    github: "https://github.com/spiderNerd007",
+    linkedin: "https://www.linkedin.com/in/sumon-majumder-6a6b81371",
+    facebook: "https://www.facebook.com/share/1Gc3FqZf1L/",
+  },
   // {
   //   name: "Sujoy Roy",
   //   role: "Media Team",
@@ -89,7 +89,7 @@ const developers = [
     name: "Nilay Paul Partha",
     role: "Code Reviewer & Tester",
     image: nilay,
-    roll:"2403160",
+    roll: "2403160",
     location: "Cox's Bazar, Bangladesh",
     github: "https://github.com/nilaypaulpartha",
     linkedin: "https://bd.linkedin.com/in/nilay-paul-partho-064654259",
@@ -99,7 +99,7 @@ const developers = [
     name: "Mirajul Islam",
     role: "Code Reviewer & Tester",
     image: miraj,
-    roll:"2403147",
+    roll: "2403147",
     location: "Kushtia, Bangladesh",
     github: "#",
     linkedin: "https://www.linkedin.com/in/md-mirajul-islam-98071624b/",
@@ -109,7 +109,7 @@ const developers = [
     name: "Tasaouf Ahnaf",
     role: "Code Reviewer & Tester",
     image: ahnaf,
-    roll:"2403140",
+    roll: "2403140",
     location: "Jessore, Bangladesh",
     github: "#",
     linkedin: "https://www.linkedin.com/in/tasaoufahnaf/",
@@ -119,7 +119,7 @@ const developers = [
     name: "Shadman Ahmed",
     role: "Code Reviewer & Tester",
     image: shadman,
-    roll:"2403127",
+    roll: "2403127",
     location: "Bogura, Bangladesh",
     github: "https://github.com/Shadman234-sa",
     linkedin: "https://www.linkedin.com/in/shadman-ahmed-04688b210",
@@ -138,7 +138,7 @@ const developers = [
     name: "Arnob Benedict Tudu",
     role: "Code Reviewer & Tester",
     image: arnob,
-    roll:"2403155",
+    roll: "2403155",
     location: "Rajshahi, Bangladesh",
     github: "https://github.com/Arnob001607",
     linkedin: "https://www.linkedin.com/in/arnob-b-tudu-616045360",
@@ -157,7 +157,7 @@ const developers = [
     name: "Arefin Noused Ratul",
     role: "Suggestions & Resource Management",
     image: ratul,
-    roll:"2403149",
+    roll: "2403149",
     location: "Dhaka, Bangladesh",
     github: "https://github.com/Arefin-Ratul",
     linkedin: "https://www.linkedin.com/in/arefin-noused-ratul-622692366",
@@ -238,7 +238,9 @@ export default function Developers() {
                 </h4>
               </div>
               <p className="text-sm text-blue-600 dark:text-blue-300 mb-4 max-w-md">
-                Welcome back, <strong>{user?.name}</strong>! Help coders/programmers by resolving their coding doubts and contributing to the community.
+                Welcome back, <strong>{user?.name}</strong>! Help
+                coders/programmers by resolving their coding doubts and
+                contributing to the community.
               </p>
               <Link
                 href="/reviewers/dashboard"

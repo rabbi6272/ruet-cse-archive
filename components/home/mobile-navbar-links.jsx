@@ -16,27 +16,21 @@ const mobileNavItems = [
   {
     label: "Contact & Help",
     subItems: [
-      { name: "Get Help", href: "/user/help" },
-      { name: "Browse Doubts", href: "/all/doubts" },
-      { name: "Statistics", href: "/statistics" },
+      { name: "Get Help", href: "/contact&help/help" },
+      { name: "Browse Doubts", href: "/contact&help/doubts" },
+      { name: "Statistics", href: "/contact&help/statistics" },
       {
         name: "Official Website",
         href: "https://www.ruet.ac.bd/",
         target: "_blank",
       },
-      { name: "Facebook Page", href: "/contact/fb1" },
-      { name: "Contributors", href: "/contact/developers" },
+      { name: "Facebook Page", href: "/contact&help/#" },
+      { name: "Contributors", href: "/contact&help/developers" },
     ],
   },
   {
     label: "Apps",
-    subItems: [
-      {
-        name: "Coming Soon",
-        href: "#",
-        target: "_blank",
-      },
-    ],
+    href: "/contact&help/#",
   },
 ];
 

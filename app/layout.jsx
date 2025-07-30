@@ -1,7 +1,7 @@
 import "./globals.css";
 
 import { Navbar } from "@/components/home/navbar";
-import { FooterComponent } from "@/components/footer/footer";
+import { FooterComponent } from "@/components/home/footer";
 import { PageTitleProvider } from "@/components/providers/PageTitleProvider";
 
 import { lato } from "./ui/fonts";

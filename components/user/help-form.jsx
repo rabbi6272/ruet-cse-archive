@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import { ref, push, onValue } from "firebase/database";
 import toast, { Toaster } from "react-hot-toast";
-import { hasReachedDailyLimit, getRemainingDoubts, getTimeUntilNextDoubt, DAILY_DOUBT_LIMIT } from "@/lib/points-system";
+import {
+  hasReachedDailyLimit,
+  getRemainingDoubts,
+  getTimeUntilNextDoubt,
+  DAILY_DOUBT_LIMIT,
+} from "@/lib/points-system";
 import { addNutrinos } from "@/lib/nutrinos-system";
 
 const HelpForm = () => {
@@ -19,17 +24,17 @@ const HelpForm = () => {
     title: "",
     category: "",
     description: "",
-    attachment: null
+    attachment: null,
   });
 
   const categories = [
     "Environment bug",
-    "Code not running", 
+    "Code not running",
     "Compiler error",
     "Debug my code",
     "Give me hint",
     "Explain the idea",
-    "Explain the code"
+    "Explain the code",
   ];
 
   useEffect(() => {
@@ -54,15 +59,15 @@ const HelpForm = () => {
       const data = snapshot.val();
       if (data) {
         const userDoubtsArray = Object.keys(data)
-          .map(key => ({ id: key, ...data[key] }))
-          .filter(doubt => doubt.userDetails?.roll === user.roll);
-        
+          .map((key) => ({ id: key, ...data[key] }))
+          .filter((doubt) => doubt.userDetails?.roll === user.roll);
+
         setUserDoubts(userDoubtsArray);
-        
+
         // Check daily limits
         const limitReached = hasReachedDailyLimit(userDoubtsArray);
         const remaining = getRemainingDoubts(userDoubtsArray);
-        
+
         setDailyLimitReached(limitReached);
         setRemainingDoubts(remaining);
       }
@@ -71,15 +76,15 @@ const HelpForm = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    
+
     if (file) {
       // Check file size (100KB = 100 * 1024 bytes)
       if (file.size > 100 * 1024) {
@@ -89,22 +94,53 @@ const HelpForm = () => {
       }
 
       // Check if it's an image
-      const imageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      const imageTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+      ];
       const isImage = imageTypes.includes(file.type);
 
       // Check if it's a code/text file
       const allowedTypes = [
-        'text/plain',
-        '.txt', '.js', '.jsx', '.ts', '.tsx', '.py', '.cpp', '.c', '.java',
-        '.html', '.css', '.json', '.xml', '.sql', '.php', '.rb', '.go',
-        '.rs', '.swift', '.kt', '.scala', '.sh', '.bat', '.ps1'
+        "text/plain",
+        ".txt",
+        ".js",
+        ".jsx",
+        ".ts",
+        ".tsx",
+        ".py",
+        ".cpp",
+        ".c",
+        ".java",
+        ".html",
+        ".css",
+        ".json",
+        ".xml",
+        ".sql",
+        ".php",
+        ".rb",
+        ".go",
+        ".rs",
+        ".swift",
+        ".kt",
+        ".scala",
+        ".sh",
+        ".bat",
+        ".ps1",
       ];
 
-      const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-      const isCodeFile = allowedTypes.includes(file.type) || allowedTypes.includes(fileExtension);
+      const fileExtension = "." + file.name.split(".").pop().toLowerCase();
+      const isCodeFile =
+        allowedTypes.includes(file.type) ||
+        allowedTypes.includes(fileExtension);
 
       if (!isImage && !isCodeFile) {
-        toast.error("Only images (JPEG, PNG, GIF, WebP) and code/text files are allowed");
+        toast.error(
+          "Only images (JPEG, PNG, GIF, WebP) and code/text files are allowed"
+        );
         e.target.value = "";
         return;
       }
@@ -112,18 +148,18 @@ const HelpForm = () => {
       // Read file content
       const reader = new FileReader();
       reader.onload = (event) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           attachment: {
             name: file.name,
             content: event.target.result,
             size: file.size,
-            type: isImage ? 'image' : 'code',
-            data: isImage ? event.target.result : undefined
-          }
+            type: isImage ? "image" : "code",
+            data: isImage ? event.target.result : undefined,
+          },
         }));
       };
-      
+
       if (isImage) {
         reader.readAsDataURL(file);
       } else {
@@ -134,8 +170,12 @@ const HelpForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!formData.title.trim() || !formData.category || !formData.description.trim()) {
+
+    if (
+      !formData.title.trim() ||
+      !formData.category ||
+      !formData.description.trim()
+    ) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -143,7 +183,9 @@ const HelpForm = () => {
     // Check daily limit
     if (dailyLimitReached) {
       const timeLeft = getTimeUntilNextDoubt();
-      toast.error(`Daily limit reached! You can submit ${DAILY_DOUBT_LIMIT} doubts per day. Next doubt available in ${timeLeft}`);
+      toast.error(
+        `Daily limit reached! You can submit ${DAILY_DOUBT_LIMIT} doubts per day. Next doubt available in ${timeLeft}`
+      );
       return;
     }
 
@@ -157,7 +199,7 @@ const HelpForm = () => {
           name: formData.attachment.name,
           content: formData.attachment.content,
           size: formData.attachment.size,
-          type: formData.attachment.type
+          type: formData.attachment.type,
         };
         // Only add data property if it exists (for images)
         if (formData.attachment.data) {
@@ -173,13 +215,13 @@ const HelpForm = () => {
         userDetails: {
           name: user.name,
           roll: user.roll,
-          email: user.email || ""
+          email: user.email || "",
         },
         timestamp: Date.now(),
         status: "pending", // pending, assigned, resolved
         assignedTo: null,
         solution: null,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
 
       // Save to Firebase
@@ -188,9 +230,9 @@ const HelpForm = () => {
 
       // Award Nutrinos points for doubt submission
       try {
-        await addNutrinos(user.roll, 'doubt_ask', 'Asked Doubt', {
+        await addNutrinos(user.roll, "doubt_ask", "Asked Doubt", {
           title: formData.title,
-          category: formData.category
+          category: formData.category,
         });
       } catch (nutritosError) {
         console.error("Failed to award Nutrinos points:", nutritosError);
@@ -214,15 +256,15 @@ const HelpForm = () => {
       }
 
       toast.success("Your doubt has been submitted successfully!");
-      
+
       // Reset form
       setFormData({
         title: "",
         category: "",
         description: "",
-        attachment: null
+        attachment: null,
       });
-      
+
       // Clear file input
       const fileInput = document.getElementById("attachment");
       if (fileInput) fileInput.value = "";
@@ -231,7 +273,6 @@ const HelpForm = () => {
       setTimeout(() => {
         router.push("/user/dashboard?tab=my-doubts");
       }, 1500); // Wait for toast to be visible
-
     } catch (error) {
       console.error("Error submitting doubt:", error);
       toast.error("Failed to submit doubt. Please try again.");
@@ -241,16 +282,22 @@ const HelpForm = () => {
   };
 
   if (!user) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        Loading...
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 sm:px-4 lg:px-6">
-      <Toaster position="top-right" />
+    <div className="min-h-screen py-8 sm:px-4 lg:px-6">
+      <Toaster />
       <div className="max-w-[95%] lg:max-w-4xl mx-auto">
         <div className="bg-white dark:bg-slate-700 rounded-lg shadow-md p-4 lg:p-6">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">Get Help with Your Code</h1>
-          
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">
+            Get Help with Your Code
+          </h1>
+
           {/* Daily Limit Indicator */}
           <div className="mb-6">
             {dailyLimitReached ? (
@@ -260,9 +307,12 @@ const HelpForm = () => {
                     <i className="fas fa-exclamation-triangle text-red-500 dark:text-red-400 text-lg sm:text-xl"></i>
                   </div>
                   <div className="ml-3">
-                    <h3 className="text-sm font-medium text-red-800 dark:text-red-300">Daily Limit Reached</h3>
+                    <h3 className="text-sm font-medium text-red-800 dark:text-red-300">
+                      Daily Limit Reached
+                    </h3>
                     <p className="text-xs sm:text-sm text-red-700 dark:text-red-400 mt-1">
-                      You've submitted {DAILY_DOUBT_LIMIT} doubts today. Next doubt available in {getTimeUntilNextDoubt()}.
+                      You've submitted {DAILY_DOUBT_LIMIT} doubts today. Next
+                      doubt available in {getTimeUntilNextDoubt()}.
                     </p>
                   </div>
                 </div>
@@ -274,20 +324,32 @@ const HelpForm = () => {
                     <i className="fas fa-info-circle text-blue-500 dark:text-blue-400 text-lg sm:text-xl"></i>
                   </div>
                   <div className="ml-3">
-                    <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300">Daily Doubts</h3>
+                    <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                      Daily Doubts
+                    </h3>
                     <p className="text-xs sm:text-sm text-blue-700 dark:text-blue-400 mt-1">
-                      You can submit {remainingDoubts} more doubt{remainingDoubts !== 1 ? 's' : ''} today ({remainingDoubts}/{DAILY_DOUBT_LIMIT} remaining).
+                      You can submit {remainingDoubts} more doubt
+                      {remainingDoubts !== 1 ? "s" : ""} today (
+                      {remainingDoubts}/{DAILY_DOUBT_LIMIT} remaining).
                     </p>
                   </div>
                 </div>
               </div>
             )}
           </div>
-          
-          <form onSubmit={handleSubmit} className={`space-y-4 sm:space-y-6 ${dailyLimitReached ? 'opacity-50 pointer-events-none' : ''}`}>
+
+          <form
+            onSubmit={handleSubmit}
+            className={`space-y-4 sm:space-y-6 ${
+              dailyLimitReached ? "opacity-50 pointer-events-none" : ""
+            }`}
+          >
             {/* Title */}
             <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label
+                htmlFor="title"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Title *
               </label>
               <input
@@ -304,7 +366,10 @@ const HelpForm = () => {
 
             {/* Category */}
             <div>
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label
+                htmlFor="category"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Category *
               </label>
               <select
@@ -330,9 +395,17 @@ const HelpForm = () => {
                 User Details (Auto-detected)
               </label>
               <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
-                <p className="text-sm text-gray-700 dark:text-gray-300"><strong>Name:</strong> {user.name}</p>
-                <p className="text-sm text-gray-700 dark:text-gray-300"><strong>Roll:</strong> {user.roll}</p>
-                {user.email && <p className="text-sm text-gray-700 dark:text-gray-300"><strong>Email:</strong> {user.email}</p>}
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  <strong>Name:</strong> {user.name}
+                </p>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  <strong>Roll:</strong> {user.roll}
+                </p>
+                {user.email && (
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    <strong>Email:</strong> {user.email}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -342,13 +415,18 @@ const HelpForm = () => {
                 Submission Time (Auto-detected)
               </label>
               <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md">
-                <p className="text-sm text-gray-700 dark:text-gray-300">{new Date().toLocaleString()}</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  {new Date().toLocaleString()}
+                </p>
               </div>
             </div>
 
             {/* File Attachment */}
             <div>
-              <label htmlFor="attachment" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label
+                htmlFor="attachment"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 File Attachment (Optional - Max 100KB, images and code files)
               </label>
               <input
@@ -361,13 +439,14 @@ const HelpForm = () => {
               {formData.attachment && (
                 <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded">
                   <p className="text-sm text-green-700 dark:text-green-300">
-                    File attached: {formData.attachment.name} ({Math.round(formData.attachment.size / 1024)}KB)
-                    {formData.attachment.type === 'image' && ' - Image'}
-                    {formData.attachment.type === 'code' && ' - Code/Text'}
+                    File attached: {formData.attachment.name} (
+                    {Math.round(formData.attachment.size / 1024)}KB)
+                    {formData.attachment.type === "image" && " - Image"}
+                    {formData.attachment.type === "code" && " - Code/Text"}
                   </p>
-                  {formData.attachment.type === 'image' && (
-                    <img 
-                      src={formData.attachment.data} 
+                  {formData.attachment.type === "image" && (
+                    <img
+                      src={formData.attachment.data}
                       alt={formData.attachment.name}
                       className="mt-2 max-w-32 h-auto max-h-20 rounded border"
                     />
@@ -378,7 +457,10 @@ const HelpForm = () => {
 
             {/* Description */}
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label
+                htmlFor="description"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Description *
               </label>
               <textarea
@@ -411,13 +493,23 @@ const HelpForm = () => {
 
           {/* Help Text */}
           <div className="mt-6 sm:mt-8 p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
-            <h3 className="font-medium text-blue-800 dark:text-blue-300 mb-2">How it works:</h3>
+            <h3 className="font-medium text-blue-800 dark:text-blue-300 mb-2">
+              How it works:
+            </h3>
             <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1">
               <li>• Submit your coding doubt using this form</li>
-              <li>• Our code reviewers will be notified and work on solving it</li>
+              <li>
+                • Our code reviewers will be notified and work on solving it
+              </li>
               <li>• You'll be notified when a solution is available</li>
-              <li>• Once resolved, your doubt will be added to our searchable archive</li>
-              <li>• Check existing doubts first to see if your question is already answered</li>
+              <li>
+                • Once resolved, your doubt will be added to our searchable
+                archive
+              </li>
+              <li>
+                • Check existing doubts first to see if your question is already
+                answered
+              </li>
             </ul>
           </div>
         </div>

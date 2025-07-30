@@ -21,7 +21,7 @@ const ReviewerDashboard = () => {
   const [submittingSolution, setSubmittingSolution] = useState(false);
   const [solutionAttachments, setSolutionAttachments] = useState([]);
   const [expandedSnippets, setExpandedSnippets] = useState({});
-  
+
   const maxCodeLines = 20;
 
   useEffect(() => {
@@ -32,10 +32,12 @@ const ReviewerDashboard = () => {
     }
 
     const parsedUser = JSON.parse(userData);
-    
+
     // Check if user is authorized reviewer using utility function
     if (!isAuthorizedReviewer(parsedUser)) {
-      toast.error("Access denied. You are not authorized to access this dashboard.");
+      toast.error(
+        "Access denied. You are not authorized to access this dashboard."
+      );
       router.push("/user/dashboard");
       return;
     }
@@ -46,7 +48,7 @@ const ReviewerDashboard = () => {
 
   useEffect(() => {
     // Highlight code blocks after component renders
-    const codeBlocks = document.querySelectorAll('pre code');
+    const codeBlocks = document.querySelectorAll("pre code");
     codeBlocks.forEach((block) => {
       hljs.highlightElement(block);
     });
@@ -60,13 +62,16 @@ const ReviewerDashboard = () => {
         const data = snapshot.val();
         if (data) {
           const doubtsArray = Object.keys(data)
-            .map(key => ({
+            .map((key) => ({
               id: key,
-              ...data[key]
+              ...data[key],
             }))
-            .filter(doubt => doubt.status === "pending" || doubt.status === "assigned")
+            .filter(
+              (doubt) =>
+                doubt.status === "pending" || doubt.status === "assigned"
+            )
             .sort((a, b) => b.timestamp - a.timestamp);
-          
+
           setDoubts(doubtsArray);
         } else {
           setDoubts([]);
@@ -88,8 +93,8 @@ const ReviewerDashboard = () => {
         assignedTo: {
           name: user.name,
           roll: user.roll,
-          assignedAt: Date.now()
-        }
+          assignedAt: Date.now(),
+        },
       });
       toast.success("Doubt assigned to you!");
     } catch (error) {
@@ -100,8 +105,8 @@ const ReviewerDashboard = () => {
 
   const handleFileUpload = (e) => {
     const files = Array.from(e.target.files);
-    
-    files.forEach(file => {
+
+    files.forEach((file) => {
       // Check file size (100KB = 100 * 1024 bytes)
       if (file.size > 100 * 1024) {
         toast.error(`File ${file.name} is too large. Maximum size is 100KB.`);
@@ -110,39 +115,68 @@ const ReviewerDashboard = () => {
 
       // Check file type
       const allowedTypes = [
-        'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-        'text/plain'
-      ];
-      
-      const allowedExtensions = [
-        '.txt', '.js', '.jsx', '.ts', '.tsx', '.py', '.cpp', '.c', '.java',
-        '.html', '.css', '.json', '.xml', '.sql', '.php', '.rb', '.go',
-        '.rs', '.swift', '.kt', '.scala', '.sh', '.bat', '.ps1'
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+        "text/plain",
       ];
 
-      const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
-      const isAllowed = allowedTypes.includes(file.type) || allowedExtensions.includes(fileExtension);
+      const allowedExtensions = [
+        ".txt",
+        ".js",
+        ".jsx",
+        ".ts",
+        ".tsx",
+        ".py",
+        ".cpp",
+        ".c",
+        ".java",
+        ".html",
+        ".css",
+        ".json",
+        ".xml",
+        ".sql",
+        ".php",
+        ".rb",
+        ".go",
+        ".rs",
+        ".swift",
+        ".kt",
+        ".scala",
+        ".sh",
+        ".bat",
+        ".ps1",
+      ];
+
+      const fileExtension = "." + file.name.split(".").pop().toLowerCase();
+      const isAllowed =
+        allowedTypes.includes(file.type) ||
+        allowedExtensions.includes(fileExtension);
 
       if (!isAllowed) {
-        toast.error(`File ${file.name} type is not allowed. Only images and code files are supported.`);
+        toast.error(
+          `File ${file.name} type is not allowed. Only images and code files are supported.`
+        );
         return;
       }
 
       // Read file content
       const reader = new FileReader();
-      
-      if (file.type.startsWith('image/')) {
+
+      if (file.type.startsWith("image/")) {
         // For images, read as data URL
         reader.onload = (event) => {
           const newAttachment = {
             id: Date.now() + Math.random(),
             name: file.name,
-            type: 'image',
+            type: "image",
             content: event.target.result,
             size: file.size,
-            mimeType: file.type
+            mimeType: file.type,
           };
-          setSolutionAttachments(prev => [...prev, newAttachment]);
+          setSolutionAttachments((prev) => [...prev, newAttachment]);
         };
         reader.readAsDataURL(file);
       } else {
@@ -151,23 +185,25 @@ const ReviewerDashboard = () => {
           const newAttachment = {
             id: Date.now() + Math.random(),
             name: file.name,
-            type: 'code',
+            type: "code",
             content: event.target.result,
             size: file.size,
-            mimeType: file.type
+            mimeType: file.type,
           };
-          setSolutionAttachments(prev => [...prev, newAttachment]);
+          setSolutionAttachments((prev) => [...prev, newAttachment]);
         };
         reader.readAsText(file);
       }
     });
 
     // Clear the input
-    e.target.value = '';
+    e.target.value = "";
   };
 
   const removeAttachment = (attachmentId) => {
-    setSolutionAttachments(prev => prev.filter(att => att.id !== attachmentId));
+    setSolutionAttachments((prev) =>
+      prev.filter((att) => att.id !== attachmentId)
+    );
   };
 
   const submitSolution = async () => {
@@ -179,12 +215,12 @@ const ReviewerDashboard = () => {
     setSubmittingSolution(true);
     try {
       // Clean solution attachments to remove undefined properties
-      const cleanAttachments = solutionAttachments.map(attachment => {
+      const cleanAttachments = solutionAttachments.map((attachment) => {
         const cleanAttachment = {
           id: attachment.id,
           name: attachment.name,
           content: attachment.content,
-          type: attachment.type
+          type: attachment.type,
         };
         // Only add data property if it exists (for images)
         if (attachment.data) {
@@ -195,7 +231,7 @@ const ReviewerDashboard = () => {
 
       const solvedAt = Date.now();
       const assignedAt = selectedDoubt.assignedTo?.assignedAt || solvedAt;
-      
+
       // Calculate initial points (will be updated when user marks as satisfied)
       const initialPoints = calculateSolverPoints(
         solution.trim(),
@@ -206,7 +242,7 @@ const ReviewerDashboard = () => {
       );
 
       const doubtRef = ref(db, `doubts/${selectedDoubt.id}`);
-      
+
       // Update doubt with solution
       await update(doubtRef, {
         status: "resolved",
@@ -215,13 +251,13 @@ const ReviewerDashboard = () => {
           attachments: cleanAttachments,
           solvedBy: {
             name: user.name,
-            roll: user.roll
+            roll: user.roll,
           },
           solvedAt: solvedAt,
           assignedAt: assignedAt,
           initialPoints: initialPoints,
-          finalPoints: null // Will be set when user marks as satisfied
-        }
+          finalPoints: null, // Will be set when user marks as satisfied
+        },
       });
 
       // Move resolved doubt to archive
@@ -234,24 +270,29 @@ const ReviewerDashboard = () => {
           attachments: cleanAttachments,
           solvedBy: {
             name: user.name,
-            roll: user.roll
+            roll: user.roll,
           },
           solvedAt: solvedAt,
           assignedAt: assignedAt,
           initialPoints: initialPoints,
-          finalPoints: null
-        }
+          finalPoints: null,
+        },
       };
-      
+
       await update(archiveRef, archiveData);
 
       // Award Nutrinos points for doubt solution
       try {
-        await addNutrinos(user.roll, 'doubt_solve', "Solved doubt in reviewer dashboard", {
-          title: selectedDoubt.title,
-          category: selectedDoubt.category,
-          askedBy: selectedDoubt.userDetails?.roll
-        });
+        await addNutrinos(
+          user.roll,
+          "doubt_solve",
+          "Solved doubt in reviewer dashboard",
+          {
+            title: selectedDoubt.title,
+            category: selectedDoubt.category,
+            askedBy: selectedDoubt.userDetails?.roll,
+          }
+        );
       } catch (nutritosError) {
         console.error("Failed to award Nutrinos points:", nutritosError);
         // Don't break the flow, just log the error
@@ -279,7 +320,6 @@ const ReviewerDashboard = () => {
       setSelectedDoubt(null);
       setSolution("");
       setSolutionAttachments([]);
-      
     } catch (error) {
       console.error("Error submitting solution:", error);
       toast.error("Failed to submit solution");
@@ -300,7 +340,7 @@ const ReviewerDashboard = () => {
       "Debug my code": "bg-blue-100 text-blue-800",
       "Give me hint": "bg-green-100 text-green-800",
       "Explain the idea": "bg-purple-100 text-purple-800",
-      "Explain the code": "bg-pink-100 text-pink-800"
+      "Explain the code": "bg-pink-100 text-pink-800",
     };
     return colors[category] || "bg-gray-100 text-gray-800";
   };
@@ -310,14 +350,14 @@ const ReviewerDashboard = () => {
       ...prev,
       [id]: !prev[id],
     }));
-    
+
     // Re-highlight after state change and DOM update
     setTimeout(() => {
-      const codeBlocks = document.querySelectorAll('pre code');
+      const codeBlocks = document.querySelectorAll("pre code");
       codeBlocks.forEach((block) => {
         // Remove existing highlighting classes
-        block.removeAttribute('data-highlighted');
-        block.className = block.className.replace(/hljs[^\s]*/g, '').trim();
+        block.removeAttribute("data-highlighted");
+        block.className = block.className.replace(/hljs[^\s]*/g, "").trim();
         // Re-apply highlighting
         hljs.highlightElement(block);
       });
@@ -329,26 +369,40 @@ const ReviewerDashboard = () => {
   };
 
   if (!user) {
-    return <div className="flex justify-center items-center min-h-screen dark:bg-gray-900 dark:text-gray-200">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen dark:bg-gray-900 dark:text-gray-200">
+        Loading...
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-4 sm:py-8">
-      <Toaster position="top-right" />
+    <div className="min-h-screen  py-4 sm:py-8">
+      <Toaster />
       <div className="max-w-[95%] sm:max-w-7xl mx-auto px-4">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-200">Code Reviewers Dashboard</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">Help coders/programmers with their coding doubts</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-200">
+            Code Reviewers Dashboard
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            Help coders/programmers with their coding doubts
+          </p>
         </div>
 
         {loading ? (
           <div className="flex justify-center items-center py-12">
-            <div className="text-lg text-gray-600 dark:text-gray-400">Loading doubts...</div>
+            <div className="text-lg text-gray-600 dark:text-gray-400">
+              Loading doubts...
+            </div>
           </div>
         ) : doubts.length === 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 sm:p-8 text-center">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-700 dark:text-gray-200 mb-2">No pending doubts</h2>
-            <p className="text-gray-500 dark:text-gray-400">All doubts have been resolved. Great work!</p>
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-700 dark:text-gray-200 mb-2">
+              No pending doubts
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400">
+              All doubts have been resolved. Great work!
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
@@ -357,36 +411,51 @@ const ReviewerDashboard = () => {
               <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
                 Pending Doubts ({doubts.length})
               </h2>
-              
+
               {doubts.map((doubt) => (
-                <div key={doubt.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border-l-4 border-blue-500">
+                <div
+                  key={doubt.id}
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border-l-4 border-blue-500"
+                >
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 space-y-2 sm:space-y-0">
-                    <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-base sm:text-lg truncate pr-2">{doubt.title}</h3>
-                    <span className={`px-2 py-1 rounded text-xs font-medium self-start ${getCategoryColor(doubt.category)}`}>
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-base sm:text-lg truncate pr-2">
+                      {doubt.title}
+                    </h3>
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-medium self-start ${getCategoryColor(
+                        doubt.category
+                      )}`}
+                    >
                       {doubt.category}
                     </span>
                   </div>
-                  
+
                   <div className="mb-3 space-y-1">
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      <strong>Coder:</strong> {doubt.userDetails.name} ({doubt.userDetails.roll})
+                      <strong>Coder:</strong> {doubt.userDetails.name} (
+                      {doubt.userDetails.roll})
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       <strong>Submitted:</strong> {formatDate(doubt.timestamp)}
                     </p>
                   </div>
 
-                  <p className="text-gray-700 dark:text-gray-300 mb-4 line-clamp-3 text-sm sm:text-base">{doubt.description}</p>
+                  <p className="text-gray-700 dark:text-gray-300 mb-4 line-clamp-3 text-sm sm:text-base">
+                    {doubt.description}
+                  </p>
 
                   {doubt.attachment && (
                     <div className="mb-4 p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded">
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         📎 Attachment: {doubt.attachment.name}
                       </p>
-                      {doubt.attachment.type === 'image' ? (
+                      {doubt.attachment.type === "image" ? (
                         <div className="mt-2">
-                          <img 
-                            src={doubt.attachment.data || `data:image/*;base64,${doubt.attachment.content}`} 
+                          <img
+                            src={
+                              doubt.attachment.data ||
+                              `data:image/*;base64,${doubt.attachment.content}`
+                            }
                             alt={doubt.attachment.name}
                             className="w-full max-w-32 h-auto max-h-20 rounded object-cover cursor-pointer hover:opacity-80"
                             onClick={() => setSelectedDoubt(doubt)}
@@ -394,7 +463,9 @@ const ReviewerDashboard = () => {
                         </div>
                       ) : (
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {doubt.attachment.type === 'code' ? '📄 Code file' : '📄 Text file'}
+                          {doubt.attachment.type === "code"
+                            ? "📄 Code file"
+                            : "📄 Text file"}
                         </p>
                       )}
                     </div>
@@ -420,7 +491,7 @@ const ReviewerDashboard = () => {
                         Assigned to {doubt.assignedTo?.name}
                       </span>
                     )}
-                    
+
                     <button
                       onClick={() => setSelectedDoubt(doubt)}
                       className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-500 text-sm"
@@ -435,24 +506,37 @@ const ReviewerDashboard = () => {
             {/* Solution Panel */}
             {selectedDoubt && (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6 h-fit lg:sticky lg:top-4">
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Solve Doubt</h2>
-                
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                  Solve Doubt
+                </h2>
+
                 <div className="mb-4">
-                  <h3 className="font-semibold text-gray-700 dark:text-gray-300 text-sm sm:text-base">{selectedDoubt.title}</h3>
-                  <span className={`inline-block px-2 py-1 rounded text-xs font-medium mt-2 ${getCategoryColor(selectedDoubt.category)}`}>
+                  <h3 className="font-semibold text-gray-700 dark:text-gray-300 text-sm sm:text-base">
+                    {selectedDoubt.title}
+                  </h3>
+                  <span
+                    className={`inline-block px-2 py-1 rounded text-xs font-medium mt-2 ${getCategoryColor(
+                      selectedDoubt.category
+                    )}`}
+                  >
                     {selectedDoubt.category}
                   </span>
                 </div>
 
                 <div className="mb-4">
-                  <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">Coder Details:</h4>
+                  <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                    Coder Details:
+                  </h4>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {selectedDoubt.userDetails.name} ({selectedDoubt.userDetails.roll})
+                    {selectedDoubt.userDetails.name} (
+                    {selectedDoubt.userDetails.roll})
                   </p>
                 </div>
 
                 <div className="mb-4">
-                  <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">Problem Description:</h4>
+                  <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                    Problem Description:
+                  </h4>
                   <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded border border-gray-200 dark:border-gray-600 max-h-32 overflow-y-auto">
                     <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                       {selectedDoubt.description}
@@ -462,19 +546,30 @@ const ReviewerDashboard = () => {
 
                 {selectedDoubt.attachment && (
                   <div className="mb-4">
-                    <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">Coder's Attachment:</h4>
+                    <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                      Coder's Attachment:
+                    </h4>
                     <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded border border-gray-200 dark:border-gray-600">
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         📎 {selectedDoubt.attachment.name}
                       </p>
                       <div className="bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-600">
-                        {selectedDoubt.attachment.type === 'image' ? (
+                        {selectedDoubt.attachment.type === "image" ? (
                           <div>
-                            <img 
-                              src={selectedDoubt.attachment.data || `data:image/*;base64,${selectedDoubt.attachment.content}`} 
+                            <img
+                              src={
+                                selectedDoubt.attachment.data ||
+                                `data:image/*;base64,${selectedDoubt.attachment.content}`
+                              }
                               alt={selectedDoubt.attachment.name}
                               className="max-w-full h-auto max-h-48 sm:max-h-64 rounded cursor-pointer hover:opacity-80"
-                              onClick={() => window.open(selectedDoubt.attachment.data || `data:image/*;base64,${selectedDoubt.attachment.content}`, '_blank')}
+                              onClick={() =>
+                                window.open(
+                                  selectedDoubt.attachment.data ||
+                                    `data:image/*;base64,${selectedDoubt.attachment.content}`,
+                                  "_blank"
+                                )
+                              }
                             />
                           </div>
                         ) : (
@@ -487,9 +582,7 @@ const ReviewerDashboard = () => {
                                   : ""
                               }`}
                             >
-                              <code
-                                className={`language-javascript`}
-                              >
+                              <code className={`language-javascript`}>
                                 {isCodeLong(selectedDoubt.attachment.content) &&
                                 !expandedSnippets[`doubt-${selectedDoubt.id}`]
                                   ? selectedDoubt.attachment.content
@@ -507,10 +600,13 @@ const ReviewerDashboard = () => {
                                   className="px-6 py-2 text-sm font-medium rounded-full mx-auto dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300 bg-gray-300 hover:bg-gray-400 text-gray-600 transition-colors duration-300"
                                   onClick={() => {
                                     // Remove highlighting before animation
-                                    const codeBlocks = document.querySelectorAll('pre code');
+                                    const codeBlocks =
+                                      document.querySelectorAll("pre code");
                                     codeBlocks.forEach((block) => {
-                                      block.removeAttribute('data-highlighted');
-                                      block.className = block.className.replace(/hljs[^\s]*/g, '').trim();
+                                      block.removeAttribute("data-highlighted");
+                                      block.className = block.className
+                                        .replace(/hljs[^\s]*/g, "")
+                                        .trim();
                                     });
                                     toggleExpand(`doubt-${selectedDoubt.id}`);
                                   }}
@@ -530,7 +626,10 @@ const ReviewerDashboard = () => {
                 )}
 
                 <div className="mb-4">
-                  <label htmlFor="solution" className="block font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                  <label
+                    htmlFor="solution"
+                    className="block font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm"
+                  >
                     Your Solution:
                   </label>
                   <textarea
@@ -545,7 +644,10 @@ const ReviewerDashboard = () => {
 
                 {/* File Upload Section */}
                 <div className="mb-4">
-                  <label htmlFor="solution-files" className="block font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm">
+                  <label
+                    htmlFor="solution-files"
+                    className="block font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm"
+                  >
                     Attachments (Optional):
                   </label>
                   <input
@@ -557,21 +659,27 @@ const ReviewerDashboard = () => {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-sm file:bg-blue-50 dark:file:bg-blue-900 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-100 dark:hover:file:bg-blue-800"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Upload images or code files (max 100KB each). Supports: JPG, PNG, GIF, WebP, TXT, JS, Python, C++, etc.
+                    Upload images or code files (max 100KB each). Supports: JPG,
+                    PNG, GIF, WebP, TXT, JS, Python, C++, etc.
                   </p>
-                  
+
                   {/* Display uploaded attachments */}
                   {solutionAttachments.length > 0 && (
                     <div className="mt-3 space-y-2">
-                      <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">Uploaded Files:</h5>
+                      <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Uploaded Files:
+                      </h5>
                       {solutionAttachments.map((attachment) => (
-                        <div key={attachment.id} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 p-2 rounded border border-gray-200 dark:border-gray-600">
+                        <div
+                          key={attachment.id}
+                          className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 p-2 rounded border border-gray-200 dark:border-gray-600"
+                        >
                           <div className="flex items-center space-x-2 min-w-0 flex-1">
-                            {attachment.type === 'image' ? (
+                            {attachment.type === "image" ? (
                               <>
                                 <i className="fas fa-image text-green-500 flex-shrink-0"></i>
-                                <img 
-                                  src={attachment.content} 
+                                <img
+                                  src={attachment.content}
                                   alt={attachment.name}
                                   className="w-6 h-6 sm:w-8 sm:h-8 object-cover rounded flex-shrink-0"
                                 />
@@ -580,8 +688,12 @@ const ReviewerDashboard = () => {
                               <i className="fas fa-file-code text-blue-500 flex-shrink-0"></i>
                             )}
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{attachment.name}</p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">{Math.round(attachment.size / 1024)}KB</p>
+                              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
+                                {attachment.name}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {Math.round(attachment.size / 1024)}KB
+                              </p>
                             </div>
                           </div>
                           <button
@@ -609,7 +721,7 @@ const ReviewerDashboard = () => {
                   >
                     {submittingSolution ? "Submitting..." : "Submit Solution"}
                   </button>
-                  
+
                   <button
                     onClick={() => {
                       setSelectedDoubt(null);

@@ -1,4 +1,4 @@
-import DoubtsArchive from "@/components/doubts/doubts-archive";
+import DoubtsArchive from "@/components/contact&help/doubts/doubts-archive";
 //
 
 const AllDoubtsPage = () => {

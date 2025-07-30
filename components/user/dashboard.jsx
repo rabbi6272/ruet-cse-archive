@@ -378,7 +378,7 @@ const Dashboard = () => {
               </button>
 
               <Link
-                href="/user/help"
+                href="/contact&help/help"
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 lg:px-6 lg:py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center gap-2"
               >
                 <i className="fas fa-question-circle text-xs"></i>
@@ -552,7 +552,7 @@ const Dashboard = () => {
                           className={`p-4 overflow-x-auto transition-transform duration-500 ${
                             isCodeLong(snippet.codeSnippet) &&
                             !expandedSnippets[snippet.id]
-                              ? "max-h-70"
+                              ? "max-h-90"
                               : ""
                           }`}
                         >

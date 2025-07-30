@@ -7,14 +7,8 @@ import hljs from "highlight.js";
 import "highlight.js/styles/monokai.css";
 import CommentSection from "./CommentSection";
 
-import { Lato } from "next/font/google";
-const lato = Lato({
-  variable: "--font-lato",
-  subsets: ["latin"],
-  weight: ["300", "400", "700"],
-});
+import { lato } from "@/app/ui/fonts";
 
-//c
 function getNameFromRoll(roll) {
   // Find the user with the matching roll number
   const user = users.find((u) => u.roll === roll);
@@ -223,10 +217,6 @@ const CodeLibrary = () => {
     }));
   };
 
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-  };
-
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   const isCodeLong = (code) => {
@@ -236,7 +226,7 @@ const CodeLibrary = () => {
   return (
     <div
       className={`${
-        lato.classname
+        lato.className
       } min-h-screen transition-colors duration-300 ${darkMode ? "dark" : ""}`}
     >
       <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -254,13 +244,6 @@ const CodeLibrary = () => {
                 coding!
               </p>
             </div>
-            {/* Dark mode toggle button - uncomment to re-enable */}
-            {/* <button
-              onClick={toggleDarkMode}
-              className="px-4 py-2 rounded-lg dark:bg-gray-700 dark:hover:bg-gray-600 bg-gray-200 hover:bg-gray-300"
-            >
-              {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
-            </button> */}
           </div>
 
           {/* Search and filters */}
@@ -426,8 +409,8 @@ const CodeLibrary = () => {
                   </div>
 
                   {/* Comment Section */}
-                  <CommentSection 
-                    snippetId={snippet.id} 
+                  <CommentSection
+                    snippetId={snippet.id}
                     snippetAuthor={snippet.rollNumber}
                     snippetTitle={snippet.title}
                   />
