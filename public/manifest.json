@@ -1,12 +1,16 @@
 {
-  "name": "RUET CSE Archive",
-  "short_name": "RUET CSE",
-  "description": "Comprehensive archive of Computer Science & Engineering resources for RUET students",
+  "name": "RUET CSE Archive - Complete Resource Hub",
+  "short_name": "RUET CSE Archive",
+  "description": "The ultimate archive of Computer Science & Engineering resources for RUET students. Access notes, code libraries, academic materials, alumni network, and study resources.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#071a26",
   "theme_color": "#071a26",
   "orientation": "portrait-primary",
+  "categories": ["education", "reference", "productivity"],
+  "lang": "en-US",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -33,9 +37,29 @@
       "purpose": "any"
     }
   ],
-  "categories": ["education", "productivity", "utilities"],
-  "lang": "en",
-  "scope": "/",
+  "shortcuts": [
+    {
+      "name": "Code Library",
+      "short_name": "Code Library",
+      "description": "Browse programming solutions and code examples",
+      "url": "/codelibrary",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Resources",
+      "short_name": "Resources",
+      "description": "Access academic resources and study materials",
+      "url": "/resources",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Alumni Network",
+      "short_name": "Alumni",
+      "description": "Connect with CSE graduates worldwide",
+      "url": "/alumni",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
   "screenshots": [
     {
       "src": "/screenshot-wide.png",
