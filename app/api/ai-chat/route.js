@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSystemInstructions, AI_CONFIG } from '@/lib/ai-config';
 import { performSearch, WEBSITE_KNOWLEDGE } from '@/lib/website-knowledge';
 
-// Initialize Gemini Flash 2.5
+// Initialize Gemini Flash 1.5 (more stable quota)
 const genAI = new GoogleGenerativeAI("AIzaSyBpMnoRGcBMG_oSxz0y9NOvYfBs1LNOMU8");
 
 // Helper function to detect if user is asking for search

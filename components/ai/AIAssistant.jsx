@@ -35,20 +35,35 @@ const formatBotMessage = (text) => {
     // Code blocks with triple backticks ```code``` - with copy button (PROCESS FIRST)
     .replace(/```(\w+)?\s*([\s\S]*?)```/g, (match, language, code) => {
       const codeId = `code-block-${Date.now()}-${++codeBlockCounter}`;
-      // Preserve ALL formatting - don't modify the code content at all
-      const escapedCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      // Preserve ALL formatting - don't modify the code content at all, keep line breaks
+      const escapedCode = code
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
       const detectedLanguage = language || 'text';
-      return `<div className="code-container dark:bg-gray-900 bg-gray-200 mt-4 rounded-lg overflow-hidden relative group max-w-full"><button data-copy-target="${codeId}" className="copy-code-btn px-2 py-1 rounded text-xs absolute top-2 right-2 opacity-100 xl:opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:bg-gray-900 dark:hover:bg-gray-800 dark:text-white bg-gray-900 hover:bg-gray-800 text-white z-10" title="Copy code"><i className="far fa-copy mr-1"></i> Copy</button><pre id="${codeId}" className="p-4 overflow-auto font-cascadia whitespace-pre max-h-96 max-w-full" style="tab-size: 4;"><code className="language-${detectedLanguage} block">${escapedCode}</code></pre></div>`;
+      return `<div class="code-container dark:bg-gray-900 bg-gray-900 mt-4 mb-4 rounded-lg overflow-hidden relative group max-w-full border border-gray-700"><div class="flex items-center justify-between bg-gray-800 px-4 py-2 border-b border-gray-700"><span class="text-xs text-gray-400 font-medium">${detectedLanguage}</span><button data-copy-target="${codeId}" class="copy-code-btn px-3 py-1 rounded text-xs bg-gray-700 hover:bg-gray-600 text-white transition-colors duration-200" title="Copy code"><i class="far fa-copy mr-1"></i> Copy</button></div><pre id="${codeId}" class="p-4 overflow-auto font-cascadia whitespace-pre max-h-96 max-w-full text-sm leading-relaxed" style="tab-size: 4; line-height: 1.5;"><code class="language-${detectedLanguage} block text-gray-200">${escapedCode}</code></pre></div>`;
     })
     
     // Inline code `code` - with copy button for longer code (PROCESS SECOND)
     .replace(/`([^`]+)`/g, (match, code) => {
       const escapedCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      
+      // Check if code has multiple lines or is significantly long
+      const hasMultipleLines = code.includes('\n') || code.includes('\\n');
+      const isLongCode = code.length > 50;
+      
+      // For multi-line or long code, create a block format
+      if (hasMultipleLines || isLongCode) {
+        const codeId = `inline-code-block-${Date.now()}-${++codeBlockCounter}`;
+        return `<div class="code-container bg-gray-900 mt-3 mb-3 rounded-lg overflow-hidden relative group max-w-full"><button data-copy-target="${codeId}" class="copy-code-btn px-2 py-1 rounded text-xs absolute top-2 right-2 opacity-100 xl:opacity-0 transition-opacity duration-300 group-hover:opacity-100 bg-gray-800 hover:bg-gray-700 text-white z-10" title="Copy code"><i class="far fa-copy mr-1"></i> Copy</button><pre id="${codeId}" class="p-4 overflow-auto font-cascadia whitespace-pre max-h-80 max-w-full text-sm" style="tab-size: 4;"><code class="text-gray-200 block">${escapedCode}</code></pre></div>`;
+      }
+      
+      // For short single-line code, use inline format
       if (code.length > 20) {
         const codeId = `inline-code-${Date.now()}-${++codeBlockCounter}`;
-        return `<span className="inline-flex items-center gap-1 dark:bg-gray-800 bg-gray-800 dark:text-gray-300 text-gray-200 px-2 py-1 rounded font-cascadia text-sm not-italic"><code id="${codeId}">${escapedCode}</code><button data-copy-target="${codeId}" className="copy-code-btn ml-1 p-0.5 dark:hover:bg-gray-700 hover:bg-gray-700 rounded transition-colors" title="Copy"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button></span>`;
+        return `<span class="inline-flex items-center gap-1 dark:bg-gray-800 bg-gray-800 dark:text-gray-300 text-gray-200 px-2 py-1 rounded font-cascadia text-sm not-italic"><code id="${codeId}">${escapedCode}</code><button data-copy-target="${codeId}" class="copy-code-btn ml-1 p-0.5 dark:hover:bg-gray-700 hover:bg-gray-700 rounded transition-colors" title="Copy"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button></span>`;
       }
-      return `<code className="dark:bg-gray-800 bg-gray-800 dark:text-gray-300 text-gray-200 px-2 py-1 rounded font-cascadia text-sm not-italic">${escapedCode}</code>`;
+      return `<code class="dark:bg-gray-800 bg-gray-800 dark:text-gray-300 text-gray-200 px-2 py-1 rounded font-cascadia text-sm not-italic">${escapedCode}</code>`;
     })
     
     // Bold text **text** (PROCESS AFTER CODE)
@@ -87,7 +102,7 @@ const formatBotMessage = (text) => {
       return `<div className="grid grid-cols-${cells.length} gap-2 border border-gray-200 rounded p-2 my-2">${cells.map(cell => `<div className="p-1 text-sm">${cell}</div>`).join('')}</div>`;
     })
     
-    // Line breaks (convert \n to <br> but preserve structure)
+    // Line breaks (convert \n to <br> but preserve structure) - PROCESS LAST
     .replace(/\n\n/g, '<div className="my-3"></div>')
     .replace(/\n/g, '<br>');
 };
@@ -428,7 +443,7 @@ export default function AIAssistant() {
           };
           setMessages(prev => [...prev, botMessage]);
           setIsLoading(false);
-        }, AI_CONFIG.behavior.typingDelay);
+        }, Math.max(500, Math.min(data.message?.length * 20 || 1000, 2000))); // Dynamic delay based on message length
       } else {
         throw new Error(data.error || 'Failed to get response');
       }
@@ -674,12 +689,15 @@ ${fileContent}
           
           {/* Loading indicator */}
           {isLoading && (
-            <div>
-              <div className="bg-white text-gray-800 border border-gray-200 max-w-[80%] p-3 rounded-2xl">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            <div className="animate-fadeIn">
+              <div className="bg-white text-gray-800 border border-gray-200 max-w-[80%] p-3 rounded-2xl shadow-sm">
+                <div className="flex items-center space-x-2">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce animation-delay-0"></div>
+                    <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce animation-delay-150"></div>
+                    <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce animation-delay-300"></div>
+                  </div>
+                  <span className="text-xs text-gray-500 ml-2 animate-pulse">⚡ Pikachu is thinking...</span>
                 </div>
               </div>
             </div>
@@ -807,39 +825,97 @@ ${fileContent}
           background: #1f2937 !important;
         }
         
-        /* Enhanced code block styling with proper scrollbars */
+        /* Enhanced code block styling with proper scrollbars and readability */
         .ai-message pre {
           max-height: 400px;
           max-width: 100%;
           overflow: auto;
           scrollbar-width: thin;
-          scrollbar-color: #4b5563 #1f2937;
+          scrollbar-color: #6b7280 #374151;
           white-space: pre !important;
           word-wrap: normal !important;
           word-break: normal !important;
+          background: #1f2937 !important;
+          color: #e5e7eb !important;
+          border-radius: 0.5rem;
+          line-height: 1.5 !important;
+          display: block !important;
+        }
+        
+        /* Fix dangerouslySetInnerHTML code rendering */
+        .ai-message div[class*="code-container"] {
+          background: #1f2937 !important;
+          border-radius: 0.5rem !important;
+          overflow: hidden !important;
+          margin: 16px 0 !important;
+        }
+        
+        .ai-message div[class*="code-container"] pre {
+          background: #1f2937 !important;
+          margin: 0 !important;
+          padding: 16px !important;
+          border-radius: 0 !important;
+        }
+        
+        .ai-message div[class*="code-container"] code {
+          background: transparent !important;
+          color: #e5e7eb !important;
+          display: block !important;
+          font-family: 'Cascadia Code', 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+          white-space: pre !important;
+          word-wrap: normal !important;
+          word-break: normal !important;
+          line-height: 1.5 !important;
         }
         
         .ai-message pre::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
+          width: 12px;
+          height: 12px;
         }
         
         .ai-message pre::-webkit-scrollbar-track {
-          background: #1f2937;
-          border-radius: 4px;
+          background: #374151;
+          border-radius: 6px;
         }
         
         .ai-message pre::-webkit-scrollbar-thumb {
-          background: #4b5563;
-          border-radius: 4px;
+          background: #6b7280;
+          border-radius: 6px;
+          border: 2px solid #374151;
         }
         
         .ai-message pre::-webkit-scrollbar-thumb:hover {
-          background: #6b7280;
+          background: #9ca3af;
         }
         
         .ai-message pre::-webkit-scrollbar-corner {
-          background: #1f2937;
+          background: #374151;
+        }
+        
+        /* Enhanced code container styling */
+        .code-container {
+          position: relative;
+          max-width: 100%;
+          overflow: hidden;
+          margin: 16px 0;
+          border-radius: 8px;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Inline code block styling */
+        .code-container pre {
+          margin: 0 !important;
+          border-radius: 0 0 8px 8px !important;
+        }
+        
+        /* Better vertical spacing for code elements */
+        .ai-message .code-container + .code-container {
+          margin-top: 12px;
+        }
+        
+        .ai-message .code-container + p,
+        .ai-message p + .code-container {
+          margin-top: 16px;
         }
         
         /* Preserve indentation and formatting EXACTLY as written */
@@ -851,23 +927,65 @@ ${fileContent}
           text-indent: 0 !important;
           tab-size: 4 !important;
           -moz-tab-size: 4 !important;
-          line-height: 1.4 !important;
+          line-height: 1.6 !important;
           font-variant-ligatures: normal !important;
+          display: block !important;
         }
         
-        /* Ensure pre element preserves ALL whitespace */
+        /* Ensure pre element preserves ALL whitespace and line breaks */
         .ai-message pre {
           white-space: pre !important;
           word-wrap: normal !important;
           word-break: normal !important;
           overflow-wrap: normal !important;
+          font-family: 'Cascadia Code', 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
         }
         
-        /* Code container improvements */
-        .code-container {
-          position: relative;
-          max-width: 100%;
-          overflow: hidden;
+        /* Force code containers to maintain proper formatting */
+        .code-container pre,
+        .code-container code {
+          white-space: pre !important;
+          line-height: 1.6 !important;
+          font-family: 'Cascadia Code', 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+        }
+        
+        /* Loading Animation Fixes */
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+        
+        .animation-delay-0 {
+          animation-delay: 0ms;
+        }
+        
+        .animation-delay-150 {
+          animation-delay: 150ms;
+        }
+        
+        .animation-delay-300 {
+          animation-delay: 300ms;
+        }
+        
+        /* Force immediate animation start */
+        .animate-bounce {
+          animation: bounce 1s infinite;
+          animation-fill-mode: both;
+        }
+        
+        @keyframes bounce {
+          0%, 100% {
+            transform: translateY(-25%);
+            animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+          }
+          50% {
+            transform: none;
+            animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+          }
         }
         
         /* Enhanced mobile responsiveness */
@@ -914,12 +1032,31 @@ ${fileContent}
           
           /* Better code block handling on mobile */
           .ai-message pre {
-            max-height: 200px !important;
-            font-size: 12px !important;
+            max-height: 250px !important;
+            font-size: 13px !important;
+            line-height: 1.4 !important;
+            padding: 12px !important;
           }
           
           .ai-message code {
-            font-size: 12px !important;
+            font-size: 13px !important;
+          }
+          
+          /* Better scrollbars on mobile */
+          .ai-message pre::-webkit-scrollbar {
+            width: 8px !important;
+            height: 8px !important;
+          }
+          
+          /* Code container improvements on mobile */
+          .code-container {
+            margin: 12px 0 !important;
+            border-radius: 6px !important;
+          }
+          
+          /* Inline code blocks on mobile */
+          .code-container pre {
+            border-radius: 0 0 6px 6px !important;
           }
         }
         
@@ -956,6 +1093,21 @@ ${fileContent}
           .ai-chat-input-area input {
             font-size: 16px !important;
             padding: 10px 6px !important;
+          }
+          
+          /* Mobile code improvements */
+          .ai-message pre {
+            max-height: 200px !important;
+            font-size: 12px !important;
+            padding: 8px !important;
+          }
+          
+          .ai-message code {
+            font-size: 12px !important;
+          }
+          
+          .code-container {
+            margin: 8px 0 !important;
           }
         }
       `}</style>
