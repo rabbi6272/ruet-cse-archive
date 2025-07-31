@@ -10,8 +10,24 @@ const formatBotMessage = (text) => {
   // Generate unique IDs for code blocks
   let codeBlockCounter = 0;
   
-  // First, clean up any existing HTML that might be in the response
-  let cleanedText = text
+  // First, protect code blocks from HTML cleaning by temporarily replacing them
+  const codeBlockPlaceholders = [];
+  let tempText = text
+    // Extract and protect code blocks first
+    .replace(/```[\s\S]*?```/g, (match) => {
+      const placeholder = `__CODE_BLOCK_${codeBlockPlaceholders.length}__`;
+      codeBlockPlaceholders.push(match);
+      return placeholder;
+    })
+    // Extract and protect inline code
+    .replace(/`[^`]+`/g, (match) => {
+      const placeholder = `__INLINE_CODE_${codeBlockPlaceholders.length}__`;
+      codeBlockPlaceholders.push(match);
+      return placeholder;
+    });
+  
+  // Now clean HTML from non-code content
+  let cleanedText = tempText
     // Remove HTML tags that might have been included in the response
     .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '\n# $1\n')
     .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '\n## $1\n')
@@ -21,10 +37,16 @@ const formatBotMessage = (text) => {
     // Handle pre/code blocks specially - preserve ALL content exactly
     .replace(/<pre[^>]*>([\s\S]*?)<\/pre>/gi, '\n```\n$1\n```\n')
     .replace(/<code[^>]*>(.*?)<\/code>/gi, '`$1`')
-    .replace(/<[^>]*>/g, '') // Remove any other HTML tags
+    .replace(/<[^>]*>/g, '') // Now safe to remove HTML tags
     // Only clean up excessive whitespace outside of code blocks
     .replace(/(\n\s*){4,}/g, '\n\n\n') // Allow max 3 consecutive newlines
     .trim();
+  
+  // Restore protected code blocks
+  codeBlockPlaceholders.forEach((code, index) => {
+    cleanedText = cleanedText.replace(`__CODE_BLOCK_${index}__`, code);
+    cleanedText = cleanedText.replace(`__INLINE_CODE_${index}__`, code);
+  });
   
   return cleanedText
     // Headers (### Header, ## Header, # Header)
@@ -41,7 +63,7 @@ const formatBotMessage = (text) => {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
       const detectedLanguage = language || 'text';
-      return `<div class="code-container dark:bg-gray-900 bg-gray-900 mt-4 mb-4 rounded-lg overflow-hidden relative group max-w-full border border-gray-700"><div class="flex items-center justify-between bg-gray-800 px-4 py-2 border-b border-gray-700"><span class="text-xs text-gray-400 font-medium">${detectedLanguage}</span><button data-copy-target="${codeId}" class="copy-code-btn px-3 py-1 rounded text-xs bg-gray-700 hover:bg-gray-600 text-white transition-colors duration-200" title="Copy code"><i class="far fa-copy mr-1"></i> Copy</button></div><pre id="${codeId}" class="p-4 overflow-auto font-cascadia whitespace-pre max-h-96 max-w-full text-sm leading-relaxed" style="tab-size: 4; line-height: 1.5;"><code class="language-${detectedLanguage} block text-gray-200">${escapedCode}</code></pre></div>`;
+      return `<div class="code-container dark:bg-gray-900 bg-gray-900 mt-4 mb-4 rounded-lg overflow-hidden relative group max-w-full border border-gray-700"><div class="flex items-center justify-between bg-gray-800 px-4 py-2 border-b border-gray-700"><span class="text-xs text-gray-400 font-medium">${detectedLanguage}</span><button data-copy-target="${codeId}" class="copy-code-btn px-3 py-1 rounded text-xs bg-gray-700 hover:bg-gray-600 text-white transition-colors duration-200" title="Copy code"><i class="far fa-copy mr-1"></i> Copy</button></div><pre id="${codeId}" class="p-4 font-cascadia max-w-full text-sm leading-relaxed" style="tab-size: 4; line-height: 1.5; overflow: hidden; white-space: pre-wrap; word-wrap: break-word;"><code class="language-${detectedLanguage} block text-gray-200">${escapedCode}</code></pre></div>`;
     })
     
     // Inline code `code` - with copy button for longer code (PROCESS SECOND)
@@ -55,7 +77,7 @@ const formatBotMessage = (text) => {
       // For multi-line or long code, create a block format
       if (hasMultipleLines || isLongCode) {
         const codeId = `inline-code-block-${Date.now()}-${++codeBlockCounter}`;
-        return `<div class="code-container bg-gray-900 mt-3 mb-3 rounded-lg overflow-hidden relative group max-w-full"><button data-copy-target="${codeId}" class="copy-code-btn px-2 py-1 rounded text-xs absolute top-2 right-2 opacity-100 xl:opacity-0 transition-opacity duration-300 group-hover:opacity-100 bg-gray-800 hover:bg-gray-700 text-white z-10" title="Copy code"><i class="far fa-copy mr-1"></i> Copy</button><pre id="${codeId}" class="p-4 overflow-auto font-cascadia whitespace-pre max-h-80 max-w-full text-sm" style="tab-size: 4;"><code class="text-gray-200 block">${escapedCode}</code></pre></div>`;
+        return `<div class="code-container bg-gray-900 mt-3 mb-3 rounded-lg overflow-hidden relative group max-w-full"><button data-copy-target="${codeId}" class="copy-code-btn px-2 py-1 rounded text-xs absolute top-2 right-2 opacity-100 xl:opacity-0 transition-opacity duration-300 group-hover:opacity-100 bg-gray-800 hover:bg-gray-700 text-white z-10" title="Copy code"><i class="far fa-copy mr-1"></i> Copy</button><pre id="${codeId}" class="p-4 font-cascadia max-w-full text-sm" style="tab-size: 4; overflow: hidden; white-space: pre-wrap; word-wrap: break-word;"><code class="text-gray-200 block">${escapedCode}</code></pre></div>`;
       }
       
       // For short single-line code, use inline format
@@ -148,7 +170,10 @@ export default function AIAssistant() {
     return () => clearInterval(interval);
   }, []);
 
-  // Load chat history from localStorage on component mount
+  // Message quota system for non-logged-in users
+  const [messageQuota, setMessageQuota] = useState({ count: 3, resetTime: null });
+
+  // Load chat history and message quota from localStorage on component mount
   useEffect(() => {
     const loadChatHistory = () => {
       try {
@@ -163,25 +188,56 @@ export default function AIAssistant() {
           setMessages(sanitizedMessages);
         } else {
           // If no history, start with welcome message
-          const welcomeMessage = {
-            id: 1,
-            text: getPersonalizedWelcomeMessage(),
-            sender: 'bot',
-            timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
+          const initializeWelcome = async () => {
+            const welcomeText = await getPersonalizedWelcomeMessage();
+            const welcomeMessage = {
+              id: 1,
+              text: welcomeText,
+              sender: 'bot',
+              timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
+            };
+            setMessages([welcomeMessage]);
+            localStorage.setItem('pikachu_chat_history', JSON.stringify([welcomeMessage]));
           };
-          setMessages([welcomeMessage]);
-          localStorage.setItem('pikachu_chat_history', JSON.stringify([welcomeMessage]));
+          initializeWelcome();
+        }
+
+        // Load message quota for non-logged-in users
+        if (!currentUser) {
+          const savedQuota = localStorage.getItem('pikachu_message_quota');
+          if (savedQuota) {
+            const quotaData = JSON.parse(savedQuota);
+            const now = new Date().getTime();
+            
+            // Check if quota has reset (3 hours passed)
+            if (quotaData.resetTime && now >= quotaData.resetTime) {
+              // Reset quota
+              const newQuota = { count: 3, resetTime: null };
+              setMessageQuota(newQuota);
+              localStorage.setItem('pikachu_message_quota', JSON.stringify(newQuota));
+            } else {
+              setMessageQuota(quotaData);
+            }
+          }
+        } else {
+          // Clear quota for logged-in users
+          localStorage.removeItem('pikachu_message_quota');
+          setMessageQuota({ count: 3, resetTime: null });
         }
       } catch (error) {
         console.error('Error loading chat history:', error);
         // Fallback to welcome message if localStorage fails
-        const welcomeMessage = {
-          id: 1,
-          text: getPersonalizedWelcomeMessage(),
-          sender: 'bot',
-          timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
+        const initializeFallbackWelcome = async () => {
+          const welcomeText = await getPersonalizedWelcomeMessage();
+          const welcomeMessage = {
+            id: 1,
+            text: welcomeText,
+            sender: 'bot',
+            timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
+          };
+          setMessages([welcomeMessage]);
         };
-        setMessages([welcomeMessage]);
+        initializeFallbackWelcome();
       }
     };
 
@@ -227,13 +283,107 @@ export default function AIAssistant() {
     return String(text);
   };
 
+  // Function to get time-based greeting
+  const getTimeBasedGreeting = () => {
+    const now = new Date();
+    const hour = now.getHours();
+    
+    if (hour >= 0 && hour < 6) {
+      return "Ghuma vhai please! ⚡ Rat 12 tar por, tomar ghum proyojon! 😴";
+    } else if (hour >= 6 && hour < 12) {
+      return "Good Morning ⚡ Sokal sokal uthe geche mama! Fresh feeling! 🌅";
+    } else if (hour >= 12 && hour < 17) {
+      return "Good Afternoon ⚡ Dupurer alo te kichu coding korbo? 🌞";
+    } else if (hour >= 17 && hour < 21) {
+      return "Good Evening ⚡ Shondha hoye geche, ektu relax koro! 🌆";
+    } else {
+      return "Good Night ⚡ Rat hoye geche mama, tara dekho! 🌙";
+    }
+  };
+
+  // Function to check battery status and show warnings
+  const getBatteryWarning = async () => {
+    try {
+      if ('getBattery' in navigator) {
+        const battery = await navigator.getBattery();
+        let batteryMessage = "";
+        
+        // Check if charging
+        if (battery.charging) {
+          batteryMessage += "\n\n🔋 **Battery Alert**: Device charging detected! Charger lagate lagate use korle battery life kharap hoye jabe! Ektu wait koro, charge complete houar por use koro. ⚡";
+        }
+        
+        // Check low battery
+        const batteryLevel = Math.round(battery.level * 100);
+        if (batteryLevel < 20 && !battery.charging) {
+          batteryMessage += `\n\n🪫 **Low Battery Warning**: Battery ${batteryLevel}%! Tara tari charger lagao vai, noyto mobile off hoye jabe! Emergency e backup rakhle bhalo hoto! ⚠️`;
+        }
+        
+        return batteryMessage;
+      }
+    } catch (error) {
+      console.log('Battery API not supported or permission denied');
+    }
+    return "";
+  };
+
+  // Function to get detailed battery information  
+  const getBatteryInfo = async () => {
+    try {
+      if ('getBattery' in navigator) {
+        const battery = await navigator.getBattery();
+        const batteryLevel = Math.round(battery.level * 100);
+        const chargingStatus = battery.charging ? 'Charging ⚡' : 'Not Charging 🔋';
+        
+        let batteryMessage = `**🔋 Battery Status:**\n\n`;
+        batteryMessage += `**Level:** ${batteryLevel}%\n`;
+        batteryMessage += `**Status:** ${chargingStatus}\n`;
+        
+        if (battery.chargingTime && battery.chargingTime !== Infinity) {
+          const chargingTimeHours = Math.floor(battery.chargingTime / 3600);
+          const chargingTimeMinutes = Math.floor((battery.chargingTime % 3600) / 60);
+          batteryMessage += `**Charging Time:** ${chargingTimeHours}h ${chargingTimeMinutes}m\n`;
+        }
+        
+        if (battery.dischargingTime && battery.dischargingTime !== Infinity) {
+          const dischargingTimeHours = Math.floor(battery.dischargingTime / 3600);
+          const dischargingTimeMinutes = Math.floor((battery.dischargingTime % 3600) / 60);
+          batteryMessage += `**Remaining Time:** ${dischargingTimeHours}h ${dischargingTimeMinutes}m\n`;
+        }
+        
+        // Add warnings
+        if (battery.charging) {
+          batteryMessage += `\n⚠️ **Pikachu's Advice:** Device charging detected! Charger lagate lagate use korle battery life damage hoye jabe! Ektu wait koro, charge complete houar por use koro. Health er jonno better! ⚡`;
+        }
+        
+        if (batteryLevel < 20 && !battery.charging) {
+          batteryMessage += `\n🪫 **Low Battery Warning:** Battery khub kom! Tara tari charger lagao vai, noyto mobile off hoye jabe! Emergency backup ready rakho! ⚠️`;
+        } else if (batteryLevel < 50 && !battery.charging) {
+          batteryMessage += `\n🔋 **Battery Reminder:** Battery half hoye geche, charger er kothা ভাবো! ⚡`;
+        } else if (batteryLevel > 90) {
+          batteryMessage += `\n✅ **Good Battery:** Battery besh valo ache! Continue korte paro! 😎`;
+        }
+        
+        return batteryMessage;
+      } else {
+        return `🔋 **Battery API not supported** on this device/browser. Tomar browser Battery API support kore na mama! Chrome/Edge e try koro! ⚡`;
+      }
+    } catch (error) {
+      console.error('Battery check error:', error);
+      return `⚡ **Battery Check Failed:** Permission nai ba error hoyeche! Browser settings check koro! 🔧`;
+    }
+  };
+
   // Function to get personalized welcome message
-  const getPersonalizedWelcomeMessage = () => {
+  const getPersonalizedWelcomeMessage = async () => {
+    const timeGreeting = getTimeBasedGreeting();
+    const batteryWarning = await getBatteryWarning();
+    
     if (currentUser && currentUser.name) {
       const firstName = currentUser.name.split(' ')[0];
-      return `Yoooo ${firstName} mama! ⚡ Ami Pikachu, tumader chaotic digital classmate! Dekho ${firstName}, RUET CSE Archive er shob kichu jani, Nutrinos system theke shuru kore Section C er shob ghotona! Aj ki korbo? Sikhan vai naki kibabe sombob? 😎`;
+      return `${timeGreeting}\n\nYoooo ${firstName} mama! ⚡ Ami Pikachu, tumader chaotic digital classmate! Dekho ${firstName}, RUET CSE Archive er shob kichu jani, Nutrinos system theke shuru kore Section C er shob ghotona! Aj ki korbo? Sikhan vai naki kibabe sombob? 😎${batteryWarning}`;
     }
-    return AI_CONFIG.behavior.welcomeMessage || 'Pika pika! ⚡ Hey there! I\'m Pikachu, your coding assistant!';
+    return `${timeGreeting}\n\n${AI_CONFIG.behavior.welcomeMessage || 'Pika pika! ⚡ Hey there! I\'m Pikachu, your coding assistant!'}${batteryWarning}`;
   };
 
   // Save messages to localStorage whenever messages change
@@ -355,13 +505,14 @@ export default function AIAssistant() {
   };
 
   // Function to clear chat history
-  const clearChatHistory = () => {
+  const clearChatHistory = async () => {
     if (window.confirm('Ami ki chat history clear kore dibo? Eta undo kora jabe na! 🤔')) {
       try {
         localStorage.removeItem('pikachu_chat_history');
+        const welcomeText = await getPersonalizedWelcomeMessage();
         const welcomeMessage = {
           id: Date.now(),
-          text: getPersonalizedWelcomeMessage(),
+          text: welcomeText,
           sender: 'bot',
           timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
         };
@@ -373,8 +524,74 @@ export default function AIAssistant() {
     }
   };
 
+  // Function to check if user can send message (quota system)
+  const canSendMessage = () => {
+    // Logged-in users have unlimited messages
+    if (currentUser) return { allowed: true };
+    
+    // Non-logged-in users have quota system
+    const now = new Date().getTime();
+    
+    // Check if quota has reset (3 hours passed)
+    if (messageQuota.resetTime && now >= messageQuota.resetTime) {
+      // Reset quota
+      const newQuota = { count: 3, resetTime: null };
+      setMessageQuota(newQuota);
+      localStorage.setItem('pikachu_message_quota', JSON.stringify(newQuota));
+      return { allowed: true };
+    }
+    
+    // Check if user has messages left
+    if (messageQuota.count > 0) {
+      return { allowed: true };
+    }
+    
+    // Calculate remaining time
+    const remainingTime = messageQuota.resetTime ? messageQuota.resetTime - now : 0;
+    const hours = Math.floor(remainingTime / (1000 * 60 * 60));
+    const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return { 
+      allowed: false, 
+      resetTime: messageQuota.resetTime,
+      remainingTime: { hours, minutes }
+    };
+  };
+
+  // Function to use a message from quota
+  const useMessageQuota = () => {
+    if (currentUser) return; // No quota for logged-in users
+    
+    const now = new Date().getTime();
+    const newCount = messageQuota.count - 1;
+    let newResetTime = messageQuota.resetTime;
+    
+    // If this is the last message, set reset time to 3 hours from now
+    if (newCount === 0) {
+      newResetTime = now + (3 * 60 * 60 * 1000); // 3 hours in milliseconds
+    }
+    
+    const newQuota = { count: newCount, resetTime: newResetTime };
+    setMessageQuota(newQuota);
+    localStorage.setItem('pikachu_message_quota', JSON.stringify(newQuota));
+  };
+
   const sendMessage = async (customMessage = null) => {
     try {
+      // Check message quota first
+      const quotaCheck = canSendMessage();
+      if (!quotaCheck.allowed) {
+        const { hours, minutes } = quotaCheck.remainingTime;
+        const quotaMessage = {
+          id: Date.now(),
+          text: `⚡ **Message Limit Reached!** 🚫\n\n**Hey there!** Tumi guest user, tai 3 ta message er limit ache every 3 hours e! \n\n**⏰ Wait Time:** ${hours}h ${minutes}m baki ache!\n\n**💡 Solution:** \n- **Login koro** unlimited messages er jonno! 🔑\n- **Noile wait koro** ${hours > 0 ? `${hours} hour ${minutes} minute` : `${minutes} minute`} 😊\n\n**🎯 Pro Tip:** Account create korle unlimited chat korte parba Pikachu er shathe! ⚡`,
+          sender: 'bot',
+          timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
+        };
+        setMessages(prev => [...prev, quotaMessage]);
+        return;
+      }
+
       // Get the raw message first - handle mobile input properly
       let rawMessage;
       if (customMessage !== null) {
@@ -393,6 +610,28 @@ export default function AIAssistant() {
       // Additional mobile validation
       if (!message || message === '[object Object]' || message === 'Error: Invalid message format' || message.length === 0 || isLoading) {
         console.warn('Invalid message detected:', { message, rawMessage, inputMessage });
+        return;
+      }
+
+      // Use quota for non-logged-in users
+      useMessageQuota();
+
+      // Check for battery command
+      if (message.toLowerCase().includes('battery') || message.toLowerCase().includes('charge')) {
+        const batteryInfo = await getBatteryInfo();
+        const batteryMessage = {
+          id: Date.now(),
+          text: batteryInfo,
+          sender: 'bot',
+          timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
+        };
+        setMessages(prev => [...prev, {
+          id: Date.now() - 1,
+          text: message,
+          sender: 'user',
+          timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
+        }, batteryMessage]);
+        if (!customMessage) setInputMessage('');
         return;
       }
 
@@ -720,7 +959,7 @@ ${fileContent}
             {/* File upload button - Attachment Icon */}
             <button
               onClick={triggerFileUpload}
-              disabled={isLoading}
+              disabled={isLoading || (!currentUser && messageQuota.count === 0)}
               className="ml-3 p-2 w-10 h-10 flex items-center justify-center rounded-full text-gray-500 hover:text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               title="Upload code file (max 100KB)"
             >
@@ -736,15 +975,19 @@ ${fileContent}
               value={inputMessage}
               onChange={handleInputChange}
               onKeyPress={handleKeyPress}
-              placeholder={AI_CONFIG.behavior.placeholder}
-              disabled={isLoading}
+              placeholder={
+                !currentUser && messageQuota.count === 0 
+                  ? "Login to continue chatting..." 
+                  : AI_CONFIG.behavior.placeholder
+              }
+              disabled={isLoading || (!currentUser && messageQuota.count === 0)}
               className="flex-1 text-sm px-4 py-3 bg-transparent border-none focus:outline-none disabled:opacity-50 placeholder-gray-500"
             />
 
             {/* Send button - Airplane Icon */}
             <button
               onClick={handleSendClick}
-              disabled={!inputMessage.trim() || isLoading}
+              disabled={!inputMessage.trim() || isLoading || (!currentUser && messageQuota.count === 0)}
               className="mr-3 p-2 w-10 h-10 flex items-center justify-center rounded-full bg-yellow-500 text-white hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-opacity-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 disabled:bg-gray-300"
               title="Send message"
             >
@@ -763,6 +1006,22 @@ ${fileContent}
             />
           </div>
         </div>
+
+        {/* Message quota indicator for non-logged-in users */}
+        {!currentUser && (
+          <div className="px-3 py-2 bg-white border-t border-gray-100 text-xs text-center">
+            {messageQuota.count > 0 ? (
+              <span className="text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                ⚡ {messageQuota.count} messages left | 
+                <span className="text-blue-600 ml-1">Login for unlimited! 🔑</span>
+              </span>
+            ) : (
+              <span className="text-red-600 bg-red-50 px-2 py-1 rounded-full">
+                🚫 Message limit reached | Wait {Math.floor((messageQuota.resetTime - new Date().getTime()) / (1000 * 60 * 60))}h {Math.floor(((messageQuota.resetTime - new Date().getTime()) % (1000 * 60 * 60)) / (1000 * 60))}m
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Footer */}
         <div className="text-center text-xs text-gray-400 py-2 bg-white border-t border-gray-100">
@@ -798,7 +1057,7 @@ ${fileContent}
           background: #272822 !important;
           color: #f8f8f2 !important;
           border-radius: 0.5rem;
-          overflow-x: auto;
+          overflow: hidden;
           font-family: 'Cascadia Code', 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
         }
         
@@ -825,15 +1084,12 @@ ${fileContent}
           background: #1f2937 !important;
         }
         
-        /* Enhanced code block styling with proper scrollbars and readability */
+        /* Enhanced code block styling with full text wrapping */
         .ai-message pre {
-          max-height: 400px;
           max-width: 100%;
-          overflow: auto;
-          scrollbar-width: thin;
-          scrollbar-color: #6b7280 #374151;
-          white-space: pre !important;
-          word-wrap: normal !important;
+          overflow: hidden;
+          white-space: pre-wrap !important;
+          word-wrap: break-word !important;
           word-break: normal !important;
           background: #1f2937 !important;
           color: #e5e7eb !important;
@@ -862,34 +1118,10 @@ ${fileContent}
           color: #e5e7eb !important;
           display: block !important;
           font-family: 'Cascadia Code', 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
-          white-space: pre !important;
-          word-wrap: normal !important;
+          white-space: pre-wrap !important;
+          word-wrap: break-word !important;
           word-break: normal !important;
           line-height: 1.5 !important;
-        }
-        
-        .ai-message pre::-webkit-scrollbar {
-          width: 12px;
-          height: 12px;
-        }
-        
-        .ai-message pre::-webkit-scrollbar-track {
-          background: #374151;
-          border-radius: 6px;
-        }
-        
-        .ai-message pre::-webkit-scrollbar-thumb {
-          background: #6b7280;
-          border-radius: 6px;
-          border: 2px solid #374151;
-        }
-        
-        .ai-message pre::-webkit-scrollbar-thumb:hover {
-          background: #9ca3af;
-        }
-        
-        .ai-message pre::-webkit-scrollbar-corner {
-          background: #374151;
         }
         
         /* Enhanced code container styling */

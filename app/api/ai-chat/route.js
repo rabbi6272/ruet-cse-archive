@@ -17,6 +17,68 @@ function detectSearchIntent(message) {
   return searchKeywords.some(keyword => lowerMessage.includes(keyword));
 }
 
+// Helper function to detect code generation requests and deny them
+function detectCodeGenerationRequest(message) {
+  const codeGenKeywords = [
+    'generate code', 'write code', 'create code', 'make code', 'build code',
+    'code for', 'write a program', 'create a program', 'make a program',
+    'generate a function', 'write a function', 'create a function',
+    'write solution', 'give me code', 'provide code', 'show code',
+    'implement', 'coding solution', 'program to', 'algorithm code',
+    'write script', 'create script', 'generate script'
+  ];
+  
+  const lowerMessage = message.toLowerCase();
+  const isCodeGenRequest = codeGenKeywords.some(keyword => lowerMessage.includes(keyword));
+  
+  if (isCodeGenRequest) {
+    return {
+      detected: true,
+      denialMessage: "Arey vai! 🚫 Ami code generate kori na... I don't encourage you to use such prompt-based generation. Rather I am here to debug your code, give suggestions, help debug your code to boost your capability! 💪\n\nTumi code likho, ami help korbo:\n✅ Debug korte parbo\n✅ Tips dite parbo\n✅ Best practices suggest korte parbo\n✅ Logic explain korte parbo\n\nCode Library (/codelibrary) te giye examples dekho, tarpor nijei try koro! Eita tumake better programmer banabe 🚀⚡"
+    };
+  }
+  
+  return { detected: false };
+}
+
+// Helper function to detect course material requests and provide direct navigation
+function detectCourseRequest(message) {
+  const lowerMessage = message.toLowerCase();
+  
+  // Common course request patterns
+  const coursePatterns = [
+    /(?:ct|questions?|materials?|notes?|resources?|papers?)\s+(?:of|for)?\s*([a-z]+\s*\d{4})/i,
+    /([a-z]+\s*\d{4})\s+(?:ct|questions?|materials?|notes?|resources?|papers?)/i,
+    /(?:i\s+need|give\s+me|show\s+me|find)\s+.*?([a-z]+\s*\d{4})/i,
+    /([a-z]+\s*\d{4})\s+(?:course|subject)/i
+  ];
+  
+  for (const pattern of coursePatterns) {
+    const match = message.match(pattern);
+    if (match) {
+      let courseCode = match[1].replace(/\s+/g, ' ').trim().toLowerCase();
+      
+      // Normalize common course codes
+      const courseMap = {
+        'chem 1113': 'Chemistry 1113',
+        'chemistry 1113': 'Chemistry 1113',
+        'eee 1151': 'EEE 1151',
+        'electrical 1151': 'EEE 1151'
+      };
+      
+      const normalizedCourse = courseMap[courseCode] || courseCode;
+      
+      return {
+        detected: true,
+        courseCode: normalizedCourse,
+        originalRequest: message
+      };
+    }
+  }
+  
+  return { detected: false };
+}
+
 // Enhanced response with search results
 async function enhanceResponseWithSearch(userMessage, aiResponse) {
   try {
@@ -106,27 +168,32 @@ export async function POST(request) {
     const response = await result.response;
     let botMessage = response.text();
 
-    // Clean up any HTML tags that might have been generated
-    botMessage = botMessage
-      // Remove HTML tags while preserving content and ALL formatting
-      .replace(/<h([1-6])[^>]*>(.*?)<\/h[1-6]>/gi, (match, level, content) => {
-        const hashes = '#'.repeat(parseInt(level));
-        return `\n${hashes} ${content}\n`;
-      })
-      .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<code[^>]*>(.*?)<\/code>/gi, '`$1`')
-      .replace(/<pre[^>]*>([\s\S]*?)<\/pre>/gi, (match, content) => {
-        // Preserve ALL formatting in pre blocks - don't change anything
-        return `\n\`\`\`\n${content}\n\`\`\`\n`;
-      })
-      .replace(/<[^>]*>/g, '') // Remove any remaining HTML tags
-      // Only clean up excessive empty lines, but preserve intentional spacing
-      .replace(/(\n\s*){5,}/g, '\n\n\n\n') // Allow up to 4 consecutive newlines
-      .trim();
+    // Check for code generation requests first (highest priority)
+    const codeGenRequest = detectCodeGenerationRequest(message);
+    if (codeGenRequest.detected) {
+      return Response.json({ 
+        message: codeGenRequest.denialMessage,
+        success: true 
+      });
+    }
 
-    // Enhance response with search results if applicable
-    botMessage = await enhanceResponseWithSearch(message, botMessage);
+    // Check for course material requests second
+    const courseRequest = detectCourseRequest(message);
+    if (courseRequest.detected) {
+      // Add navigation link to the response
+      const resourcesLink = `/resources?course=${encodeURIComponent(courseRequest.courseCode)}`;
+      const driveLink = `/drive?search=${encodeURIComponent(courseRequest.courseCode)}`;
+      
+      botMessage += `\n\n**🎯 Ami direct tumake course materials er kache niye jabo!**\n\n`;
+      botMessage += `**${courseRequest.courseCode}** er jonno resources:\n`;
+      botMessage += `🔗 **[Resources Page e jao](${resourcesLink})** - Structured course materials\n`;
+      botMessage += `📁 **[Drive e search koro](${driveLink})** - All uploaded files\n\n`;
+      botMessage += `Vai ekhane click korle direct course folder e chole jabe! Ar kono tension nai 😎⚡`;
+    } else {
+      // Don't mess with Gemini's response - let it output clean markdown
+      // Just enhance with search results if applicable
+      botMessage = await enhanceResponseWithSearch(message, botMessage);
+    }
 
     return Response.json({ 
       message: botMessage,
