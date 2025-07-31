@@ -538,9 +538,8 @@ export default function AIAssistant() {
 
   // Focus input when chat opens and scroll to bottom
   useEffect(() => {
-    if (isOpen && inputRef.current) {
+    if (isOpen) {
       setTimeout(() => {
-        inputRef.current.focus();
         // Scroll to bottom when chat opens
         if (chatBodyRef.current) {
           chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
