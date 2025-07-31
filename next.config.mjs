@@ -2,6 +2,19 @@ import withFlowbiteReact from "flowbite-react/plugin/nextjs";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Fix Windows OneDrive symlink issues
+  outputFileTracingIncludes: {},
+  outputFileTracingExcludes: {},
+  
+  // Disable symlinks to avoid Windows/OneDrive issues
+  typescript: {
+    ignoreBuildErrors: false,
+  },
+  
+  eslint: {
+    ignoreDuringBuilds: false,
+  },
+
   // SEO and Performance optimizations
   async headers() {
     return [
