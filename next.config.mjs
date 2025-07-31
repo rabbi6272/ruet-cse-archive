@@ -79,6 +79,9 @@ const nextConfig = {
   // Enable trailing slash for consistent URLs
   trailingSlash: false,
 
+  // Allow dev origins for cross-origin requests
+  allowedDevOrigins: ['192.168.56.1'],
+
   // Custom webpack config for optimization
   webpack: (config, { isServer }) => {
     if (!isServer) {

@@ -1,0 +1,58 @@
+
+> ruet_cse_archive@1.0.0 build
+> next build
+
+   Γû▓ Next.js 15.3.5
+
+   Creating an optimized production build ...
+Generating .flowbite-react\class-list.json file...
+ Γ£ô Compiled successfully in 36.0s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/28) ...
+   Generating static pages (7/28) 
+   Generating static pages (14/28) 
+   Generating static pages (21/28) 
+ Γ£ô Generating static pages (28/28)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+Γöî Γùï /                                    2.88 kB         150 kB
+Γö£ Γùï /_not-found                            172 B         102 kB
+Γö£ ╞Æ /admin/api-keys                        172 B         102 kB
+Γö£ Γùï /admin/migrate                       5.86 kB         158 kB
+Γö£ Γùï /alumni                              48.7 kB         154 kB
+Γö£ ╞Æ /api/admin/api-keys                    172 B         102 kB
+Γö£ ╞Æ /api/ai-chat                           172 B         102 kB
+Γö£ ╞Æ /api/codesnap/[id]                     172 B         102 kB
+Γö£ ╞Æ /api/doubt-notifications               172 B         102 kB
+Γö£ ╞Æ /api/drive                             172 B         102 kB
+Γö£ Γùï /codelibrary                         3.21 kB         487 kB
+Γö£ ╞Æ /codelibrary/[id]                    2.15 kB         490 kB
+Γö£ Γùï /contact&help/developers             6.59 kB         168 kB
+Γö£ Γùï /contact&help/doubts                 3.87 kB         468 kB
+Γö£ Γùï /contact&help/help                   3.97 kB         167 kB
+Γö£ Γùï /contact&help/statistics             76.1 kB         228 kB
+Γö£ Γùï /drive                                2.3 kB         149 kB
+Γö£ ╞Æ /drive/[id]                          2.87 kB         150 kB
+Γö£ Γùï /icon.png                                0 B            0 B
+Γö£ Γùï /resources                           1.56 kB         112 kB
+Γö£ Γùï /reviewers/dashboard                 5.62 kB         476 kB
+Γö£ Γùï /robots.txt                            172 B         102 kB
+Γö£ Γùï /shelf                               2.58 kB         154 kB
+Γö£ Γùï /sitemap.xml                           172 B         102 kB
+Γö£ Γùï /user/create                         2.55 kB         166 kB
+Γö£ Γùï /user/dashboard                      11.7 kB         489 kB
+Γö£ Γùï /user/login                          5.99 kB         113 kB
+Γö£ Γùï /user/my-doubts                       3.9 kB         471 kB
+Γöö Γùï /user/notifications                     7 kB         166 kB
++ First Load JS shared by all             102 kB
+  Γö£ chunks/1684-c04eeed3efbcd9ee.js      46.6 kB
+  Γö£ chunks/4bd1b696-fbdb3b15e7e9a35d.js  53.2 kB
+  Γöö other shared chunks (total)          2.09 kB
+
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+
