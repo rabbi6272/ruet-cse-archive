@@ -848,6 +848,7 @@ ${fileContent}
   };
 
   const handleClickOutside = (e) => {
+    // Check if click is outside both the chat popup and toggle button
     if (e.target.closest('#chatPopup') === null && 
         e.target.closest('#chatToggleBtn') === null) {
       setIsOpen(false);
@@ -868,6 +869,14 @@ ${fileContent}
 
   return (
     <>
+      {/* Backdrop with blur effect when chat is open */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-all duration-300"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+      
       {/* Floating Chat Button - Available for all users */}
       <button
         id="chatToggleBtn"
@@ -925,23 +934,12 @@ ${fileContent}
           {/* Clear Chat Button */}
           <button 
             onClick={clearChatHistory}
-            className="mr-2 text-white/80 hover:text-white focus:outline-none p-1 rounded hover:bg-white/10 transition-colors"
+            className="text-white/80 hover:text-white focus:outline-none p-1 rounded hover:bg-white/10 transition-colors"
             title="Clear chat history"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd" />
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 012 0v4a1 1 0 11-2 0V7zM12 7a1 1 0 012 0v4a1 1 0 11-2 0V7z" clipRule="evenodd" />
-            </svg>
-          </button>
-
-          {/* Close Chat Button */}
-          <button 
-            onClick={toggleChat}
-            className="text-white/80 hover:text-white focus:outline-none"
-            title="Close chat"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
           </button>
         </div>
@@ -999,29 +997,6 @@ ${fileContent}
             </div>
           )}
         </div>
-
-        {/* Scroll to Bottom Button - appears when user is scrolled up */}
-        {!shouldAutoScroll && (
-          <div className="absolute bottom-2 right-2 z-10">
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (chatBodyRef.current) {
-                  chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
-                  setShouldAutoScroll(true);
-                }
-              }}
-              className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg transition-all duration-200 flex items-center space-x-1 text-xs"
-              title="Scroll to bottom"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 112 0v11.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              <span>New</span>
-            </button>
-          </div>
-        )}
 
         {/* File Upload Info */}
         <div className="px-3 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-t border-gray-200 dark:border-gray-700">
