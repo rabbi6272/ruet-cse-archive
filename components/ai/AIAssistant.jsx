@@ -1,5 +1,5 @@
 'use client';
-//new comment
+
 import { useState, useRef, useEffect } from 'react';
 import AI_CONFIG from '@/lib/ai-config';
 import hljs from "highlight.js";
