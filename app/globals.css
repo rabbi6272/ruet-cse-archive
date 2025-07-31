@@ -49,6 +49,102 @@ body {
   animation: pulse 0.5s ease-in-out;
 }
 
+/* AI Assistant Enhanced Styling */
+.ai-chat-container {
+  scrollbar-width: thin;
+  scrollbar-color: #fbbf24 #f9fafb;
+}
+
+.ai-chat-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.ai-chat-container::-webkit-scrollbar-track {
+  background: #f9fafb;
+}
+
+.ai-chat-container::-webkit-scrollbar-thumb {
+  background: #fbbf24;
+  border-radius: 2px;
+}
+
+.ai-chat-container::-webkit-scrollbar-thumb:hover {
+  background: #f59e0b;
+}
+
+/* Enhanced markdown styling for AI responses */
+.ai-message h1,
+.ai-message h2,
+.ai-message h3 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.ai-message code {
+  border-radius: 0.25rem;
+  font-family: "Courier New", monospace;
+}
+
+.ai-message pre {
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.ai-message blockquote {
+  border-radius: 0.25rem;
+}
+
+/* Code block copy button styling */
+.ai-message .copy-button {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.ai-message .code-block:hover .copy-button {
+  opacity: 1;
+}
+
+.ai-message button {
+  transition: all 0.2s ease;
+}
+
+.ai-message button:hover {
+  transform: scale(1.05);
+}
+
+/* Pikachu themed animations */
+@keyframes electric-glow {
+  0%,
+  100% {
+    text-shadow: 0 0 5px #fbbf24, 0 0 10px #fbbf24, 0 0 15px #fbbf24;
+  }
+  50% {
+    text-shadow: 0 0 10px #f59e0b, 0 0 20px #f59e0b, 0 0 30px #f59e0b;
+  }
+}
+
+.electric-glow {
+  animation: electric-glow 2s ease-in-out infinite;
+}
+
+/* Nutrinos badge styling */
+.nutrinos-badge {
+  background: linear-gradient(45deg, #10b981, #059669);
+  animation: nutrinos-pulse 2s ease-in-out infinite;
+}
+
+@keyframes nutrinos-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.8);
+  }
+}
+
 /* Code snippet max height for expand/collapse */
 .max-h-70 {
   max-height: 280px; /* Equivalent to max-h-70 in Tailwind (70 * 4px = 280px) */
