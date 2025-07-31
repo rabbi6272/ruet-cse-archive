@@ -94,20 +94,113 @@ const formatBotMessage = (text) => {
 
 export default function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      text: AI_CONFIG.behavior.welcomeMessage,
-      sender: 'bot',
-      timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
-    }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const chatBodyRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  // Check for logged-in user
+  useEffect(() => {
+    const checkUser = () => {
+      try {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          // Check if user session is still valid
+          if (user.expiry && new Date().getTime() < user.expiry) {
+            setCurrentUser(user);
+          } else {
+            // Session expired, remove from localStorage
+            localStorage.removeItem('user');
+            setCurrentUser(null);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking user login:', error);
+        setCurrentUser(null);
+      }
+    };
+
+    checkUser();
+    
+    // Check periodically for user login changes
+    const interval = setInterval(checkUser, 5000); // Check every 5 seconds
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Load chat history from localStorage on component mount
+  useEffect(() => {
+    const loadChatHistory = () => {
+      try {
+        const savedMessages = localStorage.getItem('pikachu_chat_history');
+        if (savedMessages) {
+          const parsedMessages = JSON.parse(savedMessages);
+          setMessages(parsedMessages);
+        } else {
+          // If no history, start with welcome message
+          const welcomeMessage = {
+            id: 1,
+            text: getPersonalizedWelcomeMessage(),
+            sender: 'bot',
+            timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
+          };
+          setMessages([welcomeMessage]);
+          localStorage.setItem('pikachu_chat_history', JSON.stringify([welcomeMessage]));
+        }
+      } catch (error) {
+        console.error('Error loading chat history:', error);
+        // Fallback to welcome message if localStorage fails
+        const welcomeMessage = {
+          id: 1,
+          text: getPersonalizedWelcomeMessage(),
+          sender: 'bot',
+          timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
+        };
+        setMessages([welcomeMessage]);
+      }
+    };
+
+    loadChatHistory();
+  }, [currentUser]); // Re-run when user login status changes
+
+  // Function to get personalized welcome message
+  const getPersonalizedWelcomeMessage = () => {
+    if (currentUser && currentUser.name) {
+      const firstName = currentUser.name.split(' ')[0];
+      return `Yoooo ${firstName} mama! ⚡ Ami Pikachu, tumader chaotic digital classmate! Dekho ${firstName}, RUET CSE Archive er shob kichu jani, Nutrinos system theke shuru kore Section C er shob ghotona! Aj ki korbo? Sikhan vai naki kibabe sombob? 😎`;
+    }
+    return AI_CONFIG.behavior.welcomeMessage;
+  };
+
+  // Save messages to localStorage whenever messages change
+  useEffect(() => {
+    if (messages.length > 0) {
+      try {
+        // Limit chat history to last 50 messages to prevent localStorage overflow
+        const limitedMessages = messages.length > 50 ? messages.slice(-50) : messages;
+        localStorage.setItem('pikachu_chat_history', JSON.stringify(limitedMessages));
+        
+        // Update state if we trimmed messages
+        if (messages.length > 50 && limitedMessages.length !== messages.length) {
+          setMessages(limitedMessages);
+        }
+      } catch (error) {
+        console.error('Error saving chat history:', error);
+        // If localStorage is full, try to clear some space
+        if (error.name === 'QuotaExceededError') {
+          console.warn('localStorage quota exceeded, clearing old chat history');
+          const recentMessages = messages.slice(-20); // Keep only last 20 messages
+          setMessages(recentMessages);
+          localStorage.setItem('pikachu_chat_history', JSON.stringify(recentMessages));
+        }
+      }
+    }
+  }, [messages]);
 
   // Copy to clipboard function
   const copyToClipboard = async (elementId, buttonElement) => {
@@ -202,6 +295,25 @@ export default function AIAssistant() {
     setIsOpen(!isOpen);
   };
 
+  // Function to clear chat history
+  const clearChatHistory = () => {
+    if (window.confirm('Ami ki chat history clear kore dibo? Eta undo kora jabe na! 🤔')) {
+      try {
+        localStorage.removeItem('pikachu_chat_history');
+        const welcomeMessage = {
+          id: Date.now(),
+          text: getPersonalizedWelcomeMessage(),
+          sender: 'bot',
+          timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
+        };
+        setMessages([welcomeMessage]);
+        localStorage.setItem('pikachu_chat_history', JSON.stringify([welcomeMessage]));
+      } catch (error) {
+        console.error('Error clearing chat history:', error);
+      }
+    }
+  };
+
   const sendMessage = async (customMessage = null) => {
     const message = customMessage || inputMessage.trim();
     if (!message || isLoading) return;
@@ -233,7 +345,11 @@ export default function AIAssistant() {
         },
         body: JSON.stringify({
           message,
-          chatHistory
+          chatHistory,
+          userInfo: currentUser ? {
+            name: currentUser.name,
+            roll: currentUser.roll
+          } : null
         }),
       });
 
@@ -397,10 +513,31 @@ ${fileContent}
             />
             <span className="hidden text-lg">⚡</span>
           </div>
-          <span className="font-semibold">{AI_CONFIG.appearance.name}</span>
+          <span className="font-semibold flex-1">
+            {AI_CONFIG.appearance.name}
+            {currentUser && (
+              <span className="block text-xs font-normal opacity-90">
+                Hey {currentUser.name.split(' ')[0]}! 👋
+              </span>
+            )}
+          </span>
+          
+          {/* Clear Chat Button */}
+          <button 
+            onClick={clearChatHistory}
+            className="mr-2 text-white/80 hover:text-white focus:outline-none p-1 rounded hover:bg-white/10 transition-colors"
+            title="Clear chat history"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd" />
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 012 0v4a1 1 0 11-2 0V7zM12 7a1 1 0 012 0v4a1 1 0 11-2 0V7z" clipRule="evenodd" />
+            </svg>
+          </button>
+
+          {/* Close Chat Button */}
           <button 
             onClick={toggleChat}
-            className="ml-auto text-white/80 hover:text-white focus:outline-none"
+            className="text-white/80 hover:text-white focus:outline-none"
             title="Close chat"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

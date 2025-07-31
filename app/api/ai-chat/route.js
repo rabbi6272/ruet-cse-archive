@@ -50,16 +50,25 @@ async function enhanceResponseWithSearch(userMessage, aiResponse) {
 
 export async function POST(request) {
   try {
-    const { message, chatHistory = [] } = await request.json();
+    const { message, chatHistory = [], userInfo = null } = await request.json();
 
     if (!message) {
       return Response.json({ error: 'Message is required' }, { status: 400 });
     }
 
+    // Create user context for Gemini
+    let userContext = "";
+    if (userInfo && userInfo.name) {
+      const firstName = userInfo.name.split(' ')[0];
+      userContext = `\n**CURRENT USER INFO:**\n- User Name: ${userInfo.name}\n- First Name: ${firstName}\n- Roll Number: ${userInfo.roll}\n- Status: Logged in to RUET CSE Archive\n- Call them by their first name (${firstName}) when appropriate!\n\n`;
+    } else {
+      userContext = "\n**CURRENT USER INFO:**\n- Status: Anonymous visitor (not logged in)\n- Use general greetings like 'mama' or 'vai'\n\n";
+    }
+
     // Create the model with Flash 2.5
     const model = genAI.getGenerativeModel({ 
       model: AI_CONFIG.api.model,
-      systemInstruction: getSystemInstructions()
+      systemInstruction: getSystemInstructions() + userContext
     });
 
     // Prepare chat history for Gemini (exclude initial bot welcome message)
