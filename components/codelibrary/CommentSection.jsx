@@ -543,7 +543,7 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
 
   const renderText = (text) => {
     // Replace mentions with styled spans - updated regex to match the new mention format
-    return text.replace(/@([^(]+)\((\d+)\)/g, '<span class="text-blue-500 font-medium">@$1</span>');
+    return text.replace(/@([^(]+)\((\d+)\)/g, '<span className="text-blue-500 font-medium">@$1</span>');
   };
 
   const toggleExpandReplies = (commentId) => {

@@ -232,7 +232,7 @@ export function FeaturesList() {
               className="bg-white dark:bg-gray-800 w-full lg:w-[330px] rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700"
             >
               <div className="p-4">
-                <i class="fa-solid fa-file-pdf pb-4 text-5xl text-gray-700 dark:text-gray-300 "></i>
+                <i className="fa-solid fa-file-pdf pb-4 text-5xl text-gray-700 dark:text-gray-300 "></i>
 
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                   How will this site be beneficial?
@@ -266,7 +266,7 @@ export function FeaturesList() {
               className="bg-white dark:bg-gray-800 w-full  lg:w-[330px] rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700"
             >
               <div className="p-4">
-                <i class="fa-solid fa-file-code pb-4 text-5xl text-gray-700 dark:text-gray-300 "></i>
+                <i className="fa-solid fa-file-code pb-4 text-5xl text-gray-700 dark:text-gray-300 "></i>
 
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                   How will the Code Library help you?
@@ -299,7 +299,7 @@ export function FeaturesList() {
               className="bg-white dark:bg-gray-800 w-full  lg:w-[330px] rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700"
             >
               <div className="p-4">
-                <i class="fa-solid fa-paper-plane pb-4 text-5xl text-gray-700 dark:text-gray-300 "></i>
+                <i className="fa-solid fa-paper-plane pb-4 text-5xl text-gray-700 dark:text-gray-300 "></i>
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                   Want to suggest a feature or ask something?
                 </h3>
