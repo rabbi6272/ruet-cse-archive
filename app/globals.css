@@ -12,6 +12,25 @@
   background-color: #111827 !important; /* Corresponds to Tailwind's gray-900 */
 }
 
+/* Dark mode scrollbar for AI chat */
+.dark .ai-chat-container {
+  scrollbar-width: thin;
+  scrollbar-color: #fbbf24 #374151;
+}
+
+.dark .ai-chat-container::-webkit-scrollbar-track {
+  background: #374151;
+}
+
+.dark .ai-chat-container::-webkit-scrollbar-thumb {
+  background: #3b82f6;
+  border-radius: 2px;
+}
+
+.dark .ai-chat-container::-webkit-scrollbar-thumb:hover {
+  background: #2563eb;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -52,7 +71,7 @@ body {
 /* AI Assistant Enhanced Styling */
 .ai-chat-container {
   scrollbar-width: thin;
-  scrollbar-color: #fbbf24 #f9fafb;
+  scrollbar-color: #3b82f6 #f9fafb;
 }
 
 .ai-chat-container::-webkit-scrollbar {
@@ -64,12 +83,12 @@ body {
 }
 
 .ai-chat-container::-webkit-scrollbar-thumb {
-  background: #fbbf24;
+  background: #3b82f6;
   border-radius: 2px;
 }
 
 .ai-chat-container::-webkit-scrollbar-thumb:hover {
-  background: #f59e0b;
+  background: #2563eb;
 }
 
 /* Enhanced markdown styling for AI responses */

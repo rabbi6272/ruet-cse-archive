@@ -5,9 +5,9 @@ import AI_CONFIG from '@/lib/ai-config';
 import hljs from "highlight.js";
 import "highlight.js/styles/monokai.css";
 
-// Enhanced format bot messages with comprehensive Markdown support
+
 const formatBotMessage = (text) => {
-  // Generate unique IDs for code blocks
+ 
   let codeBlockCounter = 0;
   
   // First, protect code blocks from HTML cleaning by temporarily replacing them
@@ -50,9 +50,9 @@ const formatBotMessage = (text) => {
   
   return cleanedText
     // Headers (### Header, ## Header, # Header)
-    .replace(/^### (.*$)/gm, '<h3 className="text-lg font-bold text-gray-800 mt-3 mb-2">$1</h3>')
-    .replace(/^## (.*$)/gm, '<h2 className="text-xl font-bold text-gray-900 mt-4 mb-2">$1</h2>')
-    .replace(/^# (.*$)/gm, '<h1 className="text-2xl font-bold text-gray-900 mt-4 mb-3">$1</h1>')
+    .replace(/^### (.*$)/gm, '<h3 class="text-lg font-bold text-gray-800 dark:text-[#CDEAFC] mt-3 mb-2">$1</h3>')
+    .replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold text-gray-900 dark:text-[#CDEAFC] mt-4 mb-2">$1</h2>')
+    .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold text-gray-900 dark:text-[#CDEAFC] mt-4 mb-3">$1</h1>')
     
     // Code blocks with triple backticks ```code``` - with copy button (PROCESS FIRST)
     .replace(/```(\w+)?\s*([\s\S]*?)```/g, (match, language, code) => {
@@ -89,39 +89,39 @@ const formatBotMessage = (text) => {
     })
     
     // Bold text **text** (PROCESS AFTER CODE)
-    .replace(/\*\*(.*?)\*\*/g, '<strong className="font-semibold text-gray-900">$1</strong>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900 dark:text-[#CDEAFC]">$1</strong>')
     
     // Italic text *text* - avoid affecting code elements (PROCESS LAST for text formatting)
-    .replace(/\*([^*<>]+)\*/g, '<em className="italic text-gray-700">$1</em>')
+    .replace(/\*([^*<>]+)\*/g, '<em class="italic text-gray-700 dark:text-gray-300">$1</em>')
     
     // Links with markdown [text](url) and direct links
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" className="text-yellow-600 hover:text-yellow-800 underline font-medium" target="_blank">$1</a>')
-    .replace(/🔗 Go to: (\/[\w\/\-]*)/g, '<a href="$1" className="text-yellow-600 hover:text-yellow-800 underline font-medium" target="_blank">🔗 Go to: $1</a>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline font-medium" target="_blank">$1</a>')
+    .replace(/🔗 Go to: (\/[\w\/\-]*)/g, '<a href="$1" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline font-medium" target="_blank">🔗 Go to: $1</a>')
     
     // Blockquotes > text
-    .replace(/^> (.*$)/gm, '<blockquote className="border-l-4 border-yellow-400 pl-4 py-2 bg-yellow-50 italic text-gray-700 my-2">$1</blockquote>')
+    .replace(/^> (.*$)/gm, '<blockquote class="border-l-4 border-blue-400 pl-4 py-2 bg-blue-50 dark:bg-blue-900/20 italic text-gray-700 dark:text-gray-300 my-2">$1</blockquote>')
     
     // Bullet points with dashes, asterisks, and plus
-    .replace(/^[-*+] (.*$)/gm, '<div className="flex items-start my-1"><span className="text-yellow-500 mr-2 mt-1">•</span><span className="flex-1">$1</span></div>')
+    .replace(/^[-*+] (.*$)/gm, '<div class="flex items-start my-1"><span class="text-blue-500 mr-2 mt-1">•</span><span class="flex-1">$1</span></div>')
     
     // Numbered lists
-    .replace(/^(\d+)\. (.*$)/gm, '<div className="flex items-start my-1"><span className="text-yellow-600 font-semibold mr-2 min-w-[1.5rem]">$1.</span><span className="flex-1">$2</span></div>')
+    .replace(/^(\d+)\. (.*$)/gm, '<div class="flex items-start my-1"><span class="text-blue-600 font-semibold mr-2 min-w-[1.5rem]">$1.</span><span class="flex-1">$2</span></div>')
     
     // Emojis at start of lines with enhanced styling
-    .replace(/^(📚|💻|🔍|❓|🏠|📝|💡|🎓|⚡|🤖|📖|📊|🌐|🎯|🚀|⭐|🔥|💫) (.*$)/gm, '<div className="flex items-start my-2 p-2 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg"><span className="text-xl mr-3">$1</span><span className="flex-1">$2</span></div>')
+    .replace(/^(📚|💻|🔍|❓|🏠|📝|💡|🎓|⚡|🤖|📖|📊|🌐|🎯|🚀|⭐|🔥|💫) (.*$)/gm, '<div class="flex items-start my-2 p-2 bg-gradient-to-r from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-800/20 rounded-lg"><span class="text-xl mr-3">$1</span><span class="flex-1">$2</span></div>')
     
     // Special Pikachu/Electric themed elements
-    .replace(/⚡/g, '<span className="text-yellow-500 animate-pulse">⚡</span>')
-    .replace(/Pika pika!/g, '<span className="text-yellow-600 font-bold animate-bounce">Pika pika!</span>')
-    .replace(/Nutrinos/g, '<span className="text-green-600 font-semibold bg-green-100 px-1 rounded">Nutrinos</span>')
+    .replace(/⚡/g, '<span class="text-blue-500 animate-pulse">⚡</span>')
+    .replace(/Pika pika!/g, '<span class="text-blue-600 font-bold animate-bounce">Pika pika!</span>')
+    .replace(/Nutrinos/g, '<span class="text-green-600 font-semibold bg-green-100 dark:bg-green-900/30 dark:text-green-400 px-1 rounded">Nutrinos</span>')
     
     // Horizontal rules ---
-    .replace(/^---$/gm, '<hr className="border-t-2 border-yellow-200 my-4">')
+    .replace(/^---$/gm, '<hr class="border-t-2 border-blue-200 dark:border-blue-600 my-4">')
     
     // Tables (basic support)
     .replace(/\|(.+)\|/g, (match, content) => {
       const cells = content.split('|').map(cell => cell.trim());
-      return `<div className="grid grid-cols-${cells.length} gap-2 border border-gray-200 rounded p-2 my-2">${cells.map(cell => `<div className="p-1 text-sm">${cell}</div>`).join('')}</div>`;
+      return `<div class="grid grid-cols-${cells.length} gap-2 border border-gray-200 dark:border-gray-600 rounded p-2 my-2">${cells.map(cell => `<div class="p-1 text-sm">${cell}</div>`).join('')}</div>`;
     })
     
     // Line breaks (convert \n to <br> but preserve structure) - PROCESS LAST
@@ -136,59 +136,122 @@ export default function AIAssistant() {
   const [isLoading, setIsLoading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true); // Track if we should auto-scroll
+  const [userSentMessage, setUserSentMessage] = useState(false); // Track if user just sent a message
+  const [isHydrated, setIsHydrated] = useState(false); // Track hydration status
+  const [messageQuota, setMessageQuota] = useState({ count: 3, resetTime: null }); // Message quota for non-logged-in users
   const chatBodyRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Check for logged-in user
+  // Hydration effect - runs only on client side
   useEffect(() => {
-    const checkUser = () => {
-      try {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-          const user = JSON.parse(userData);
-          // Check if user session is still valid
-          if (user.expiry && new Date().getTime() < user.expiry) {
-            setCurrentUser(user);
-          } else {
-            // Session expired, remove from localStorage
-            localStorage.removeItem('user');
-            setCurrentUser(null);
-          }
-        }
-      } catch (error) {
-        console.error('Error checking user login:', error);
-        setCurrentUser(null);
-      }
-    };
-
-    checkUser();
+    // Add small delay to ensure hydration is complete
+    const timer = setTimeout(() => {
+      setIsHydrated(true);
+    }, 100);
     
-    // Check periodically for user login changes
-    const interval = setInterval(checkUser, 5000); // Check every 5 seconds
-    
-    return () => clearInterval(interval);
+    return () => clearTimeout(timer);
   }, []);
 
-  // Message quota system for non-logged-in users
-  const [messageQuota, setMessageQuota] = useState({ count: 3, resetTime: null });
+  // Check for logged-in user
+  useEffect(() => {
+    // Only run on client side after hydration
+    if (!isHydrated) return;
+
+    // Add delay to prevent hydration issues
+    const userCheckTimer = setTimeout(() => {
+      const checkUser = () => {
+        try {
+          const userData = localStorage.getItem('user');
+          if (userData) {
+            const user = JSON.parse(userData);
+            // Check if user session is still valid
+            if (user.expiry && new Date().getTime() < user.expiry) {
+              setCurrentUser(user);
+            } else {
+              // Session expired, remove from localStorage
+              localStorage.removeItem('user');
+              setCurrentUser(null);
+            }
+          }
+        } catch (error) {
+          console.error('Error checking user login:', error);
+          setCurrentUser(null);
+        }
+      };
+
+      checkUser();
+      
+      // Check periodically for user login changes
+      const interval = setInterval(checkUser, 5000); // Check every 5 seconds
+      
+      return () => clearInterval(interval);
+    }, 25); // Smaller delay for user check
+
+    return () => clearTimeout(userCheckTimer);
+  }, [isHydrated]);
 
   // Load chat history and message quota from localStorage on component mount
   useEffect(() => {
-    const loadChatHistory = () => {
-      try {
-        const savedMessages = localStorage.getItem('pikachu_chat_history');
-        if (savedMessages) {
-          const parsedMessages = JSON.parse(savedMessages);
-          // Sanitize all loaded messages only if they're not already strings
-          const sanitizedMessages = parsedMessages.map(msg => ({
-            ...msg,
-            text: typeof msg.text === 'string' ? msg.text : sanitizeMessageText(msg.text)
-          }));
-          setMessages(sanitizedMessages);
-        } else {
-          // If no history, start with welcome message
-          const initializeWelcome = async () => {
+    // Only run on client side after hydration
+    if (!isHydrated) return;
+
+    // Add additional delay to ensure DOM is fully ready
+    const loadTimer = setTimeout(() => {
+      const loadChatHistory = () => {
+        try {
+          const savedMessages = localStorage.getItem('pikachu_chat_history');
+          if (savedMessages) {
+            const parsedMessages = JSON.parse(savedMessages);
+            // Sanitize all loaded messages only if they're not already strings
+            const sanitizedMessages = parsedMessages.map(msg => ({
+              ...msg,
+              text: typeof msg.text === 'string' ? msg.text : sanitizeMessageText(msg.text)
+            }));
+            setMessages(sanitizedMessages);
+          } else {
+            // If no history, start with welcome message
+            const initializeWelcome = async () => {
+              const welcomeText = await getPersonalizedWelcomeMessage();
+              const welcomeMessage = {
+                id: 1,
+                text: welcomeText,
+                sender: 'bot',
+                timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
+              };
+              setMessages([welcomeMessage]);
+              localStorage.setItem('pikachu_chat_history', JSON.stringify([welcomeMessage]));
+            };
+            initializeWelcome();
+          }
+
+          // Load message quota for non-logged-in users
+          if (!currentUser) {
+            const savedQuota = localStorage.getItem('pikachu_message_quota');
+            if (savedQuota) {
+              const quotaData = JSON.parse(savedQuota);
+              const now = new Date().getTime();
+              
+              // Check if quota has reset (3 hours passed)
+              if (quotaData.resetTime && now >= quotaData.resetTime) {
+                // Reset quota
+                const newQuota = { count: 3, resetTime: null };
+                setMessageQuota(newQuota);
+                localStorage.setItem('pikachu_message_quota', JSON.stringify(newQuota));
+              } else {
+                setMessageQuota(quotaData);
+              }
+            }
+          } else {
+            // Clear quota for logged-in users
+            localStorage.removeItem('pikachu_message_quota');
+            setMessageQuota({ count: 3, resetTime: null });
+          }
+        } catch (error) {
+          console.error('Error loading chat history:', error);
+          // Fallback to welcome message if localStorage fails
+          const initializeFallbackWelcome = async () => {
             const welcomeText = await getPersonalizedWelcomeMessage();
             const welcomeMessage = {
               id: 1,
@@ -197,54 +260,18 @@ export default function AIAssistant() {
               timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
             };
             setMessages([welcomeMessage]);
-            localStorage.setItem('pikachu_chat_history', JSON.stringify([welcomeMessage]));
           };
-          initializeWelcome();
+          initializeFallbackWelcome();
         }
+      };
 
-        // Load message quota for non-logged-in users
-        if (!currentUser) {
-          const savedQuota = localStorage.getItem('pikachu_message_quota');
-          if (savedQuota) {
-            const quotaData = JSON.parse(savedQuota);
-            const now = new Date().getTime();
-            
-            // Check if quota has reset (3 hours passed)
-            if (quotaData.resetTime && now >= quotaData.resetTime) {
-              // Reset quota
-              const newQuota = { count: 3, resetTime: null };
-              setMessageQuota(newQuota);
-              localStorage.setItem('pikachu_message_quota', JSON.stringify(newQuota));
-            } else {
-              setMessageQuota(quotaData);
-            }
-          }
-        } else {
-          // Clear quota for logged-in users
-          localStorage.removeItem('pikachu_message_quota');
-          setMessageQuota({ count: 3, resetTime: null });
-        }
-      } catch (error) {
-        console.error('Error loading chat history:', error);
-        // Fallback to welcome message if localStorage fails
-        const initializeFallbackWelcome = async () => {
-          const welcomeText = await getPersonalizedWelcomeMessage();
-          const welcomeMessage = {
-            id: 1,
-            text: welcomeText,
-            sender: 'bot',
-            timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
-          };
-          setMessages([welcomeMessage]);
-        };
-        initializeFallbackWelcome();
-      }
-    };
+      loadChatHistory();
+    }, 50); // Small delay after hydration
 
-    loadChatHistory();
-  }, [currentUser]); // Re-run when user login status changes
+    return () => clearTimeout(loadTimer);
+  }, [isHydrated, currentUser]);
 
-  // Function to sanitize message text to prevent object serialization
+
   const sanitizeMessageText = (text) => {
     // If it's already a string, return as is
     if (typeof text === 'string') return text;
@@ -461,10 +488,26 @@ export default function AIAssistant() {
 
   // Auto-scroll to bottom when new messages are added
   useEffect(() => {
-    if (chatBodyRef.current) {
+    if (chatBodyRef.current && (shouldAutoScroll || userSentMessage)) {
       chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+      setUserSentMessage(false); // Reset the flag after scrolling
     }
-  }, [messages]);
+  }, [messages, shouldAutoScroll, userSentMessage]);
+
+  // Track scroll position to determine if user is at bottom
+  useEffect(() => {
+    const chatBody = chatBodyRef.current;
+    if (!chatBody) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = chatBody;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 50; // 50px threshold
+      setShouldAutoScroll(isNearBottom);
+    };
+
+    chatBody.addEventListener('scroll', handleScroll);
+    return () => chatBody.removeEventListener('scroll', handleScroll);
+  }, [isOpen]); // Re-attach when chat opens
 
   // Apply syntax highlighting when messages change (matching codelibrary implementation)
   const needsHighlightRef = useRef(false);
@@ -493,10 +536,17 @@ export default function AIAssistant() {
     return () => clearTimeout(timeout);
   }, [messages]);
 
-  // Focus input when chat opens
+  // Focus input when chat opens and scroll to bottom
   useEffect(() => {
     if (isOpen && inputRef.current) {
-      setTimeout(() => inputRef.current.focus(), 100);
+      setTimeout(() => {
+        inputRef.current.focus();
+        // Scroll to bottom when chat opens
+        if (chatBodyRef.current) {
+          chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+          setShouldAutoScroll(true); // Reset auto-scroll when opening
+        }
+      }, 100);
     }
   }, [isOpen]);
 
@@ -592,6 +642,9 @@ export default function AIAssistant() {
         return;
       }
 
+      // Use quota for non-logged-in users
+      useMessageQuota();
+
       // Get the raw message first - handle mobile input properly
       let rawMessage;
       if (customMessage !== null) {
@@ -613,9 +666,6 @@ export default function AIAssistant() {
         return;
       }
 
-      // Use quota for non-logged-in users
-      useMessageQuota();
-
       // Check for battery command
       if (message.toLowerCase().includes('battery') || message.toLowerCase().includes('charge')) {
         const batteryInfo = await getBatteryInfo();
@@ -631,6 +681,7 @@ export default function AIAssistant() {
           sender: 'user',
           timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
         }, batteryMessage]);
+        setUserSentMessage(true); // Flag that user sent a message
         if (!customMessage) setInputMessage('');
         return;
       }
@@ -644,6 +695,7 @@ export default function AIAssistant() {
       };
 
       setMessages(prev => [...prev, userMessage]);
+      setUserSentMessage(true); // Flag that user sent a message, so we should auto-scroll
       if (!customMessage) setInputMessage(''); // Only clear input if it's a manual message
       setIsLoading(true);
 
@@ -809,13 +861,18 @@ ${fileContent}
     }
   }, [isOpen]);
 
+  // Only render after hydration to prevent SSR mismatch
+  if (!isHydrated) {
+    return null; // Don't show anything during SSR
+  }
+
   return (
     <>
-      {/* Floating Chat Button */}
+      {/* Floating Chat Button - Available for all users */}
       <button
         id="chatToggleBtn"
         onClick={toggleChat}
-        className="fixed bottom-5 right-5 w-16 h-16 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full shadow-lg flex items-center justify-center text-2xl z-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-opacity-50 hover:scale-110 hover:shadow-xl"
+        className="fixed bottom-5 right-5 w-16 h-16 bg-blue-500 hover:bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center text-2xl z-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 hover:scale-110 hover:shadow-xl"
         title="Open Pikachu Assistant"
       >
         {isOpen ? AI_CONFIG.appearance.closeIcon : (
@@ -835,7 +892,7 @@ ${fileContent}
       {/* Chat Popup */}
       <div
         id="chatPopup"
-        className={`fixed bottom-28 right-5 w-80 sm:w-96 max-w-[calc(100vw-2.5rem)] bg-white shadow-xl rounded-xl overflow-hidden border border-gray-200 z-50 transition-all duration-300 transform-gpu ${
+        className={`fixed bottom-28 right-5 w-80 sm:w-96 max-w-[calc(100vw-2.5rem)] bg-white dark:bg-[#152732] shadow-xl rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 z-50 transition-all duration-300 transform-gpu ${
           isOpen 
             ? 'scale-100 opacity-100' 
             : 'scale-0 opacity-0 pointer-events-none'
@@ -843,7 +900,7 @@ ${fileContent}
         style={{ transformOrigin: 'bottom right' }}
       >
         {/* Header */}
-        <div className="flex items-center px-3 py-2 border-b border-gray-200 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white">
+        <div className="flex items-center px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-500 to-blue-600 text-white">
           <div className="w-7 h-7 mr-2 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
             <img 
               src={AI_CONFIG.appearance.avatar} 
@@ -892,20 +949,20 @@ ${fileContent}
         {/* Chat Body */}
         <div 
           ref={chatBodyRef}
-          className="p-3 h-80 overflow-y-auto space-y-2 text-sm bg-gray-50 ai-chat-container"
+          className="p-3 h-80 overflow-y-auto space-y-2 text-sm bg-gray-50 dark:bg-[#152732] ai-chat-container"
         >
           {messages.map((message) => (
             <div key={message.id}>
               <div 
                 className={`max-w-[85%] p-3 rounded-2xl word-wrap break-words ${
                   message.sender === 'user'
-                    ? 'bg-yellow-500 text-white ml-auto'
-                    : 'bg-white text-gray-800 border border-gray-200 shadow-sm'
+                    ? 'bg-blue-500 text-white ml-auto'
+                    : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-[#CDEAFC] border border-gray-200 dark:border-gray-600 shadow-sm'
                 }`}
               >
                 {message.sender === 'bot' ? (
                   <div 
-                    className="ai-message prose prose-sm max-w-none prose-yellow prose-headings:text-gray-900 prose-code:text-yellow-800 prose-code:bg-yellow-100"
+                    className="ai-message prose prose-sm max-w-none prose-blue prose-headings:text-gray-900 dark:prose-headings:text-[#CDEAFC] prose-code:text-blue-800 dark:prose-code:text-blue-300 prose-code:bg-blue-100 dark:prose-code:bg-blue-900/30"
                     dangerouslySetInnerHTML={{
                       __html: formatBotMessage(message.text)
                     }}
@@ -917,7 +974,7 @@ ${fileContent}
                 )}
               </div>
               <div 
-                className={`text-xs text-gray-500 mt-1 ${
+                className={`text-xs text-gray-500 dark:text-gray-400 mt-1 ${
                   message.sender === 'user' ? 'text-right' : ''
                 }`}
               >
@@ -943,9 +1000,32 @@ ${fileContent}
           )}
         </div>
 
+        {/* Scroll to Bottom Button - appears when user is scrolled up */}
+        {!shouldAutoScroll && (
+          <div className="absolute bottom-2 right-2 z-10">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (chatBodyRef.current) {
+                  chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+                  setShouldAutoScroll(true);
+                }
+              }}
+              className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg transition-all duration-200 flex items-center space-x-1 text-xs"
+              title="Scroll to bottom"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M14.707 12.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V3a1 1 0 112 0v11.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              <span>New</span>
+            </button>
+          </div>
+        )}
+
         {/* File Upload Info */}
-        <div className="px-3 py-2 bg-gradient-to-r from-blue-50 to-yellow-50 border-t border-gray-200">
-          <div className="flex items-center text-xs text-gray-600">
+        <div className="px-3 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
             </svg>
@@ -954,13 +1034,13 @@ ${fileContent}
         </div>
 
         {/* Input Area */}
-        <div className="flex items-center border-t border-gray-200 p-3 bg-white ai-chat-input-area">
-          <div className="flex items-center w-full bg-gray-100 rounded-full border border-gray-300 focus-within:border-yellow-400 focus-within:ring-2 focus-within:ring-yellow-400 focus-within:ring-opacity-30 transition-all duration-200">
+        <div className="flex items-center border-t border-gray-200 dark:border-gray-700 p-3 bg-white dark:bg-[#152732] ai-chat-input-area">
+          <div className="flex items-center w-full bg-gray-100 dark:bg-gray-800 rounded-full border border-gray-300 dark:border-gray-600 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400 focus-within:ring-opacity-30 transition-all duration-200">
             {/* File upload button - Attachment Icon */}
             <button
               onClick={triggerFileUpload}
               disabled={isLoading || (!currentUser && messageQuota.count === 0)}
-              className="ml-3 p-2 w-10 h-10 flex items-center justify-center rounded-full text-gray-500 hover:text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="ml-3 p-2 w-10 h-10 flex items-center justify-center rounded-full text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               title="Upload code file (max 100KB)"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -981,14 +1061,14 @@ ${fileContent}
                   : AI_CONFIG.behavior.placeholder
               }
               disabled={isLoading || (!currentUser && messageQuota.count === 0)}
-              className="flex-1 text-sm px-4 py-3 bg-transparent border-none focus:outline-none disabled:opacity-50 placeholder-gray-500"
+              className="flex-1 text-sm px-4 py-3 bg-transparent border-none focus:outline-none disabled:opacity-50 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-[#CDEAFC]"
             />
 
             {/* Send button - Airplane Icon */}
             <button
               onClick={handleSendClick}
               disabled={!inputMessage.trim() || isLoading || (!currentUser && messageQuota.count === 0)}
-              className="mr-3 p-2 w-10 h-10 flex items-center justify-center rounded-full bg-yellow-500 text-white hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-opacity-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 disabled:bg-gray-300"
+              className="mr-3 p-2 w-10 h-10 flex items-center justify-center rounded-full bg-blue-500 text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 disabled:bg-gray-300"
               title="Send message"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transform rotate-45" viewBox="0 0 20 20" fill="currentColor">
@@ -1009,7 +1089,7 @@ ${fileContent}
 
         {/* Message quota indicator for non-logged-in users */}
         {!currentUser && (
-          <div className="px-3 py-2 bg-white border-t border-gray-100 text-xs text-center">
+          <div className="px-3 py-2 bg-white dark:bg-[#152732] border-t border-gray-100 dark:border-gray-700 text-xs text-center">
             {messageQuota.count > 0 ? (
               <span className="text-green-600 bg-green-50 px-2 py-1 rounded-full">
                 ⚡ {messageQuota.count} messages left | 
@@ -1024,7 +1104,7 @@ ${fileContent}
         )}
 
         {/* Footer */}
-        <div className="text-center text-xs text-gray-400 py-2 bg-white border-t border-gray-100">
+        <div className="text-center text-xs text-gray-400 dark:text-gray-500 py-2 bg-white dark:bg-[#152732] border-t border-gray-100 dark:border-gray-700">
           Powered by <strong>Gemini Flash 2.5</strong>
         </div>
       </div>

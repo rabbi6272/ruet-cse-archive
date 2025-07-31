@@ -1,10 +1,99 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSystemInstructions, AI_CONFIG } from '@/lib/ai-config';
 import { performSearch, WEBSITE_KNOWLEDGE } from '@/lib/website-knowledge';
+import { 
+  getCurrentApiKey, 
+  markApiKeyAsFailed, 
+  rotateToNextApiKey,
+  getApiKeyStats,
+  resetFailedKeys 
+} from '@/lib/api-key-manager';
 
-// Initialize Gemini Flash 1.5 (more stable quota)
-const genAI = new GoogleGenerativeAI("AIzaSyBpMnoRGcBMG_oSxz0y9NOvYfBs1LNOMU8");
+// No need for static API key - will be managed dynamically
 
+// Helper function to create Gemini client with current API key
+async function createGeminiClient(retryCount = 0) {
+  const maxRetries = 3;
+  
+  try {
+    const apiKeyInfo = await getCurrentApiKey();
+    const genAI = new GoogleGenerativeAI(apiKeyInfo.key);
+    
+    console.log(`🤖 Created Gemini client with API key ${apiKeyInfo.index + 1}/${apiKeyInfo.totalKeys} (Failed: ${apiKeyInfo.failedKeys})`);
+    
+    return {
+      genAI,
+      apiKey: apiKeyInfo.key,
+      keyIndex: apiKeyInfo.index,
+      stats: apiKeyInfo
+    };
+  } catch (error) {
+    console.error(`❌ Failed to create Gemini client (attempt ${retryCount + 1}):`, error);
+    
+    if (retryCount < maxRetries) {
+      console.log(`🔄 Retrying with next API key...`);
+      await rotateToNextApiKey();
+      return createGeminiClient(retryCount + 1);
+    }
+    
+    throw new Error(`Failed to create Gemini client after ${maxRetries + 1} attempts: ${error.message}`);
+  }
+}
+
+// Helper function to handle API errors and retry with different keys
+async function executeWithRetry(operation, currentApiKey, retryCount = 0) {
+  const maxRetries = 3;
+  
+  try {
+    return await operation();
+  } catch (error) {
+    console.error(`❌ API Error (attempt ${retryCount + 1}):`, error.message);
+    
+    // Check if it's a quota/rate limit error
+    const isQuotaError = error.message?.toLowerCase().includes('quota') ||
+                        error.message?.toLowerCase().includes('rate limit') ||
+                        error.message?.toLowerCase().includes('resource_exhausted') ||
+                        error.message?.toLowerCase().includes('429') ||
+                        error.status === 429;
+    
+    const isInvalidKeyError = error.message?.toLowerCase().includes('api_key') ||
+                             error.message?.toLowerCase().includes('invalid') ||
+                             error.message?.toLowerCase().includes('authentication') ||
+                             error.status === 401 || error.status === 403;
+    
+    if ((isQuotaError || isInvalidKeyError) && retryCount < maxRetries) {
+      console.log(`🔄 ${isQuotaError ? 'Quota exhausted' : 'Invalid/Auth error'} - marking key as failed and trying next...`);
+      
+      // Mark current key as failed
+      await markApiKeyAsFailed(currentApiKey, error);
+      
+      // Get next API key and retry
+      try {
+        const newClient = await createGeminiClient();
+        const newModel = newClient.genAI.getGenerativeModel({ 
+          model: AI_CONFIG.api.model,
+          systemInstruction: operation.systemInstruction // Pass system instruction if available
+        });
+        
+        // Retry with new model
+        return await executeWithRetry(
+          () => operation.call ? operation.call(newModel) : operation(newModel), 
+          newClient.apiKey, 
+          retryCount + 1
+        );
+      } catch (retryError) {
+        console.error(`❌ Retry failed:`, retryError);
+        if (retryCount === maxRetries - 1) {
+          throw new Error(`All API keys exhausted. Last error: ${retryError.message}`);
+        }
+        throw retryError;
+      }
+    }
+    
+    // For non-quota errors or max retries reached, throw original error
+    throw error;
+  }
+}
 // Helper function to detect if user is asking for search
 function detectSearchIntent(message) {
   const searchKeywords = [
@@ -15,30 +104,6 @@ function detectSearchIntent(message) {
   
   const lowerMessage = message.toLowerCase();
   return searchKeywords.some(keyword => lowerMessage.includes(keyword));
-}
-
-// Helper function to detect code generation requests and deny them
-function detectCodeGenerationRequest(message) {
-  const codeGenKeywords = [
-    'generate code', 'write code', 'create code', 'make code', 'build code',
-    'code for', 'write a program', 'create a program', 'make a program',
-    'generate a function', 'write a function', 'create a function',
-    'write solution', 'give me code', 'provide code', 'show code',
-    'implement', 'coding solution', 'program to', 'algorithm code',
-    'write script', 'create script', 'generate script'
-  ];
-  
-  const lowerMessage = message.toLowerCase();
-  const isCodeGenRequest = codeGenKeywords.some(keyword => lowerMessage.includes(keyword));
-  
-  if (isCodeGenRequest) {
-    return {
-      detected: true,
-      denialMessage: "Arey vai! 🚫 Ami code generate kori na... I don't encourage you to use such prompt-based generation. Rather I am here to debug your code, give suggestions, help debug your code to boost your capability! 💪\n\nTumi code likho, ami help korbo:\n✅ Debug korte parbo\n✅ Tips dite parbo\n✅ Best practices suggest korte parbo\n✅ Logic explain korte parbo\n\nCode Library (/codelibrary) te giye examples dekho, tarpor nijei try koro! Eita tumake better programmer banabe 🚀⚡"
-    };
-  }
-  
-  return { detected: false };
 }
 
 // Helper function to detect course material requests and provide direct navigation
@@ -111,6 +176,8 @@ async function enhanceResponseWithSearch(userMessage, aiResponse) {
 }
 
 export async function POST(request) {
+  let clientInfo = null;
+  
   try {
     const { message, chatHistory = [], userInfo = null } = await request.json();
 
@@ -127,10 +194,15 @@ export async function POST(request) {
       userContext = "\n**CURRENT USER INFO:**\n- Status: Anonymous visitor (not logged in)\n- Use general greetings like 'mama' or 'vai'\n\n";
     }
 
-    // Create the model with Flash 2.5
-    const model = genAI.getGenerativeModel({ 
+    // Get API client with rotation
+    clientInfo = await createGeminiClient();
+    console.log(`📊 API Key Stats:`, getApiKeyStats());
+
+    // Create the model with Flash 2.5 and system instructions
+    const systemInstructions = getSystemInstructions() + userContext;
+    const model = clientInfo.genAI.getGenerativeModel({ 
       model: AI_CONFIG.api.model,
-      systemInstruction: getSystemInstructions() + userContext
+      systemInstruction: systemInstructions
     });
 
     // Prepare chat history for Gemini (exclude initial bot welcome message)
@@ -152,62 +224,97 @@ export async function POST(request) {
       history.shift(); // Remove first model message
     }
 
-    // Start chat with history
-    const chat = model.startChat({
-      history: history,
-      generationConfig: {
-        maxOutputTokens: AI_CONFIG.api.maxTokens,
-        temperature: AI_CONFIG.api.temperature,
-        topP: AI_CONFIG.api.topP,
-        topK: AI_CONFIG.api.topK,
-      },
-    });
-
-    // Send message and get response
-    const result = await chat.sendMessage(message);
-    const response = await result.response;
-    let botMessage = response.text();
-
-    // Check for code generation requests first (highest priority)
-    const codeGenRequest = detectCodeGenerationRequest(message);
-    if (codeGenRequest.detected) {
-      return Response.json({ 
-        message: codeGenRequest.denialMessage,
-        success: true 
-      });
-    }
-
-    // Check for course material requests second
+    // Check for course material requests
     const courseRequest = detectCourseRequest(message);
     if (courseRequest.detected) {
       // Add navigation link to the response
       const resourcesLink = `/resources?course=${encodeURIComponent(courseRequest.courseCode)}`;
       const driveLink = `/drive?search=${encodeURIComponent(courseRequest.courseCode)}`;
       
-      botMessage += `\n\n**🎯 Ami direct tumake course materials er kache niye jabo!**\n\n`;
+      let botMessage = `**🎯 Ami direct tumake course materials er kache niye jabo!**\n\n`;
       botMessage += `**${courseRequest.courseCode}** er jonno resources:\n`;
       botMessage += `🔗 **[Resources Page e jao](${resourcesLink})** - Structured course materials\n`;
       botMessage += `📁 **[Drive e search koro](${driveLink})** - All uploaded files\n\n`;
       botMessage += `Vai ekhane click korle direct course folder e chole jabe! Ar kono tension nai 😎⚡`;
-    } else {
-      // Don't mess with Gemini's response - let it output clean markdown
-      // Just enhance with search results if applicable
-      botMessage = await enhanceResponseWithSearch(message, botMessage);
+      
+      return Response.json({ 
+        message: botMessage,
+        success: true 
+      });
     }
+
+    // Execute chat with retry logic
+    const chatOperation = async (modelToUse = model) => {
+      const chat = modelToUse.startChat({
+        history: history,
+        generationConfig: {
+          maxOutputTokens: AI_CONFIG.api.maxTokens,
+          temperature: AI_CONFIG.api.temperature,
+          topP: AI_CONFIG.api.topP,
+          topK: AI_CONFIG.api.topK,
+        },
+      });
+
+      const result = await chat.sendMessage(message);
+      const response = await result.response;
+      return response.text();
+    };
+    
+    // Add system instructions to operation for retry purposes
+    chatOperation.systemInstruction = systemInstructions;
+
+    // Execute with automatic retry and API key rotation
+    let botMessage = await executeWithRetry(chatOperation, clientInfo.apiKey);
+
+    // Enhance with search results if applicable
+    botMessage = await enhanceResponseWithSearch(message, botMessage);
 
     return Response.json({ 
       message: botMessage,
-      success: true 
+      success: true,
+      meta: {
+        apiKeyIndex: clientInfo.keyIndex + 1,
+        totalKeys: clientInfo.stats.totalKeys,
+        failedKeys: clientInfo.stats.failedKeys
+      }
     });
 
   } catch (error) {
-    console.error('AI Chat Error:', error);
+    console.error('🚨 AI Chat Error:', error);
+    
+    // Log detailed API key statistics on error
+    try {
+      const stats = getApiKeyStats();
+      console.error('📊 API Key Stats on Error:', stats);
+    } catch (statsError) {
+      console.error('❌ Could not get API key stats:', statsError);
+    }
     
     // Handle specific Gemini API errors
-    if (error.message?.includes('API_KEY')) {
+    if (error.message?.includes('API_KEY') || error.message?.includes('authentication')) {
+      console.error('🔑 API Key Error - attempting emergency reset...');
+      try {
+        await resetFailedKeys();
+        console.log('🔄 Emergency reset completed');
+      } catch (resetError) {
+        console.error('❌ Emergency reset failed:', resetError);
+      }
+      
       return Response.json({ 
-        error: 'API configuration error. Please contact support.' 
+        error: 'API configuration error. Please try again in a moment.' 
       }, { status: 500 });
+    }
+    
+    if (error.message?.includes('quota') || error.message?.includes('rate limit')) {
+      return Response.json({ 
+        error: 'Service temporarily unavailable due to high demand. Please try again in a few minutes.' 
+      }, { status: 429 });
+    }
+    
+    if (error.message?.includes('All API keys exhausted')) {
+      return Response.json({ 
+        error: 'All API services are currently unavailable. Please try again later.' 
+      }, { status: 503 });
     }
     
     return Response.json({ 
