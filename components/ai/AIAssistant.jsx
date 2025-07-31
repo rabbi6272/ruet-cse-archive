@@ -28,9 +28,9 @@ const formatBotMessage = (text) => {
   
   return cleanedText
     // Headers (### Header, ## Header, # Header)
-    .replace(/^### (.*$)/gm, '<h3 class="text-lg font-bold text-gray-800 mt-3 mb-2">$1</h3>')
-    .replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold text-gray-900 mt-4 mb-2">$1</h2>')
-    .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold text-gray-900 mt-4 mb-3">$1</h1>')
+    .replace(/^### (.*$)/gm, '<h3 className="text-lg font-bold text-gray-800 mt-3 mb-2">$1</h3>')
+    .replace(/^## (.*$)/gm, '<h2 className="text-xl font-bold text-gray-900 mt-4 mb-2">$1</h2>')
+    .replace(/^# (.*$)/gm, '<h1 className="text-2xl font-bold text-gray-900 mt-4 mb-3">$1</h1>')
     
     // Code blocks with triple backticks ```code``` - with copy button (PROCESS FIRST)
     .replace(/```(\w+)?\s*([\s\S]*?)```/g, (match, language, code) => {
@@ -38,7 +38,7 @@ const formatBotMessage = (text) => {
       // Preserve ALL formatting - don't modify the code content at all
       const escapedCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const detectedLanguage = language || 'text';
-      return `<div class="code-container dark:bg-gray-900 bg-gray-200 mt-4 rounded-lg overflow-hidden relative group max-w-full"><button data-copy-target="${codeId}" class="copy-code-btn px-2 py-1 rounded text-xs absolute top-2 right-2 opacity-100 xl:opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:bg-gray-900 dark:hover:bg-gray-800 dark:text-white bg-gray-900 hover:bg-gray-800 text-white z-10" title="Copy code"><i class="far fa-copy mr-1"></i> Copy</button><pre id="${codeId}" class="p-4 overflow-auto font-cascadia whitespace-pre max-h-96 max-w-full" style="tab-size: 4;"><code class="language-${detectedLanguage} block">${escapedCode}</code></pre></div>`;
+      return `<div className="code-container dark:bg-gray-900 bg-gray-200 mt-4 rounded-lg overflow-hidden relative group max-w-full"><button data-copy-target="${codeId}" className="copy-code-btn px-2 py-1 rounded text-xs absolute top-2 right-2 opacity-100 xl:opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:bg-gray-900 dark:hover:bg-gray-800 dark:text-white bg-gray-900 hover:bg-gray-800 text-white z-10" title="Copy code"><i className="far fa-copy mr-1"></i> Copy</button><pre id="${codeId}" className="p-4 overflow-auto font-cascadia whitespace-pre max-h-96 max-w-full" style="tab-size: 4;"><code className="language-${detectedLanguage} block">${escapedCode}</code></pre></div>`;
     })
     
     // Inline code `code` - with copy button for longer code (PROCESS SECOND)
@@ -46,49 +46,49 @@ const formatBotMessage = (text) => {
       const escapedCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       if (code.length > 20) {
         const codeId = `inline-code-${Date.now()}-${++codeBlockCounter}`;
-        return `<span class="inline-flex items-center gap-1 dark:bg-gray-800 bg-gray-800 dark:text-gray-300 text-gray-200 px-2 py-1 rounded font-cascadia text-sm not-italic"><code id="${codeId}">${escapedCode}</code><button data-copy-target="${codeId}" class="copy-code-btn ml-1 p-0.5 dark:hover:bg-gray-700 hover:bg-gray-700 rounded transition-colors" title="Copy"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button></span>`;
+        return `<span className="inline-flex items-center gap-1 dark:bg-gray-800 bg-gray-800 dark:text-gray-300 text-gray-200 px-2 py-1 rounded font-cascadia text-sm not-italic"><code id="${codeId}">${escapedCode}</code><button data-copy-target="${codeId}" className="copy-code-btn ml-1 p-0.5 dark:hover:bg-gray-700 hover:bg-gray-700 rounded transition-colors" title="Copy"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg></button></span>`;
       }
-      return `<code class="dark:bg-gray-800 bg-gray-800 dark:text-gray-300 text-gray-200 px-2 py-1 rounded font-cascadia text-sm not-italic">${escapedCode}</code>`;
+      return `<code className="dark:bg-gray-800 bg-gray-800 dark:text-gray-300 text-gray-200 px-2 py-1 rounded font-cascadia text-sm not-italic">${escapedCode}</code>`;
     })
     
     // Bold text **text** (PROCESS AFTER CODE)
-    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong className="font-semibold text-gray-900">$1</strong>')
     
     // Italic text *text* - avoid affecting code elements (PROCESS LAST for text formatting)
-    .replace(/\*([^*<>]+)\*/g, '<em class="italic text-gray-700">$1</em>')
+    .replace(/\*([^*<>]+)\*/g, '<em className="italic text-gray-700">$1</em>')
     
     // Links with markdown [text](url) and direct links
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-yellow-600 hover:text-yellow-800 underline font-medium" target="_blank">$1</a>')
-    .replace(/🔗 Go to: (\/[\w\/\-]*)/g, '<a href="$1" class="text-yellow-600 hover:text-yellow-800 underline font-medium" target="_blank">🔗 Go to: $1</a>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" className="text-yellow-600 hover:text-yellow-800 underline font-medium" target="_blank">$1</a>')
+    .replace(/🔗 Go to: (\/[\w\/\-]*)/g, '<a href="$1" className="text-yellow-600 hover:text-yellow-800 underline font-medium" target="_blank">🔗 Go to: $1</a>')
     
     // Blockquotes > text
-    .replace(/^> (.*$)/gm, '<blockquote class="border-l-4 border-yellow-400 pl-4 py-2 bg-yellow-50 italic text-gray-700 my-2">$1</blockquote>')
+    .replace(/^> (.*$)/gm, '<blockquote className="border-l-4 border-yellow-400 pl-4 py-2 bg-yellow-50 italic text-gray-700 my-2">$1</blockquote>')
     
     // Bullet points with dashes, asterisks, and plus
-    .replace(/^[-*+] (.*$)/gm, '<div class="flex items-start my-1"><span class="text-yellow-500 mr-2 mt-1">•</span><span class="flex-1">$1</span></div>')
+    .replace(/^[-*+] (.*$)/gm, '<div className="flex items-start my-1"><span className="text-yellow-500 mr-2 mt-1">•</span><span className="flex-1">$1</span></div>')
     
     // Numbered lists
-    .replace(/^(\d+)\. (.*$)/gm, '<div class="flex items-start my-1"><span class="text-yellow-600 font-semibold mr-2 min-w-[1.5rem]">$1.</span><span class="flex-1">$2</span></div>')
+    .replace(/^(\d+)\. (.*$)/gm, '<div className="flex items-start my-1"><span className="text-yellow-600 font-semibold mr-2 min-w-[1.5rem]">$1.</span><span className="flex-1">$2</span></div>')
     
     // Emojis at start of lines with enhanced styling
-    .replace(/^(📚|💻|🔍|❓|🏠|📝|💡|🎓|⚡|🤖|📖|📊|🌐|🎯|🚀|⭐|🔥|💫) (.*$)/gm, '<div class="flex items-start my-2 p-2 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg"><span class="text-xl mr-3">$1</span><span class="flex-1">$2</span></div>')
+    .replace(/^(📚|💻|🔍|❓|🏠|📝|💡|🎓|⚡|🤖|📖|📊|🌐|🎯|🚀|⭐|🔥|💫) (.*$)/gm, '<div className="flex items-start my-2 p-2 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg"><span className="text-xl mr-3">$1</span><span className="flex-1">$2</span></div>')
     
     // Special Pikachu/Electric themed elements
-    .replace(/⚡/g, '<span class="text-yellow-500 animate-pulse">⚡</span>')
-    .replace(/Pika pika!/g, '<span class="text-yellow-600 font-bold animate-bounce">Pika pika!</span>')
-    .replace(/Nutrinos/g, '<span class="text-green-600 font-semibold bg-green-100 px-1 rounded">Nutrinos</span>')
+    .replace(/⚡/g, '<span className="text-yellow-500 animate-pulse">⚡</span>')
+    .replace(/Pika pika!/g, '<span className="text-yellow-600 font-bold animate-bounce">Pika pika!</span>')
+    .replace(/Nutrinos/g, '<span className="text-green-600 font-semibold bg-green-100 px-1 rounded">Nutrinos</span>')
     
     // Horizontal rules ---
-    .replace(/^---$/gm, '<hr class="border-t-2 border-yellow-200 my-4">')
+    .replace(/^---$/gm, '<hr className="border-t-2 border-yellow-200 my-4">')
     
     // Tables (basic support)
     .replace(/\|(.+)\|/g, (match, content) => {
       const cells = content.split('|').map(cell => cell.trim());
-      return `<div class="grid grid-cols-${cells.length} gap-2 border border-gray-200 rounded p-2 my-2">${cells.map(cell => `<div class="p-1 text-sm">${cell}</div>`).join('')}</div>`;
+      return `<div className="grid grid-cols-${cells.length} gap-2 border border-gray-200 rounded p-2 my-2">${cells.map(cell => `<div className="p-1 text-sm">${cell}</div>`).join('')}</div>`;
     })
     
     // Line breaks (convert \n to <br> but preserve structure)
-    .replace(/\n\n/g, '<div class="my-3"></div>')
+    .replace(/\n\n/g, '<div className="my-3"></div>')
     .replace(/\n/g, '<br>');
 };
 
