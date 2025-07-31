@@ -140,7 +140,12 @@ export default function AIAssistant() {
         const savedMessages = localStorage.getItem('pikachu_chat_history');
         if (savedMessages) {
           const parsedMessages = JSON.parse(savedMessages);
-          setMessages(parsedMessages);
+          // Sanitize all loaded messages only if they're not already strings
+          const sanitizedMessages = parsedMessages.map(msg => ({
+            ...msg,
+            text: typeof msg.text === 'string' ? msg.text : sanitizeMessageText(msg.text)
+          }));
+          setMessages(sanitizedMessages);
         } else {
           // If no history, start with welcome message
           const welcomeMessage = {
@@ -168,13 +173,52 @@ export default function AIAssistant() {
     loadChatHistory();
   }, [currentUser]); // Re-run when user login status changes
 
+  // Function to sanitize message text to prevent object serialization
+  const sanitizeMessageText = (text) => {
+    // If it's already a string, return as is
+    if (typeof text === 'string') return text;
+    
+    // If it's null or undefined, return empty string
+    if (text == null) return '';
+    
+    // If it's a number or boolean, convert to string
+    if (typeof text === 'number' || typeof text === 'boolean') return String(text);
+    
+    // If it's an object, try to extract meaningful text
+    if (typeof text === 'object') {
+      // Check for common text properties
+      if (text.message) return String(text.message);
+      if (text.text) return String(text.text);
+      if (text.value) return String(text.value);
+      
+      // Try toString() but avoid [object Object]
+      if (text.toString && typeof text.toString === 'function') {
+        const stringified = text.toString();
+        if (stringified !== '[object Object]' && stringified !== '[object HTMLInputElement]') {
+          return stringified;
+        }
+      }
+      
+      // Last resort - JSON stringify for debugging
+      try {
+        const jsonString = JSON.stringify(text);
+        return jsonString !== '{}' ? jsonString : 'Error: Invalid message format';
+      } catch (e) {
+        return 'Error: Invalid message format';
+      }
+    }
+    
+    // Fallback to string conversion
+    return String(text);
+  };
+
   // Function to get personalized welcome message
   const getPersonalizedWelcomeMessage = () => {
     if (currentUser && currentUser.name) {
       const firstName = currentUser.name.split(' ')[0];
       return `Yoooo ${firstName} mama! ⚡ Ami Pikachu, tumader chaotic digital classmate! Dekho ${firstName}, RUET CSE Archive er shob kichu jani, Nutrinos system theke shuru kore Section C er shob ghotona! Aj ki korbo? Sikhan vai naki kibabe sombob? 😎`;
     }
-    return AI_CONFIG.behavior.welcomeMessage;
+    return AI_CONFIG.behavior.welcomeMessage || 'Pika pika! ⚡ Hey there! I\'m Pikachu, your coding assistant!';
   };
 
   // Save messages to localStorage whenever messages change
@@ -315,26 +359,44 @@ export default function AIAssistant() {
   };
 
   const sendMessage = async (customMessage = null) => {
-    const message = customMessage || inputMessage.trim();
-    if (!message || isLoading) return;
-
-    // Add user message
-    const userMessage = {
-      id: Date.now(),
-      text: message,
-      sender: 'user',
-      timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    if (!customMessage) setInputMessage(''); // Only clear input if it's a manual message
-    setIsLoading(true);
-
     try {
+      // Get the raw message first - handle mobile input properly
+      let rawMessage;
+      if (customMessage !== null) {
+        rawMessage = customMessage;
+      } else {
+        // For mobile compatibility, ensure we get the actual string value
+        rawMessage = typeof inputMessage === 'string' ? inputMessage.trim() : String(inputMessage || '').trim();
+      }
+      
+      // Mobile debugging
+      console.log('sendMessage called with:', { customMessage, inputMessage, rawMessage, type: typeof rawMessage });
+      
+      // Double-check we have a clean string
+      const message = typeof rawMessage === 'string' && rawMessage.length > 0 ? rawMessage : sanitizeMessageText(rawMessage);
+      
+      // Additional mobile validation
+      if (!message || message === '[object Object]' || message === 'Error: Invalid message format' || message.length === 0 || isLoading) {
+        console.warn('Invalid message detected:', { message, rawMessage, inputMessage });
+        return;
+      }
+
+      // Add user message
+      const userMessage = {
+        id: Date.now(),
+        text: message,
+        sender: 'user',
+        timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
+      };
+
+      setMessages(prev => [...prev, userMessage]);
+      if (!customMessage) setInputMessage(''); // Only clear input if it's a manual message
+      setIsLoading(true);
+
       // Prepare chat history for API (limit to recent messages)
       const recentMessages = messages.slice(-AI_CONFIG.behavior.maxMessages);
       const chatHistory = recentMessages.map(msg => ({
-        text: msg.text,
+        text: typeof msg.text === 'string' ? msg.text : sanitizeMessageText(msg.text),
         sender: msg.sender
       }));
 
@@ -344,7 +406,7 @@ export default function AIAssistant() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message,
+          message: message,
           chatHistory,
           userInfo: currentUser ? {
             name: currentUser.name,
@@ -360,7 +422,7 @@ export default function AIAssistant() {
         setTimeout(() => {
           const botMessage = {
             id: Date.now() + 1,
-            text: data.message,
+            text: typeof data.message === 'string' ? data.message : sanitizeMessageText(data.message),
             sender: 'bot',
             timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
           };
@@ -374,7 +436,7 @@ export default function AIAssistant() {
       console.error('Chat error:', error);
       const errorMessage = {
         id: Date.now() + 1,
-        text: AI_CONFIG.behavior.errorMessage,
+        text: AI_CONFIG.behavior.errorMessage || 'Bzzt! ⚡ Something went wrong. Please try again!',
         sender: 'bot',
         timestamp: new Date().toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
       };
@@ -386,8 +448,30 @@ export default function AIAssistant() {
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
+      // Ensure we're passing the current input value, not the event
       sendMessage();
     }
+  };
+
+  // Mobile-friendly send handler
+  const handleSendClick = (e) => {
+    // Prevent any event object from being passed
+    e.preventDefault();
+    e.stopPropagation();
+    sendMessage();
+  };
+
+  // Enhanced input change handler for mobile compatibility
+  const handleInputChange = (e) => {
+    // Extract the actual string value, avoiding any object references
+    const value = e.target?.value || '';
+    
+    // Mobile debugging - log if we're getting unexpected types
+    if (typeof value !== 'string') {
+      console.warn('Mobile input warning: Expected string but got:', typeof value, value);
+    }
+    
+    setInputMessage(String(value));
   };
 
   // File upload handling
@@ -414,18 +498,19 @@ export default function AIAssistant() {
     // Read file content
     const reader = new FileReader();
     reader.onload = (e) => {
-      const fileContent = e.target.result;
-      const fileInfo = {
-        name: file.name,
-        size: file.size,
-        type: fileExtension,
-        content: fileContent
-      };
-      
-      setUploadedFile(fileInfo);
-      
-      // Auto-send analysis request
-      const analysisMessage = `⚡ Pika! Please analyze this ${fileExtension} file (${file.name}) and provide:
+      try {
+        const fileContent = String(e.target.result); // Ensure it's a string
+        const fileInfo = {
+          name: String(file.name),
+          size: Number(file.size),
+          type: String(fileExtension),
+          content: fileContent
+        };
+        
+        setUploadedFile(fileInfo);
+        
+        // Auto-send analysis request
+        const analysisMessage = `⚡ Pika! Please analyze this ${fileExtension} file (${file.name}) and provide:
 1. 🐛 Bug Analysis: Identify any potential bugs or issues
 2. 💡 Solution: Suggest fixes and improvements  
 3. ⭐ Tips: Provide best practices and optimization tips
@@ -435,7 +520,11 @@ File Content:
 ${fileContent}
 \`\`\``;
 
-      sendMessage(analysisMessage);
+        sendMessage(analysisMessage);
+      } catch (error) {
+        console.error('Error processing file:', error);
+        alert('⚡ Bzzt! Error processing file. Please try again!');
+      }
     };
 
     reader.onerror = () => {
@@ -608,18 +697,44 @@ ${fileContent}
         </div>
 
         {/* Input Area */}
-        <div className="flex items-center border-t border-gray-200 p-2 bg-white">
-          <div className="flex items-center w-full">
+        <div className="flex items-center border-t border-gray-200 p-3 bg-white ai-chat-input-area">
+          <div className="flex items-center w-full bg-gray-100 rounded-full border border-gray-300 focus-within:border-yellow-400 focus-within:ring-2 focus-within:ring-yellow-400 focus-within:ring-opacity-30 transition-all duration-200">
+            {/* File upload button - Attachment Icon */}
+            <button
+              onClick={triggerFileUpload}
+              disabled={isLoading}
+              className="ml-3 p-2 w-10 h-10 flex items-center justify-center rounded-full text-gray-500 hover:text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              title="Upload code file (max 100KB)"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z" clipRule="evenodd" />
+              </svg>
+            </button>
+
+            {/* Text Input Box */}
             <input
               ref={inputRef}
               type="text"
               value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
+              onChange={handleInputChange}
               onKeyPress={handleKeyPress}
               placeholder={AI_CONFIG.behavior.placeholder}
               disabled={isLoading}
-              className="flex-1 text-sm px-3 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent disabled:opacity-50"
+              className="flex-1 text-sm px-4 py-3 bg-transparent border-none focus:outline-none disabled:opacity-50 placeholder-gray-500"
             />
+
+            {/* Send button - Airplane Icon */}
+            <button
+              onClick={handleSendClick}
+              disabled={!inputMessage.trim() || isLoading}
+              className="mr-3 p-2 w-10 h-10 flex items-center justify-center rounded-full bg-yellow-500 text-white hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-opacity-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 disabled:bg-gray-300"
+              title="Send message"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transform rotate-45" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+              </svg>
+            </button>
+
             {/* Hidden file input */}
             <input
               ref={fileInputRef}
@@ -628,28 +743,6 @@ ${fileContent}
               onChange={handleFileUpload}
               className="hidden"
             />
-            {/* File upload button */}
-            <button
-              onClick={triggerFileUpload}
-              disabled={isLoading}
-              className="ml-2 p-2 w-9 h-9 flex items-center justify-center rounded-full bg-blue-500 text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              title="Upload code file (max 100KB)"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-              </svg>
-            </button>
-            {/* Send button */}
-            <button
-              onClick={sendMessage}
-              disabled={!inputMessage.trim() || isLoading}
-              className="ml-2 p-2 w-9 h-9 flex items-center justify-center rounded-full bg-yellow-500 text-white hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              title="Send message"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
           </div>
         </div>
 
@@ -777,15 +870,92 @@ ${fileContent}
           overflow: hidden;
         }
         
+        /* Enhanced mobile responsiveness */
         @media (max-width: 640px) {
           #chatPopup {
-            width: calc(100% - 20px) !important;
-            right: 10px !important;
+            width: calc(100vw - 10px) !important;
+            right: 5px !important;
             bottom: 5rem !important;
             max-width: none !important;
+            left: 5px !important;
+            position: fixed !important;
           }
           #chatPopup > div:nth-child(2) {
             height: 60vh !important;
+            max-height: 400px !important;
+          }
+          
+          /* Adjust button sizes for mobile */
+          #chatToggleBtn {
+            width: 56px !important;
+            height: 56px !important;
+            bottom: 10px !important;
+            right: 10px !important;
+          }
+          
+          /* Adjust input area for mobile */
+          .ai-chat-container {
+            font-size: 14px !important;
+          }
+          
+          /* Better input area on mobile */
+          .ai-chat-input-area {
+            padding: 12px !important;
+          }
+          
+          .ai-chat-input-area > div {
+            min-height: 48px !important;
+          }
+          
+          .ai-chat-input-area input {
+            font-size: 16px !important; /* Prevents zoom on iOS */
+            padding: 12px 8px !important;
+          }
+          
+          /* Better code block handling on mobile */
+          .ai-message pre {
+            max-height: 200px !important;
+            font-size: 12px !important;
+          }
+          
+          .ai-message code {
+            font-size: 12px !important;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          #chatPopup {
+            width: calc(100vw - 8px) !important;
+            right: 4px !important;
+            left: 4px !important;
+            bottom: 4.5rem !important;
+          }
+          
+          #chatToggleBtn {
+            width: 52px !important;
+            height: 52px !important;
+            bottom: 8px !important;
+            right: 8px !important;
+          }
+          
+          /* Enhanced mobile input styling */
+          .ai-chat-input-area {
+            padding: 10px !important;
+          }
+          
+          .ai-chat-input-area > div {
+            min-height: 44px !important;
+          }
+          
+          .ai-chat-input-area button {
+            width: 40px !important;
+            height: 40px !important;
+            padding: 8px !important;
+          }
+          
+          .ai-chat-input-area input {
+            font-size: 16px !important;
+            padding: 10px 6px !important;
           }
         }
       `}</style>
