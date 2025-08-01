@@ -272,7 +272,7 @@ const MyDoubts = () => {
                       You haven't submitted any doubts yet.
                     </p>
                     <Link
-                      href="/user/help"
+                      href="/contact&help/help"
                       className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
                     >
                       Submit a Doubt
@@ -537,7 +537,8 @@ const MyDoubts = () => {
                             </button>
                           </div>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Mark as satisfied to add this doubt to the public archive.
+                            Mark as satisfied to add this doubt to the public
+                            archive.
                           </p>
                         </div>
                       )}
