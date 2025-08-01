@@ -60,10 +60,8 @@ const Dashboard = () => {
       setIsCodeReviewer(isAuthorizedReviewer(parsedUser));
       loadUserSnippets(parsedUser.roll);
       loadUserNutrinosData(parsedUser.roll);
-      // Load unsolved doubts count if user is a code reviewer
-      if (isAuthorizedReviewer(parsedUser)) {
-        loadUnsolvedDoubtsCount();
-      }
+      // Load unsolved doubts count for all users
+      loadUnsolvedDoubtsCount();
       // Record daily visit for Nutrinos
       recordDailyVisit(parsedUser.roll);
     }
@@ -450,23 +448,21 @@ const Dashboard = () => {
                 <span className="sm:hidden text-sm font-medium">Doubts</span>
               </Link>
 
-              {/* Code Reviewer Button - Only show for authorized reviewers */}
-              {isCodeReviewer && (
-                <Link
-                  href="/reviewers/dashboard"
-                  className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-3 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg transform hover:scale-105 relative"
-                >
-                  <i className="fas fa-clipboard-check text-sm"></i>
-                  <span className="hidden sm:inline text-sm font-medium">Solve Doubts</span>
-                  <span className="sm:hidden text-sm font-medium">Solve</span>
-                  {/* Unsolved doubts count badge */}
-                  {unsolvedDoubtsCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-lg">
-                      {unsolvedDoubtsCount > 99 ? '99+' : unsolvedDoubtsCount}
-                    </span>
-                  )}
-                </Link>
-              )}
+              {/* Solve Doubts Button - Available for all users */}
+              <Link
+                href="/reviewers/dashboard"
+                className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-3 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg transform hover:scale-105 relative"
+              >
+                <i className="fas fa-clipboard-check text-sm"></i>
+                <span className="hidden sm:inline text-sm font-medium">Solve Doubts</span>
+                <span className="sm:hidden text-sm font-medium">Solve</span>
+                {/* Unsolved doubts count badge */}
+                {unsolvedDoubtsCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-lg">
+                    {unsolvedDoubtsCount > 99 ? '99+' : unsolvedDoubtsCount}
+                  </span>
+                )}
+              </Link>
             </div>
           </div>
         </div>
