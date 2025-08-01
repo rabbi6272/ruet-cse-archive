@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from 'react';
-import { presenceTracker } from '@/lib/presence-tracker';
+import { presenceTracker, updateCurrentPage } from '@/lib/presence-tracker';
+import { usePathname } from 'next/navigation';
 
 const GlobalPresenceTracker = () => {
   const isInitialized = useRef(false);
   const currentUser = useRef(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     // Check if user is logged in
@@ -24,8 +26,8 @@ const GlobalPresenceTracker = () => {
               presenceTracker.stopTracking();
             }
             
-            // Start tracking for the current user
-            presenceTracker.startTracking(user.roll, user.name);
+            // Start tracking for the current user with current page
+            presenceTracker.startTracking(user.roll, user.name, pathname);
             currentUser.current = user;
             isInitialized.current = true;
           }
@@ -121,6 +123,14 @@ const GlobalPresenceTracker = () => {
       // Firebase onDisconnect will handle actual disconnect scenarios
     };
   }, []); // Remove pathname dependency
+
+  // Track page changes for admin monitoring
+  useEffect(() => {
+    if (currentUser.current && pathname) {
+      console.log('Page changed to:', pathname);
+      updateCurrentPage(currentUser.current.roll, pathname);
+    }
+  }, [pathname]);
 
   // This component doesn't render anything
   return null;
