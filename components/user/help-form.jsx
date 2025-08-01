@@ -12,6 +12,8 @@ import {
   DAILY_DOUBT_LIMIT,
 } from "@/lib/points-system";
 import { addNutrinos } from "@/lib/nutrinos-system";
+import { presenceTracker } from "@/lib/presence-tracker";
+import ActiveUsersIndicator from "@/components/ui/ActiveUsersIndicator";
 
 const HelpForm = () => {
   const router = useRouter();
@@ -42,8 +44,17 @@ const HelpForm = () => {
     if (!userData) {
       router.push("/user/login");
     } else {
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      
+      // Start tracking user presence
+      presenceTracker.startTracking(parsedUser.roll, parsedUser.name);
     }
+
+    // Cleanup presence tracking when component unmounts
+    return () => {
+      presenceTracker.stopTracking();
+    };
   }, [router]);
 
   // Check daily limits when user is loaded
@@ -293,11 +304,20 @@ const HelpForm = () => {
     <div className="min-h-screen py-8 sm:px-4 lg:px-6">
       <Toaster />
       <div className="max-w-[95%] lg:max-w-4xl mx-auto">
-        <div className="bg-white dark:bg-slate-700 rounded-lg shadow-md p-4 lg:p-6">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">
-            Get Help with Your Code
-          </h1>
+        {/* Active Users Indicator at the top */}
+        <div className="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+          <div className="flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-200">
+              Get Help with Your Code
+            </h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Submit your coding doubts and get help from the community
+            </p>
+          </div>
+          <ActiveUsersIndicator showDetails={true} className="flex-shrink-0 self-start sm:self-auto" />
+        </div>
 
+        <div className="bg-white dark:bg-slate-700 rounded-lg shadow-md p-4 lg:p-6">
           {/* Daily Limit Indicator */}
           <div className="mb-6">
             {dailyLimitReached ? (

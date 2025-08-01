@@ -24,6 +24,15 @@ import {
   awardSnippetNutrinos,
   getUserNutrinosHistory,
 } from "@/lib/nutrinos-system";
+import { presenceTracker } from "@/lib/presence-tracker";
+import ActiveUsersIndicator from "@/components/ui/ActiveUsersIndicator";
+import "highlight.js/styles/monokai.css";
+import {
+  getUserNutrinos,
+  recordDailyVisit,
+  awardSnippetNutrinos,
+  getUserNutrinosHistory,
+} from "@/lib/nutrinos-system";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -64,7 +73,14 @@ const Dashboard = () => {
       loadUnsolvedDoubtsCount();
       // Record daily visit for Nutrinos
       recordDailyVisit(parsedUser.roll);
+      // Start tracking user presence
+      presenceTracker.startTracking(parsedUser.roll, parsedUser.name);
     }
+
+    // Cleanup presence tracking when component unmounts
+    return () => {
+      presenceTracker.stopTracking();
+    };
   }, [router]);
 
   // Load user's Nutrinos data
@@ -315,12 +331,16 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Right Section - Notifications */}
-            <div className="flex flex-col items-end gap-3">
-              <NotificationCenter userRoll={user?.roll} />
+            {/* Right Section - Active Users & Notifications */}
+            <div className="flex flex-col lg:items-end gap-3 w-full lg:w-auto">
+              {/* Mobile: Stack horizontally, Desktop: Stack vertically */}
+              <div className="flex flex-row lg:flex-col items-start lg:items-end gap-3">
+                <ActiveUsersIndicator showDetails={true} className="flex-shrink-0" />
+                <NotificationCenter userRoll={user?.roll} />
+              </div>
               <Link
                 href="/user/notifications"
-                className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors px-3 py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-1"
+                className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors px-3 py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-1 self-start lg:self-end"
               >
                 <i className="fas fa-external-link-alt text-xs"></i>
                 <span>View all notifications</span>
