@@ -66,14 +66,9 @@ const Dashboard = () => {
       loadUnsolvedDoubtsCount();
       // Record daily visit for Nutrinos
       recordDailyVisit(parsedUser.roll);
-      // Start tracking user presence
-      presenceTracker.startTracking(parsedUser.roll, parsedUser.name);
     }
 
-    // Cleanup presence tracking when component unmounts
-    return () => {
-      presenceTracker.stopTracking();
-    };
+    // Note: Presence tracking is now handled globally by GlobalPresenceTracker
   }, [router]);
 
   // Load user's Nutrinos data

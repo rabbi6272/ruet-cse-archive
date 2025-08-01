@@ -46,15 +46,9 @@ const HelpForm = () => {
     } else {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
-      
-      // Start tracking user presence
-      presenceTracker.startTracking(parsedUser.roll, parsedUser.name);
     }
-
-    // Cleanup presence tracking when component unmounts
-    return () => {
-      presenceTracker.stopTracking();
-    };
+    
+    // Note: Presence tracking is now handled globally by GlobalPresenceTracker
   }, [router]);
 
   // Check daily limits when user is loaded

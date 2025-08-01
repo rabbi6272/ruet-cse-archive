@@ -3,6 +3,7 @@ import "./globals.css";
 import { Navbar } from "@/components/home/navbar/navbar";
 import { FooterComponent } from "@/components/home/footer";
 import { PageTitleProvider } from "@/components/providers/PageTitleProvider";
+import GlobalPresenceTracker from "@/components/providers/GlobalPresenceTracker";
 import AIAssistant from "@/components/ai/AIAssistant";
 import NoSSR from "@/components/ui/NoSSR";
 
@@ -166,6 +167,7 @@ export default function RootLayout({ children }) {
           <SpeedInsights />
           <Analytics />
           <Toaster />
+          <GlobalPresenceTracker />
           <Navbar />
 
           {children}
