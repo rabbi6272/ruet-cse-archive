@@ -50,19 +50,60 @@ export function FAQSection() {
       ),
     },
     {
-      icon: "fa-solid fa-paper-plane",
-      title: "Want to suggest a feature or ask something?",
+      icon: "fa-solid fa-graduation-cap",
+      title: "What's in the Alumni Section?",
+      content: (
+        <>
+          <p>
+            The Alumni Section connects you with RUET CSE graduates, sharing
+            their experiences, career journeys, and advice for current students.
+          </p>
+
+          <p>
+            Discover inspiring stories from{" "}
+            <Link
+              href="/alumni"
+              className="text-blue-600 dark:text-blue-500 hover:underline"
+            >
+              Alumni
+            </Link>{" "}
+            and build your network for future opportunities.
+          </p>
+        </>
+      ),
+    },
+    {
+      icon: "fa-solid fa-users",
+      title: "Who are we?",
       content: (
         <p>
-          Got a feature idea or a question? We're always here to help. Your
-          feedback helps us improve, so don't hesitate to reach out anytime!
+          We are a group of{" "}
+          <Link
+            href="/contact&help/developers"
+            className="text-blue-600 dark:text-blue-500 hover:underline"
+          >
+            RUET CSE students
+          </Link>{" "}
+          who are passionate about programming and love to help others. We aim
+          to create a platform that makes learning easier and more accessible
+          for everyone.
         </p>
       ),
     },
+    // {
+    //   icon: "fa-solid fa-paper-plane",
+    //   title: "Want to suggest a feature or ask something?",
+    //   content: (
+    //     <p>
+    //       Got a feature idea or a question? We're always here to help. Your
+    //       feedback helps us improve, so don't hesitate to reach out anytime!
+    //     </p>
+    //   ),
+    // },
   ];
 
   return (
-    <div className="w-full xl:w-[80%] 2xl:w-[70%] mx-auto text-center">
+    <div className="w-full px-4 mx-auto text-center">
       <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold">
         <span className="text-transparent bg-clip-text bg-gradient-to-r to-gray-700 from-gray-500 dark:to-neutral-400 dark:from-neutral-200">
           But Why this?
@@ -73,7 +114,7 @@ export function FAQSection() {
       </p>
       <br />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mx-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mx-auto">
         {cards.map((card, index) => (
           <AnimatedCards key={card.title} index={index}>
             <div className="p-4">

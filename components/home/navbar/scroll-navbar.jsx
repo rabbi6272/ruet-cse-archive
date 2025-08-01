@@ -6,22 +6,19 @@ export function ScrollNavbar({ children, className }) {
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
-    // Use a simple scroll listener with throttling for better performance
-    let ticking = false;
+    // Check if we're in browser environment
+    if (typeof window === "undefined") return;
 
+    // Simple and reliable scroll listener approach
     const handleScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          setIsScrolled(window.scrollY > 50);
-          ticking = false;
-        });
-        ticking = true;
-      }
+      const scrolled = window.scrollY > 50;
+      setIsScrolled(scrolled);
     };
 
     // Set initial state
     setIsScrolled(window.scrollY > 50);
 
+    // Add scroll listener
     window.addEventListener("scroll", handleScroll, { passive: true });
 
     return () => {
@@ -35,7 +32,10 @@ export function ScrollNavbar({ children, className }) {
 
   return (
     <nav
-      className={`${className} transition-all duration-300 ease-in-out ${scrollClasses}`}
+      className={`${className} ${scrollClasses}`}
+      style={{
+        transition: "all 0.3s ease-in-out",
+      }}
     >
       {children}
     </nav>

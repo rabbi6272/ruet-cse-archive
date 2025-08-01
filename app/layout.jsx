@@ -1,6 +1,6 @@
 import "./globals.css";
 
-import { Navbar } from "@/components/home/navbar";
+import { Navbar } from "@/components/home/navbar/navbar";
 import { FooterComponent } from "@/components/home/footer";
 import { PageTitleProvider } from "@/components/providers/PageTitleProvider";
 import AIAssistant from "@/components/ai/AIAssistant";
@@ -13,17 +13,33 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata = {
-  metadataBase: new URL('https://csearchive.vercel.app'),
+  metadataBase: new URL("https://csearchive.vercel.app"),
   title: {
     default: "RUET CSE Archive - Complete Resource Hub for CSE Students",
-    template: "%s | RUET CSE Archive"
+    template: "%s | RUET CSE Archive",
   },
-  description: "The ultimate archive of Computer Science & Engineering resources for RUET students. Access notes, code libraries, academic materials, alumni network, and comprehensive study resources.",
+  description:
+    "The ultimate archive of Computer Science & Engineering resources for RUET students. Access notes, code libraries, academic materials, alumni network, and comprehensive study resources.",
   keywords: [
-    "RUET", "CSE", "Computer Science", "Engineering", "Archive", "Resources", 
-    "Notes", "Code Library", "Academic Materials", "Study Resources", "Alumni Network",
-    "Rajshahi University", "Bangladesh", "Programming", "Software Engineering",
-    "Database", "Algorithms", "Data Structures", "Web Development"
+    "RUET",
+    "CSE",
+    "Computer Science",
+    "Engineering",
+    "Archive",
+    "Resources",
+    "Notes",
+    "Code Library",
+    "Academic Materials",
+    "Study Resources",
+    "Alumni Network",
+    "Rajshahi University",
+    "Bangladesh",
+    "Programming",
+    "Software Engineering",
+    "Database",
+    "Algorithms",
+    "Data Structures",
+    "Web Development",
   ],
   authors: [{ name: "RUET CSE Archive Team" }],
   creator: "RUET CSE Archive",
@@ -34,9 +50,9 @@ export const metadata = {
     googleBot: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
     },
   },
   openGraph: {
@@ -45,7 +61,8 @@ export const metadata = {
     url: "https://csearchive.vercel.app/",
     siteName: "RUET CSE Archive",
     title: "RUET CSE Archive - Complete Resource Hub for CSE Students",
-    description: "The ultimate archive of Computer Science & Engineering resources for RUET students. Access notes, code libraries, academic materials, alumni network, and comprehensive study resources.",
+    description:
+      "The ultimate archive of Computer Science & Engineering resources for RUET students. Access notes, code libraries, academic materials, alumni network, and comprehensive study resources.",
     images: [
       {
         url: "/images/og-image.png",
@@ -58,7 +75,8 @@ export const metadata = {
   twitter: {
     card: "summary_large_image",
     title: "RUET CSE Archive - Complete Resource Hub for CSE Students",
-    description: "The ultimate archive of Computer Science & Engineering resources for RUET students. Access notes, code libraries, academic materials, alumni network, and comprehensive study resources.",
+    description:
+      "The ultimate archive of Computer Science & Engineering resources for RUET students. Access notes, code libraries, academic materials, alumni network, and comprehensive study resources.",
     images: ["/images/twitter-image.png"],
     creator: "@ruetcsearchive",
   },
@@ -70,8 +88,8 @@ export const metadata = {
   alternates: {
     canonical: "https://csearchive.vercel.app/",
     languages: {
-      'en-US': 'https://csearchive.vercel.app/',
-      'bn-BD': 'https://csearchive.vercel.app/bn',
+      "en-US": "https://csearchive.vercel.app/",
+      "bn-BD": "https://csearchive.vercel.app/bn",
     },
   },
   category: "education",
@@ -91,10 +109,7 @@ export default function RootLayout({ children }) {
         <meta name="theme-color" content="#071a26" />
         <meta name="msapplication-TileColor" content="#071a26" />
         <meta name="format-detection" content="telephone=no" />
-        <link
-          rel="preconnect"
-          href="https://fonts.googleapis.com"
-        />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
           href="https://fonts.gstatic.com"
@@ -116,28 +131,27 @@ export default function RootLayout({ children }) {
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "EducationalOrganization",
-              "name": "RUET CSE Archive",
-              "description": "The ultimate archive of Computer Science & Engineering resources for RUET students.",
-              "url": "https://csearchive.vercel.app/",
-              "logo": "https://csearchive.vercel.app/icon.png",
-              "sameAs": [
-                "https://ruet-cse-archive.vercel.app/"
-              ],
-              "contactPoint": {
+              name: "RUET CSE Archive",
+              description:
+                "The ultimate archive of Computer Science & Engineering resources for RUET students.",
+              url: "https://csearchive.vercel.app/",
+              logo: "https://csearchive.vercel.app/icon.png",
+              sameAs: ["https://ruet-cse-archive.vercel.app/"],
+              contactPoint: {
                 "@type": "ContactPoint",
-                "contactType": "Support",
-                "email": "support@csearchive.vercel.app"
+                contactType: "Support",
+                email: "support@csearchive.vercel.app",
               },
-              "address": {
+              address: {
                 "@type": "PostalAddress",
-                "addressCountry": "BD",
-                "addressLocality": "Rajshahi"
+                addressCountry: "BD",
+                addressLocality: "Rajshahi",
               },
-              "founder": {
+              founder: {
                 "@type": "Organization",
-                "name": "RUET CSE Students"
-              }
-            })
+                name: "RUET CSE Students",
+              },
+            }),
           }}
         />
       </head>

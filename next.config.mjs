@@ -5,12 +5,12 @@ const nextConfig = {
   // Fix Windows OneDrive symlink issues
   outputFileTracingIncludes: {},
   outputFileTracingExcludes: {},
-  
+
   // Disable symlinks to avoid Windows/OneDrive issues
   typescript: {
     ignoreBuildErrors: false,
   },
-  
+
   eslint: {
     ignoreDuringBuilds: false,
   },
@@ -19,49 +19,49 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/(.*)',
+        source: "/(.*)",
         headers: [
           {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
+            key: "X-Content-Type-Options",
+            value: "nosniff",
           },
           {
-            key: 'X-Frame-Options',
-            value: 'DENY',
+            key: "X-Frame-Options",
+            value: "DENY",
           },
           {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
+            key: "X-XSS-Protection",
+            value: "1; mode=block",
           },
           {
-            key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
+            key: "Referrer-Policy",
+            value: "origin-when-cross-origin",
           },
         ],
       },
       {
-        source: '/sitemap.xml',
+        source: "/sitemap.xml",
         headers: [
           {
-            key: 'Content-Type',
-            value: 'application/xml',
+            key: "Content-Type",
+            value: "application/xml",
           },
           {
-            key: 'Cache-Control',
-            value: 'public, max-age=86400, s-maxage=86400',
+            key: "Cache-Control",
+            value: "public, max-age=86400, s-maxage=86400",
           },
         ],
       },
       {
-        source: '/robots.txt',
+        source: "/robots.txt",
         headers: [
           {
-            key: 'Content-Type',
-            value: 'text/plain',
+            key: "Content-Type",
+            value: "text/plain",
           },
           {
-            key: 'Cache-Control',
-            value: 'public, max-age=86400, s-maxage=86400',
+            key: "Cache-Control",
+            value: "public, max-age=86400, s-maxage=86400",
           },
         ],
       },
@@ -73,7 +73,7 @@ const nextConfig = {
 
   // Optimize images
   images: {
-    formats: ['image/webp', 'image/avif'],
+    formats: ["image/webp", "image/avif"],
     minimumCacheTTL: 60,
   },
 
@@ -82,8 +82,8 @@ const nextConfig = {
     return [
       // Redirect old URLs if needed
       {
-        source: '/home',
-        destination: '/',
+        source: "/home",
+        destination: "/",
         permanent: true,
       },
     ];
@@ -93,19 +93,7 @@ const nextConfig = {
   trailingSlash: false,
 
   // Allow dev origins for cross-origin requests
-  allowedDevOrigins: ['192.168.56.1'],
-
-  // Custom webpack config for optimization
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      // Client-side optimizations
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-      };
-    }
-    return config;
-  },
+  allowedDevOrigins: ["192.168.56.1", "192.168.0.235"],
 };
 
 export default withFlowbiteReact(nextConfig);
