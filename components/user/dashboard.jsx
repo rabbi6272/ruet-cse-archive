@@ -96,12 +96,10 @@ const Dashboard = () => {
       onValue(doubtsRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
-          const unsolvedCount = Object.keys(data)
-            .filter((key) => {
-              const doubt = data[key];
-              return doubt.status === "pending" || doubt.status === "assigned";
-            })
-            .length;
+          const unsolvedCount = Object.keys(data).filter((key) => {
+            const doubt = data[key];
+            return doubt.status === "pending" || doubt.status === "assigned";
+          }).length;
           setUnsolvedDoubtsCount(unsolvedCount);
         } else {
           setUnsolvedDoubtsCount(0);
@@ -297,7 +295,8 @@ const Dashboard = () => {
                   </span>
                   <span className="flex items-center gap-1">
                     <i className="fas fa-code text-green-500"></i>
-                    {snippets.length} {snippets.length === 1 ? "snippet" : "snippets"}
+                    {snippets.length}{" "}
+                    {snippets.length === 1 ? "snippet" : "snippets"}
                   </span>
                 </div>
 
@@ -328,7 +327,10 @@ const Dashboard = () => {
             <div className="flex flex-col lg:items-end gap-3 w-full lg:w-auto">
               {/* Mobile: Stack horizontally, Desktop: Stack vertically */}
               <div className="flex flex-row lg:flex-col items-start lg:items-end gap-3">
-                <ActiveUsersIndicator showDetails={true} className="flex-shrink-0" />
+                <ActiveUsersIndicator
+                  showDetails={true}
+                  className="flex-shrink-0"
+                />
                 <NotificationCenter userRoll={user?.roll} />
               </div>
               <Link
@@ -350,7 +352,9 @@ const Dashboard = () => {
                   <span className="text-lg">⚡</span>
                   <div className="text-left">
                     <div className="text-xs opacity-90">Total Nutrinos</div>
-                    <div className="text-lg font-bold">{userNutrinos.totalNutrinos.toFixed(2)}</div>
+                    <div className="text-lg font-bold">
+                      {userNutrinos.totalNutrinos.toFixed(2)}
+                    </div>
                   </div>
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -384,7 +388,10 @@ const Dashboard = () => {
                 <div className="divide-y divide-gray-100 dark:divide-gray-700">
                   {nutrinosHistory.length > 0 ? (
                     nutrinosHistory.map((entry) => (
-                      <div key={entry.id} className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <div
+                        key={entry.id}
+                        className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      >
                         <div className="flex justify-between items-center">
                           <div className="flex-1">
                             <p className="text-sm text-gray-900 dark:text-gray-100">
@@ -439,7 +446,9 @@ const Dashboard = () => {
                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg transform hover:scale-105"
               >
                 <i className="fas fa-plus text-sm"></i>
-                <span className="hidden sm:inline text-sm font-medium">Add Codesnippet</span>
+                <span className="hidden sm:inline text-sm font-medium">
+                  Add Codesnippet
+                </span>
                 <span className="sm:hidden text-sm font-medium">Add</span>
               </button>
 
@@ -448,7 +457,9 @@ const Dashboard = () => {
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg transform hover:scale-105"
               >
                 <i className="fas fa-question-circle text-sm"></i>
-                <span className="hidden sm:inline text-sm font-medium">Ask Help</span>
+                <span className="hidden sm:inline text-sm font-medium">
+                  Ask Help
+                </span>
                 <span className="sm:hidden text-sm font-medium">Help</span>
               </Link>
 
@@ -457,7 +468,9 @@ const Dashboard = () => {
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg transform hover:scale-105"
               >
                 <i className="fas fa-list text-sm"></i>
-                <span className="hidden sm:inline text-sm font-medium">My Doubts</span>
+                <span className="hidden sm:inline text-sm font-medium">
+                  My Doubts
+                </span>
                 <span className="sm:hidden text-sm font-medium">Doubts</span>
               </Link>
 
@@ -467,12 +480,14 @@ const Dashboard = () => {
                 className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-3 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg transform hover:scale-105 relative"
               >
                 <i className="fas fa-clipboard-check text-sm"></i>
-                <span className="hidden sm:inline text-sm font-medium">Solve Doubts</span>
+                <span className="hidden sm:inline text-sm font-medium">
+                  Solve Doubts
+                </span>
                 <span className="sm:hidden text-sm font-medium">Solve</span>
                 {/* Unsolved doubts count badge */}
                 {unsolvedDoubtsCount > 0 && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-lg">
-                    {unsolvedDoubtsCount > 99 ? '99+' : unsolvedDoubtsCount}
+                    {unsolvedDoubtsCount > 99 ? "99+" : unsolvedDoubtsCount}
                   </span>
                 )}
               </Link>

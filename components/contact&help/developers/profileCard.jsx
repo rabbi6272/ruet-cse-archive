@@ -77,9 +77,9 @@ export function ProfileCard({
           {location}
         </p>
         <p className="mt-2 text-sm text-gray-500 text-center">{role}</p>
-        
+
         {/* Points Display */}
-        {pointsData && role.includes("Code Reviewer") && (
+        {/* {pointsData && role.includes("Code Reviewer") && (
           <div className="mt-3 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-3 border border-yellow-200">
             <div className="text-center">
               <div className="flex items-center justify-center mb-1">
@@ -92,8 +92,8 @@ export function ProfileCard({
               <div className="text-xs text-yellow-600">{pointsData.doubtsResolved || 0} doubts solved</div>
             </div>
           </div>
-        )}
-        
+        )} */}
+
         <p className="mt-2 text-xs text-blue-500">Tap/Hover for social links</p>
       </div>
 

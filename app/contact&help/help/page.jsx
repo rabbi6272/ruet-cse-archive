@@ -1,4 +1,4 @@
-import HelpForm from "@/components/user/help-form";
+import HelpForm from "@/components/contact&help/help/help-form";
 
 const HelpPage = () => {
   return <HelpForm />;
