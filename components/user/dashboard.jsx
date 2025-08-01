@@ -26,13 +26,6 @@ import {
 } from "@/lib/nutrinos-system";
 import { presenceTracker } from "@/lib/presence-tracker";
 import ActiveUsersIndicator from "@/components/ui/ActiveUsersIndicator";
-import "highlight.js/styles/monokai.css";
-import {
-  getUserNutrinos,
-  recordDailyVisit,
-  awardSnippetNutrinos,
-  getUserNutrinosHistory,
-} from "@/lib/nutrinos-system";
 
 const ITEMS_PER_PAGE = 5;
 

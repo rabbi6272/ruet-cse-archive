@@ -2,6 +2,10 @@ import { db } from "@/lib/firebase";
 import { ref, onValue, push, update, remove } from "firebase/database";
 import { calculateSolverPoints } from "@/lib/points-system";
 import { isAuthorizedReviewer } from "@/lib/auth-utils";
+import { 
+  sendAvengersAssemblyNotification, 
+  removeAssemblyNotificationIfResolved 
+} from "@/lib/global-notifications";
 
 export async function POST(request) {
   try {
@@ -53,7 +57,16 @@ export async function POST(request) {
       const notificationsRef = ref(db, "reviewerNotifications");
       await push(notificationsRef, reviewerNotificationData);
 
-      return Response.json({ success: true, message: "Reviewers notified" });
+      // Send Avengers assembly notification to all users
+      try {
+        await sendAvengersAssemblyNotification();
+        console.log('Avengers assembly notification sent to all users');
+      } catch (assemblyError) {
+        console.error('Failed to send assembly notification:', assemblyError);
+        // Don't fail the main request if assembly notification fails
+      }
+
+      return Response.json({ success: true, message: "Reviewers notified and Avengers assembled" });
     }
 
     if (action === "mark_satisfied") {
@@ -132,6 +145,14 @@ export async function POST(request) {
         
         // Remove from pending/active doubts
         await remove(doubtRef);
+        
+        // Check if assembly notification should be removed
+        try {
+          await removeAssemblyNotificationIfResolved();
+          console.log('Checked assembly notification after doubt resolution');
+        } catch (assemblyError) {
+          console.error('Failed to check assembly notification:', assemblyError);
+        }
         
         return Response.json({ 
           success: true, 

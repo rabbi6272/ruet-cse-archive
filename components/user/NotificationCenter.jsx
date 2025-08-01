@@ -100,6 +100,8 @@ const NotificationCenter = ({ userRoll }) => {
         return <i className="fas fa-check-circle text-green-500"></i>;
       case "doubt_assigned":
         return <i className="fas fa-user-check text-blue-500"></i>;
+      case "doubt_assembly":
+        return <span className="text-red-500 animate-pulse">🚨</span>;
       default:
         return <i className="fas fa-bell text-gray-500"></i>;
     }
@@ -149,6 +151,11 @@ const NotificationCenter = ({ userRoll }) => {
         return {
           main:
             notification.title || "Your doubt has been assigned to a reviewer",
+          time: timeAgo,
+        };
+      case "doubt_assembly":
+        return {
+          main: notification.title || "🦸‍♂️ Avengers, Assemble! 🦸‍♀️",
           time: timeAgo,
         };
       default:
@@ -286,7 +293,9 @@ const NotificationCenter = ({ userRoll }) => {
                   <div
                     key={notification.id}
                     className={`px-3 sm:px-4 py-3 border-b border-gray-100 dark:border-gray-700 transition-all duration-200 relative ${
-                      !notification.read
+                      notification.type === "doubt_assembly"
+                        ? "bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-l-4 border-red-500 animate-pulse"
+                        : !notification.read
                         ? "bg-blue-50 dark:bg-blue-900/20 border-l-3 border-blue-500"
                         : ""
                     }`}
@@ -376,6 +385,22 @@ const NotificationCenter = ({ userRoll }) => {
 
                       {/* Actions */}
                       <div className="flex-shrink-0 flex flex-col items-end space-y-1 sm:space-y-2">
+                        {/* Special Assembly Notification Button */}
+                        {notification.type === "doubt_assembly" && (
+                          <Link
+                            href="/reviewers/dashboard"
+                            onClick={() => {
+                              markAsRead(notification.id);
+                              setShowNotifications(false);
+                            }}
+                            className="text-xs px-2 sm:px-3 py-1 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-full transition-all duration-200 font-bold flex items-center gap-1 animate-pulse shadow-lg"
+                          >
+                            <span>🦸‍♂️</span>
+                            <span className="hidden sm:inline">Assemble Now!</span>
+                            <span className="sm:hidden">Assemble!</span>
+                          </Link>
+                        )}
+
                         {/* View My Doubts Button for doubt_solved notifications */}
                         {notification.type === "doubt_solved" && (
                           <Link
@@ -418,13 +443,24 @@ const NotificationCenter = ({ userRoll }) => {
                             <span className="sm:hidden">Read</span>
                           </button>
                         )}
-                        <button
-                          onClick={() => deleteNotification(notification.id)}
-                          className="text-xs px-2 sm:px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors duration-200 font-medium"
-                        >
-                          <span className="hidden sm:inline">✕ Delete</span>
-                          <span className="sm:hidden">✕</span>
-                        </button>
+                        
+                        {/* Only show delete button for non-assembly notifications */}
+                        {notification.type !== "doubt_assembly" && (
+                          <button
+                            onClick={() => deleteNotification(notification.id)}
+                            className="text-xs px-2 sm:px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors duration-200 font-medium"
+                          >
+                            <span className="hidden sm:inline">✕ Delete</span>
+                            <span className="sm:hidden">✕</span>
+                          </button>
+                        )}
+                        
+                        {/* Special message for assembly notifications */}
+                        {notification.type === "doubt_assembly" && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 italic text-center">
+                            Auto-removes when<br/>mission complete
+                          </div>
+                        )}
                       </div>
                     </div>
 
