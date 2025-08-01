@@ -442,7 +442,7 @@ const MyDoubts = () => {
                                             <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
                                               {attachment.name}
                                             </p>
-                                            <div className="code-container dark:bg-gray-900 bg-gray-200 rounded-lg overflow-hidden relative group">
+                                            <div className="code-container bg-gray-900 rounded-lg overflow-hidden relative group">
                                               <pre
                                                 className={`p-4 overflow-x-auto transition-transform duration-500 ${
                                                   isCodeLong(
@@ -478,7 +478,7 @@ const MyDoubts = () => {
                                               ) && (
                                                 <div className="flex justify-center p-2">
                                                   <button
-                                                    className="px-6 py-2 text-sm font-medium rounded-full mx-auto dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300 bg-gray-300 hover:bg-gray-400 text-gray-600 transition-colors duration-300"
+                                                    className="px-6 py-2 text-sm font-medium rounded-full mx-auto bg-gray-800 hover:bg-gray-700 text-gray-300 transition-colors duration-300"
                                                     onClick={() => {
                                                       // Remove highlighting before animation
                                                       const codeBlocks =
@@ -535,17 +535,9 @@ const MyDoubts = () => {
                             >
                               I am satisfied ✓
                             </button>
-                            <button
-                              onClick={() => markAsNotSatisfied(doubt.id)}
-                              className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 text-sm font-medium"
-                            >
-                              Need more help ⚠️
-                            </button>
                           </div>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Mark as satisfied to add this doubt to the public
-                            archive, or request more help if the solution isn't
-                            clear.
+                            Mark as satisfied to add this doubt to the public archive.
                           </p>
                         </div>
                       )}

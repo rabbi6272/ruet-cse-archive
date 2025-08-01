@@ -38,6 +38,7 @@ const CodeLibrary = () => {
   const [expandedSnippets, setExpandedSnippets] = useState({});
   const [animateLike, setAnimateLike] = useState({});
   const [animateCopy, setAnimateCopy] = useState({});
+  const [copiedStates, setCopiedStates] = useState({});
   const snippetsPerPage = 5;
   const maxCodeLines = 20;
 
@@ -162,10 +163,13 @@ const CodeLibrary = () => {
     try {
       await navigator.clipboard.writeText(code);
       setAnimateCopy((prev) => ({ ...prev, [id]: true }));
-      setTimeout(
-        () => setAnimateCopy((prev) => ({ ...prev, [id]: false })),
-        500
-      );
+      setCopiedStates((prev) => ({ ...prev, [id]: true }));
+      
+      setTimeout(() => {
+        setAnimateCopy((prev) => ({ ...prev, [id]: false }));
+        setCopiedStates((prev) => ({ ...prev, [id]: false }));
+      }, 2000); // Show "Copied" for 2 seconds
+      
       setSnippets((prevSnippets) =>
         prevSnippets.map((snippet) =>
           snippet.id === id
@@ -221,6 +225,41 @@ const CodeLibrary = () => {
 
   const isCodeLong = (code) => {
     return code?.split("\n").length > maxCodeLines;
+  };
+
+  // Generate pagination numbers with ellipsis
+  const generatePaginationNumbers = () => {
+    const delta = window.innerWidth < 768 ? 1 : 2; // Fewer pages on mobile
+    const range = [];
+    const rangeWithDots = [];
+
+    // Always include first page
+    range.push(1);
+
+    // Add pages around current page
+    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+      range.push(i);
+    }
+
+    // Always include last page if there are more than 1 page
+    if (totalPages > 1) {
+      range.push(totalPages);
+    }
+
+    // Remove duplicates and sort
+    const uniqueRange = [...new Set(range)].sort((a, b) => a - b);
+
+    // Add ellipsis where needed
+    let prev = 0;
+    for (const page of uniqueRange) {
+      if (page - prev > 1) {
+        rangeWithDots.push('...');
+      }
+      rangeWithDots.push(page);
+      prev = page;
+    }
+
+    return rangeWithDots;
   };
 
   return (
@@ -319,11 +358,13 @@ const CodeLibrary = () => {
                   <div className="code-container dark:bg-gray-900 bg-gray-200 mt-4 rounded-lg overflow-hidden relative group">
                     {/* Copy button */}
                     <button
-                      className="copy-btn px-2 py-1 rounded text-xs absolute top-2 right-2 opacity-100 xl:opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:bg-gray-900 dark:hover:bg-gray-800 dark:text-white bg-gray-900 hover:bg-gray-800 text-white"
-                      // className="copy-btn px-2 py-1 rounded text-xs absolute top-2 right-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100 dark:bg-gray-900 dark:hover:bg-gray-800 dark:text-white bg-gray-900 hover:bg-gray-800 text-white"
+                      className={`copy-btn px-2 py-1 rounded text-xs absolute top-2 right-2 opacity-100 xl:opacity-0 transition-all duration-300 group-hover:opacity-100 dark:bg-gray-900 dark:hover:bg-gray-800 dark:text-white bg-gray-900 hover:bg-gray-800 text-white ${
+                        copiedStates[snippet.id] ? 'bg-green-600 dark:bg-green-600' : ''
+                      }`}
                       onClick={() => copyCode(snippet.id, snippet.codeSnippet)}
                     >
-                      <i className="far fa-copy mr-1"></i> Copy
+                      <i className={`${copiedStates[snippet.id] ? 'fas fa-check' : 'far fa-copy'} mr-1`}></i> 
+                      {copiedStates[snippet.id] ? 'Copied' : 'Copy'}
                     </button>
 
                     {/* Code snippet */}
@@ -426,45 +467,77 @@ const CodeLibrary = () => {
 
         {filteredSnippets.length > snippetsPerPage && (
           <div className="flex justify-center mt-8">
-            <nav className="inline-flex rounded-md shadow">
+            <nav className="inline-flex rounded-md shadow-sm overflow-hidden">
+              {/* Previous button */}
               <button
                 onClick={() => paginate(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className={`px-3 py-2 rounded-l-md border dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 bg-white border-gray-300 text-gray-500 hover:bg-gray-50 ${
+                className={`px-2 md:px-3 py-2 text-sm md:text-base rounded-l-md border dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 bg-white border-gray-300 text-gray-500 hover:bg-gray-50 ${
                   currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >
-                Previous
+                <span className="hidden sm:inline">Previous</span>
+                <span className="sm:hidden">
+                  <i className="fas fa-chevron-left"></i>
+                </span>
               </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (number) => (
-                  <button
-                    key={number}
-                    onClick={() => paginate(number)}
-                    className={`px-3 py-2 border-t border-b dark:bg-gray-800 dark:border-gray-700 ${
-                      currentPage === number
-                        ? "dark:text-blue-400"
-                        : "dark:text-gray-300 dark:hover:bg-gray-700"
-                    } bg-white border-gray-300 ${
-                      currentPage === number
-                        ? "text-blue-600"
-                        : "text-gray-500 hover:bg-gray-50"
-                    }`}
-                  >
-                    {number}
-                  </button>
-                )
-              )}
+
+              {/* Page numbers with ellipsis */}
+              <div className="hidden xs:flex">
+                {generatePaginationNumbers().map((item, index) => {
+                  if (item === '...') {
+                    return (
+                      <span
+                        key={`ellipsis-${index}`}
+                        className="px-2 md:px-3 py-2 text-sm md:text-base border-t border-b dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 bg-white border-gray-300 text-gray-400"
+                      >
+                        ...
+                      </span>
+                    );
+                  }
+
+                  const pageNumber = item;
+                  return (
+                    <button
+                      key={pageNumber}
+                      onClick={() => paginate(pageNumber)}
+                      className={`px-2 md:px-3 py-2 text-sm md:text-base border-t border-b dark:bg-gray-800 dark:border-gray-700 ${
+                        currentPage === pageNumber
+                          ? "dark:text-blue-400 dark:bg-gray-700"
+                          : "dark:text-gray-300 dark:hover:bg-gray-700"
+                      } bg-white border-gray-300 ${
+                        currentPage === pageNumber
+                          ? "text-blue-600 bg-blue-50"
+                          : "text-gray-500 hover:bg-gray-50"
+                      }`}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Mobile page indicator */}
+              <div className="xs:hidden flex items-center px-3 py-2 border-t border-b dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 bg-white border-gray-300 text-gray-500">
+                <span className="text-sm">
+                  {currentPage} / {totalPages}
+                </span>
+              </div>
+
+              {/* Next button */}
               <button
                 onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
-                className={`px-3 py-2 rounded-r-md border dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 bg-white border-gray-300 text-gray-500 hover:bg-gray-50 ${
+                className={`px-2 md:px-3 py-2 text-sm md:text-base rounded-r-md border dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 bg-white border-gray-300 text-gray-500 hover:bg-gray-50 ${
                   currentPage === totalPages
                     ? "opacity-50 cursor-not-allowed"
                     : ""
                 }`}
               >
-                Next
+                <span className="hidden sm:inline">Next</span>
+                <span className="sm:hidden">
+                  <i className="fas fa-chevron-right"></i>
+                </span>
               </button>
             </nav>
           </div>

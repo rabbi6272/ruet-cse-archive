@@ -104,8 +104,42 @@ const DoubtsArchive = () => {
     setCurrentPage(1); // Reset to first page when filtering
   };
 
+  const formatName = (name) => {
+    if (!name) return '';
+    return name
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   const formatDate = (timestamp) => {
     return new Date(timestamp).toLocaleString();
+  };
+
+  const getTimeDifference = (startTime, endTime) => {
+    if (!startTime || !endTime) return 'N/A';
+    
+    const diffMs = endTime - startTime;
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays > 0) {
+      const remainingHours = diffHours % 24;
+      return diffDays === 1 
+        ? `1 day${remainingHours > 0 ? ` ${remainingHours}h` : ''}`
+        : `${diffDays} days${remainingHours > 0 ? ` ${remainingHours}h` : ''}`;
+    } else if (diffHours > 0) {
+      const remainingMinutes = diffMinutes % 60;
+      return diffHours === 1
+        ? `1 hour${remainingMinutes > 0 ? ` ${remainingMinutes}m` : ''}`
+        : `${diffHours} hours${remainingMinutes > 0 ? ` ${remainingMinutes}m` : ''}`;
+    } else if (diffMinutes > 0) {
+      return diffMinutes === 1 ? '1 minute' : `${diffMinutes} minutes`;
+    } else {
+      return 'Less than a minute';
+    }
   };
 
   const getCategoryColor = (category) => {
@@ -250,9 +284,9 @@ const DoubtsArchive = () => {
                 >
                   <div className="p-4 sm:p-6">
                     {/* Header */}
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 space-y-2 sm:space-y-0">
-                      <div className="flex-1 min-w-0">
-                        <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2 truncate pr-2">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1 min-w-0 mr-4">
+                        <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
                           {doubt.title}
                         </h2>
                         <span
@@ -269,77 +303,122 @@ const DoubtsArchive = () => {
                             expandedDoubt === doubt.id ? null : doubt.id
                           )
                         }
-                        className="ml-0 sm:ml-4 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800 text-sm self-start"
+                        className="flex-shrink-0 flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg shadow-lg hover:shadow-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105"
                       >
+                        <i className={`fas ${expandedDoubt === doubt.id ? 'fa-chevron-up' : 'fa-chevron-down'} mr-2`}></i>
                         {expandedDoubt === doubt.id ? "Collapse" : "Expand"}
                       </button>
                     </div>
 
                     {/* Meta Information */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 text-sm text-gray-600 dark:text-gray-400">
-                      <div>
-                        <strong>Coder:</strong> {doubt.userDetails.name}
-                      </div>
-                      <div>
-                        <strong>Roll:</strong> {doubt.userDetails.roll}
-                      </div>
-                      <div>
-                        <strong>Asked:</strong> {formatDate(doubt.timestamp)}
-                      </div>
-                      <div>
-                        <strong>Solved by:</strong>{" "}
-                        {doubt.solution?.solvedBy?.name}
-                      </div>
-                    </div>
-
-                    {/* Problem Description (Always visible) */}
-                    <div className="mb-4">
-                      <h3 className="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm sm:text-base">
-                        Problem:
-                      </h3>
-                      <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded border border-gray-200 dark:border-gray-600">
-                        <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap line-clamp-3 text-sm sm:text-base">
-                          {doubt.description}
-                        </p>
-                        {doubt.attachment && (
-                          <div className="mt-2 text-xs text-blue-600 dark:text-blue-400">
-                            📎 Attachment: {doubt.attachment.name}
-                            {doubt.attachment.type === "image" && " (Image)"}
-                            {doubt.attachment.type === "code" && " (Code file)"}
+                    <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600 mb-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-sm">
+                        <div className="flex items-center">
+                          <i className="fas fa-user text-blue-500 mr-2"></i>
+                          <div>
+                            <span className="text-gray-500 dark:text-gray-400 text-xs">Coder:</span>
+                            <p className="font-semibold text-gray-700 dark:text-gray-200">{formatName(doubt.userDetails.name)}</p>
                           </div>
-                        )}
+                        </div>
+                        <div className="flex items-center">
+                          <i className="fas fa-id-badge text-green-500 mr-2"></i>
+                          <div>
+                            <span className="text-gray-500 dark:text-gray-400 text-xs">Roll:</span>
+                            <p className="font-semibold text-gray-700 dark:text-gray-200">{doubt.userDetails.roll}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center">
+                          <i className="fas fa-clock text-orange-500 mr-2"></i>
+                          <div>
+                            <span className="text-gray-500 dark:text-gray-400 text-xs">Asked:</span>
+                            <p className="font-semibold text-gray-700 dark:text-gray-200">{formatDate(doubt.timestamp)}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center">
+                          <i className="fas fa-user-graduate text-purple-500 mr-2"></i>
+                          <div>
+                            <span className="text-gray-500 dark:text-gray-400 text-xs">Solved by:</span>
+                            <p className="font-semibold text-gray-700 dark:text-gray-200">{formatName(doubt.solution?.solvedBy?.name)}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center">
+                          <i className="fas fa-stopwatch text-red-500 mr-2"></i>
+                          <div>
+                            <span className="text-gray-500 dark:text-gray-400 text-xs">Solve Time:</span>
+                            <p className="font-semibold text-gray-700 dark:text-gray-200">{getTimeDifference(doubt.timestamp, doubt.solution?.solvedAt)}</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Solution Preview */}
-                    <div className="mb-4">
-                      <h3 className="font-medium text-gray-700 dark:text-gray-300 mb-2 text-sm sm:text-base">
-                        Solution:
-                      </h3>
-                      <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded border border-green-200 dark:border-green-800">
-                        <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap line-clamp-3 text-sm sm:text-base">
-                          {doubt.solution?.content}
-                        </p>
-                        {doubt.solution?.attachments &&
-                          doubt.solution.attachments.length > 0 && (
-                            <div className="mt-2 text-xs text-green-600 dark:text-green-400">
-                              📎 {doubt.solution.attachments.length}{" "}
-                              attachment(s) in solution
+                    {/* Problem Description - Conditional Display */}
+                    {expandedDoubt !== doubt.id ? (
+                      // Brief Preview (when collapsed)
+                      <div className="mb-4">
+                        <div className="flex items-center mb-2">
+                          <div className="w-1 h-6 bg-blue-500 rounded-full mr-3"></div>
+                          <h3 className="font-semibold text-gray-700 dark:text-gray-300 text-sm sm:text-base flex items-center">
+                            <i className="fas fa-question-circle text-blue-500 mr-2"></i>
+                            Problem Description
+                          </h3>
+                        </div>
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border-l-4 border-blue-500 shadow-sm">
+                          <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap line-clamp-3 text-sm sm:text-base">
+                            {doubt.description}
+                          </p>
+                          {doubt.attachment && (
+                            <div className="mt-2 text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-800/30 px-2 py-1 rounded inline-flex items-center">
+                              <i className="fas fa-paperclip mr-1"></i>
+                              Attachment: {doubt.attachment.name}
+                              {doubt.attachment.type === "image" && " (Image)"}
+                              {doubt.attachment.type === "code" && " (Code file)"}
                             </div>
                           )}
+                        </div>
                       </div>
-                    </div>
+                    ) : null}
+
+                    {/* Solution Preview - Conditional Display */}
+                    {expandedDoubt !== doubt.id ? (
+                      // Brief Preview (when collapsed)
+                      <div className="mb-4">
+                        <div className="flex items-center mb-2">
+                          <div className="w-1 h-6 bg-green-500 rounded-full mr-3"></div>
+                          <h3 className="font-semibold text-gray-700 dark:text-gray-300 text-sm sm:text-base flex items-center">
+                            <i className="fas fa-check-circle text-green-500 mr-2"></i>
+                            Solution
+                          </h3>
+                        </div>
+                        <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border-l-4 border-green-500 shadow-sm">
+                          <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap line-clamp-3 text-sm sm:text-base">
+                            {doubt.solution?.content}
+                          </p>
+                          {doubt.solution?.attachments &&
+                            doubt.solution.attachments.length > 0 && (
+                              <div className="mt-2 text-xs text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-800/30 px-2 py-1 rounded inline-flex items-center">
+                                <i className="fas fa-paperclip mr-1"></i>
+                                {doubt.solution.attachments.length}{" "}
+                                attachment(s) in solution
+                              </div>
+                            )}
+                        </div>
+                      </div>
+                    ) : null}
 
                     {/* Expanded Content */}
                     {expandedDoubt === doubt.id && (
-                      <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                        {/* Full Problem Description */}
-                        <div className="mb-6">
-                          <h3 className="font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Full Problem Description:
-                          </h3>
-                          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded border border-gray-200 dark:border-gray-600">
-                            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap text-sm sm:text-base">
+                      <div className="mt-6 pt-6 border-t-2 border-gray-200 dark:border-gray-700">
+                        {/* Full Problem Description - Only when expanded */}
+                        <div className="mb-8">
+                          <div className="flex items-center mb-3">
+                            <div className="w-1 h-8 bg-blue-500 rounded-full mr-3"></div>
+                            <h3 className="font-bold text-gray-700 dark:text-gray-300 text-lg flex items-center">
+                              <i className="fas fa-file-alt text-blue-500 mr-2"></i>
+                              Complete Problem Description
+                            </h3>
+                          </div>
+                          <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-lg border-l-4 border-blue-500 shadow-md">
+                            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap text-sm sm:text-base leading-relaxed">
                               {doubt.description}
                             </p>
                           </div>
@@ -347,15 +426,22 @@ const DoubtsArchive = () => {
 
                         {/* Attachment */}
                         {doubt.attachment && (
-                          <div className="mb-6">
-                            <h3 className="font-medium text-gray-700 dark:text-gray-300 mb-2">
-                              Coder's Attachment:
-                            </h3>
-                            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded border border-gray-200 dark:border-gray-600">
-                              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                📎 {doubt.attachment.name}
-                              </p>
-                              <div className="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-600">
+                          <div className="mb-8">
+                            <div className="flex items-center mb-3">
+                              <div className="w-1 h-8 bg-purple-500 rounded-full mr-3"></div>
+                              <h3 className="font-bold text-gray-700 dark:text-gray-300 text-lg flex items-center">
+                                <i className="fas fa-paperclip text-purple-500 mr-2"></i>
+                                Coder's Attachment
+                              </h3>
+                            </div>
+                            <div className="bg-purple-50 dark:bg-purple-900/20 p-5 rounded-lg border-l-4 border-purple-500 shadow-md">
+                              <div className="flex items-center mb-3 bg-white dark:bg-gray-800 p-2 rounded">
+                                <i className="fas fa-file text-purple-500 mr-2"></i>
+                                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                  {doubt.attachment.name}
+                                </span>
+                              </div>
+                              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm">
                                 {doubt.attachment.type === "image" ? (
                                   <img
                                     src={
@@ -373,7 +459,7 @@ const DoubtsArchive = () => {
                                     }
                                   />
                                 ) : (
-                                  <div className="code-container dark:bg-gray-900 bg-gray-200 rounded-lg overflow-hidden relative group">
+                                  <div className="code-container bg-gray-900 rounded-lg overflow-hidden relative group">
                                     <pre
                                       className={`p-4 overflow-x-auto transition-transform duration-500 ${
                                         isCodeLong(doubt.attachment.content) &&
@@ -401,7 +487,7 @@ const DoubtsArchive = () => {
                                     {isCodeLong(doubt.attachment.content) && (
                                       <div className="flex justify-center p-2">
                                         <button
-                                          className="px-6 py-2 text-sm font-medium rounded-full mx-auto dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300 bg-gray-300 hover:bg-gray-400 text-gray-600 transition-colors duration-300"
+                                          className="px-6 py-2 text-sm font-medium rounded-full mx-auto bg-gray-800 hover:bg-gray-700 text-gray-300 transition-colors duration-300"
                                           onClick={() => {
                                             // Remove highlighting before animation
                                             const codeBlocks =
@@ -438,12 +524,16 @@ const DoubtsArchive = () => {
                         )}
 
                         {/* Full Solution */}
-                        <div className="mb-6">
-                          <h3 className="font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Complete Solution:
-                          </h3>
-                          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded border border-green-200 dark:border-green-800">
-                            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap text-sm sm:text-base">
+                        <div className="mb-8">
+                          <div className="flex items-center mb-3">
+                            <div className="w-1 h-8 bg-green-500 rounded-full mr-3"></div>
+                            <h3 className="font-bold text-gray-700 dark:text-gray-300 text-lg flex items-center">
+                              <i className="fas fa-lightbulb text-green-500 mr-2"></i>
+                              Complete Solution
+                            </h3>
+                          </div>
+                          <div className="bg-green-50 dark:bg-green-900/20 p-5 rounded-lg border-l-4 border-green-500 shadow-md">
+                            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap text-sm sm:text-base leading-relaxed">
                               {doubt.solution?.content}
                             </p>
                           </div>
@@ -451,22 +541,26 @@ const DoubtsArchive = () => {
                           {/* Solution Attachments */}
                           {doubt.solution?.attachments &&
                             doubt.solution.attachments.length > 0 && (
-                              <div className="mt-4">
-                                <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                  Solution Attachments:
-                                </h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div className="mt-6">
+                                <div className="flex items-center mb-3">
+                                  <div className="w-1 h-6 bg-emerald-500 rounded-full mr-3"></div>
+                                  <h4 className="font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                                    <i className="fas fa-folder-open text-emerald-500 mr-2"></i>
+                                    Solution Attachments
+                                  </h4>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   {doubt.solution.attachments.map(
                                     (attachment, index) => (
                                       <div
                                         key={index}
-                                        className="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-600"
+                                        className="bg-white dark:bg-gray-800 p-4 rounded-lg border-l-4 border-emerald-500 shadow-lg hover:shadow-xl transition-shadow duration-300"
                                       >
                                         {attachment.type === "image" ? (
                                           <div>
-                                            <div className="flex items-center mb-2">
-                                              <i className="fas fa-image text-green-500 mr-2"></i>
-                                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
+                                            <div className="flex items-center mb-3 bg-emerald-50 dark:bg-emerald-900/20 p-2 rounded">
+                                              <i className="fas fa-image text-emerald-500 mr-2 text-lg"></i>
+                                              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 truncate">
                                                 {attachment.name}
                                               </span>
                                             </div>
@@ -476,7 +570,7 @@ const DoubtsArchive = () => {
                                                 attachment.content
                                               }
                                               alt={attachment.name}
-                                              className="w-full max-w-sm h-auto rounded border shadow-sm cursor-pointer hover:opacity-80"
+                                              className="w-full max-w-sm h-auto rounded-lg border shadow-sm cursor-pointer hover:opacity-80 transition-opacity duration-300"
                                               onClick={() =>
                                                 window.open(
                                                   attachment.data ||
@@ -488,22 +582,20 @@ const DoubtsArchive = () => {
                                           </div>
                                         ) : (
                                           <div>
-                                            <div className="flex items-center mb-2">
-                                              <i className="fas fa-file-code text-blue-500 mr-2 flex-shrink-0"></i>
-                                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate flex-1">
+                                            <div className="flex items-center mb-3 bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
+                                              <i className="fas fa-file-code text-blue-500 mr-2 flex-shrink-0 text-lg"></i>
+                                              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 truncate flex-1">
                                                 {attachment.name}
                                               </span>
                                               {attachment.size && (
-                                                <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">
-                                                  (
+                                                <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
                                                   {Math.round(
                                                     attachment.size / 1024
-                                                  )}
-                                                  KB)
+                                                  )}KB
                                                 </span>
                                               )}
                                             </div>
-                                            <div className="code-container dark:bg-gray-900 bg-gray-200 rounded-lg overflow-hidden relative group">
+                                            <div className="code-container bg-gray-900 rounded-lg overflow-hidden relative group">
                                               <pre
                                                 className={`p-4 overflow-x-auto transition-transform duration-500 ${
                                                   isCodeLong(
@@ -539,7 +631,7 @@ const DoubtsArchive = () => {
                                               ) && (
                                                 <div className="flex justify-center p-2">
                                                   <button
-                                                    className="px-6 py-2 text-sm font-medium rounded-full mx-auto dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300 bg-gray-300 hover:bg-gray-400 text-gray-600 transition-colors duration-300"
+                                                    className="px-6 py-2 text-sm font-medium rounded-full mx-auto bg-gray-800 hover:bg-gray-700 text-gray-300 transition-colors duration-300"
                                                     onClick={() => {
                                                       // Remove highlighting before animation
                                                       const codeBlocks =
@@ -583,16 +675,6 @@ const DoubtsArchive = () => {
                                 </div>
                               </div>
                             )}
-                        </div>
-
-                        {/* Solution Details */}
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          <p>
-                            Solved by{" "}
-                            <strong>{doubt.solution?.solvedBy?.name}</strong> (
-                            {doubt.solution?.solvedBy?.roll}) on{" "}
-                            {formatDate(doubt.solution?.solvedAt)}
-                          </p>
                         </div>
                       </div>
                     )}

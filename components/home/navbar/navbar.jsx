@@ -4,12 +4,12 @@ import Image from "next/image";
 import { inter } from "@/app/ui/fonts";
 
 import { LoginButton, MobileNavbarLinks } from "./mobile-navbar-links";
-import { ScrollNavbar } from "./scroll-navbar";
+// import { ScrollNavbar } from "./scroll-navbar";
 
 export function Navbar() {
   return (
-    <ScrollNavbar
-      className={`${inter.className} font-normal text-md navbar  sticky top-0 w-full z-50`}
+    <nav
+      className={`${inter.className} bg-[#ffffff]/90 dark:bg-[#071a26]/90 backdrop-blur-md shadow-lg border-b border-gray-200/20 dark:border-gray-700/20 font-normal text-md navbar  sticky top-0 w-full z-50`}
     >
       <div className="w-full mx-auto px-3 lg:px-10 flex items-center justify-between h-[70px]">
         {/* <!-- Logo  --> */}
@@ -21,13 +21,14 @@ export function Navbar() {
               alt="logo"
               height={80}
               width={80}
+              className="object-contain"
             />
           </Link>
         </div>
         <DesktopNavbarLinks />
         <MobileNavbarLinks />
       </div>
-    </ScrollNavbar>
+    </nav>
   );
 }
 

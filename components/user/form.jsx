@@ -56,12 +56,6 @@ export function CodeSnippetForm() {
     "C++",
     "C#",
     "PHP",
-    "TypeScript",
-    "Swift",
-    "Go",
-    "Ruby",
-    "Rust",
-    "Kotlin",
     "Dart",
     "R",
     "SQL",
@@ -164,152 +158,259 @@ export function CodeSnippetForm() {
 
   if (!isLoggedIn) {
     return (
-      <div className="max-w-3xl mx-auto p-8 bg-white rounded-xl shadow-lg">
-        <p className="text-center text-lg">Redirecting to login page...</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center py-4 px-2 lg:px-4">
+        <div className="max-w-md mx-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95 p-8">
+            {/* Loading Icon */}
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full mb-4 shadow-lg">
+                <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+              </div>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                Verifying User
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400">
+                Please wait while we authenticate your account...
+              </p>
+            </div>
+            
+            {/* Progress bar */}
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-4">
+              <div className="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full animate-pulse" style={{width: '60%'}}></div>
+            </div>
+            
+            {/* Status indicators */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                <div className="w-4 h-4 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center">
+                  <i className="fas fa-check text-white text-xs"></i>
+                </div>
+                <span>Checking authentication status</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                <span>Validating user credentials</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm text-gray-400 dark:text-gray-500">
+                <div className="w-4 h-4 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+                <span>Loading user profile</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Background decorations */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-purple-400 to-indigo-600 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-indigo-400 to-purple-600 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full px-3 lg:px-6">
-      <div className="max-w-3xl mx-auto p-5 bg-white dark:bg-slate-700  rounded-xl shadow-lg">
-        <h1 className="text-3xl font-semibold text-center text-gray-900 dark:text-gray-200 mb-8">
-          Submit Code Snippet
-        </h1>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-4 px-2 lg:px-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header Section */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full mb-4 shadow-lg">
+            <i className="fas fa-code text-lg text-white"></i>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3">
+            Submit Code Snippet
+          </h1>
+          
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Main Form Card */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden backdrop-blur-sm bg-opacity-95 dark:bg-opacity-95">
+          {/* Form Header */}
+          <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4">
+            <h2 className="text-xl font-semibold text-white flex items-center gap-3">
+              <i className="fas fa-file-code"></i>
+              Code Snippet Details
+            </h2>
+            <p className="text-indigo-100 mt-1">Fill in the details below to share your code</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Title */}
-          <div>
-            <label className="block text-gray-800 dark:text-gray-300 font-medium mb-1">
+          <div className="form-group">
+            <label className="flex items-center gap-2 text-gray-800 dark:text-gray-300 font-semibold mb-2 text-base">
+              <i className="fas fa-heading text-indigo-500"></i>
               Title *
             </label>
-            <input
-              type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black dark:text-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
-              required
-              placeholder="Enter snippet title"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                name="title"
+                value={formData.title}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-300 hover:border-indigo-300 placeholder-gray-500 dark:placeholder-gray-400"
+                required
+                placeholder="Enter a descriptive title for your code snippet"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-4">
+                <i className="fas fa-asterisk text-red-400 text-xs"></i>
+              </div>
+            </div>
           </div>
 
           {/* Description */}
-          <div>
-            <label className="block text-gray-800 dark:text-gray-300 font-medium mb-1">
+          <div className="form-group">
+            <label className="flex items-center gap-2 text-gray-800 dark:text-gray-300 font-semibold mb-2 text-base">
+              <i className="fas fa-align-left text-indigo-500"></i>
               Description *
             </label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              rows="4"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black dark:text-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
-              required
-              placeholder="Explain what this code does"
-            />
+            <div className="relative">
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                rows="4"
+                className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-300 hover:border-indigo-300 placeholder-gray-500 dark:placeholder-gray-400 resize-none"
+                required
+                placeholder="Explain what this code does, how it works, and when to use it"
+              />
+              <div className="absolute top-4 right-4">
+                <i className="fas fa-asterisk text-red-400 text-xs"></i>
+              </div>
+            </div>
           </div>
 
           {/* Roll Number */}
-          <div>
-            <label className="block text-gray-800 dark:text-gray-300 font-medium mb-1">
+          <div className="form-group">
+            <label className="flex items-center gap-2 text-gray-800 dark:text-gray-300 font-semibold mb-2 text-base">
+              <i className="fas fa-id-badge text-indigo-500"></i>
               Roll Number *
             </label>
-            <input
-              type="text"
-              name="rollNumber"
-              value={formData.rollNumber}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black dark:text-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
-              required
-              placeholder="Your roll number"
-              readOnly // Make roll number read-only since it comes from auth
-            />
+            <div className="relative">
+              <input
+                type="text"
+                name="rollNumber"
+                value={formData.rollNumber}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-600 cursor-not-allowed opacity-75"
+                required
+                placeholder="Your roll number"
+                readOnly
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-4">
+                <i className="fas fa-lock text-gray-400"></i>
+              </div>
+            </div>
           </div>
 
-          {/* Language */}
-          <div>
-            <label className="block text-gray-800 dark:text-gray-300 font-medium mb-1">
-              Language *
-            </label>
-            <select
-              name="language"
-              value={formData.language}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black dark:text-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
-              required
-            >
-              <option value="">Select a language</option>
-              {programmingLanguages.map((lang) => (
-                <option key={lang} value={lang}>
-                  {lang}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Language and Year Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Language */}
+            <div className="form-group">
+              <label className="flex items-center gap-2 text-gray-800 dark:text-gray-300 font-semibold mb-2 text-base">
+                <i className="fas fa-code text-indigo-500"></i>
+                Programming Language *
+              </label>
+              <div className="relative">
+                <select
+                  name="language"
+                  value={formData.language}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-300 hover:border-indigo-300 appearance-none cursor-pointer"
+                  required
+                >
+                  <option value="">Select a programming language</option>
+                  {programmingLanguages.map((lang) => (
+                    <option key={lang} value={lang}>
+                      {lang}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                  <i className="fas fa-chevron-down text-gray-400"></i>
+                </div>
+              </div>
+            </div>
 
-          {/* Difficulty */}
-          <div>
-            <label className="block text-gray-800 dark:text-gray-300 font-medium mb-1">
-              Year *
-            </label>
-            <div className="flex space-x-6">
-              {difficultyLevels.map((level) => (
-                <label key={level.value} className="flex items-center">
-                  <input
-                    type="radio"
-                    name="difficulty"
-                    value={level.value}
-                    checked={formData.difficulty === level.value}
-                    onChange={handleChange}
-                    className="h-5 w-5 text-indigo-600 focus:ring-indigo-500 transition duration-200"
-                  />
-                  <span className="ml-2 text-gray-800 dark:text-gray-300">
-                    {level.label}
-                  </span>
-                </label>
-              ))}
+            {/* Difficulty/Year */}
+            <div className="form-group">
+              <label className="flex items-center gap-2 text-gray-800 dark:text-gray-300 font-semibold mb-2 text-base">
+                <i className="fas fa-graduation-cap text-indigo-500"></i>
+                Academic Year *
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {difficultyLevels.map((level) => (
+                  <label 
+                    key={level.value} 
+                    className={`flex items-center justify-center p-3 border-2 rounded-xl cursor-pointer transition-all duration-300 hover:scale-105 ${
+                      formData.difficulty === level.value
+                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                        : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:border-indigo-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="difficulty"
+                      value={level.value}
+                      checked={formData.difficulty === level.value}
+                      onChange={handleChange}
+                      className="sr-only"
+                    />
+                    <span className="font-medium">{level.label}</span>
+                    {formData.difficulty === level.value && (
+                      <i className="fas fa-check ml-2 text-indigo-500"></i>
+                    )}
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
 
           {/* Tags */}
-          <div>
-            <label className="block text-gray-800 dark:text-gray-300 font-medium mb-1">
+          <div className="form-group">
+            <label className="flex items-center gap-2 text-gray-800 dark:text-gray-300 font-semibold mb-2 text-base">
+              <i className="fas fa-tags text-indigo-500"></i>
               Tags
+              <span className="text-sm text-gray-500 dark:text-gray-400 font-normal">(Optional)</span>
             </label>
-            <div className="flex">
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-l-lg text-black dark:text-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
-                placeholder="Add tags (press Enter)"
-                onKeyDown={(e) =>
-                  e.key === "Enter" && (e.preventDefault(), handleTagAdd())
-                }
-              />
+            <div className="flex gap-2 mb-3">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-300 hover:border-indigo-300 placeholder-gray-500 dark:placeholder-gray-400"
+                  placeholder="Add tags"
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && (e.preventDefault(), handleTagAdd())
+                  }
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-4">
+                  <i className="fas fa-hashtag text-gray-400"></i>
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={handleTagAdd}
-                className="px-6 py-3 bg-indigo-600 text-white rounded-r-lg hover:bg-indigo-700 transition duration-200"
+                className="px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
               >
+                <i className="fas fa-plus"></i>
                 Add
               </button>
             </div>
             {formData.tags.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2">
                 {formData.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-900 rounded-full text-sm font-medium"
+                    className="inline-flex items-center px-3 py-1 bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 text-indigo-800 dark:text-indigo-300 rounded-full text-sm font-medium border border-indigo-200 dark:border-indigo-700 shadow-sm hover:shadow-md transition-all duration-200"
                   >
+                    <i className="fas fa-hashtag mr-2 text-xs"></i>
                     {tag}
                     <button
                       type="button"
                       onClick={() => handleTagRemove(tag)}
-                      className="ml-2 text-gray-600 hover:text-gray-800 dark:text-gray-300 transition duration-200"
+                      className="ml-2 text-indigo-600 dark:text-indigo-400 hover:text-red-500 dark:hover:text-red-400 transition-colors duration-200 hover:scale-110"
                     >
-                      ×
+                      <i className="fas fa-times"></i>
                     </button>
                   </span>
                 ))}
@@ -318,78 +419,81 @@ export function CodeSnippetForm() {
           </div>
 
           {/* Code Snippet */}
-          <div>
-            <label className="block text-gray-800 dark:text-gray-300 font-medium mb-1">
+          <div className="form-group">
+            <label className="flex items-center gap-2 text-gray-800 dark:text-gray-300 font-semibold mb-2 text-base">
+              <i className="fas fa-file-code text-indigo-500"></i>
               Code Snippet *
             </label>
-            <textarea
-              name="codeSnippet"
-              value={formData.codeSnippet}
-              onChange={handleChange}
-              rows="10"
-              className="w-full px-4 py-3 font-mono text-sm border border-gray-300 rounded-lg text-black dark:text-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
-              required
-              placeholder="Paste your code here"
-            />
-          </div>
-
-          {/* Visibility */}
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="isPublic"
-              name="isPublic"
-              checked={formData.isPublic}
-              onChange={handleChange}
-              className="h-5 w-5 text-indigo-600 focus:ring-indigo-500 transition duration-200"
-            />
-            <label
-              htmlFor="isPublic"
-              className="ml-2 text-gray-800 dark:text-gray-300"
-            >
-              Make this snippet public
-            </label>
+            <div className="relative">
+              <div className="absolute top-3 left-3 z-10">
+                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">
+                  <i className="fas fa-code"></i>
+                  <span>Paste your code here</span>
+                </div>
+              </div>
+              <textarea
+                name="codeSnippet"
+                value={formData.codeSnippet}
+                onChange={handleChange}
+                rows="12"
+                className="w-full px-4 py-12 font-mono text-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all duration-300 hover:border-indigo-300 placeholder-gray-500 dark:placeholder-gray-400 resize-none"
+                required
+                placeholder="// Paste your code here"
+              />
+              <div className="absolute top-4 right-4">
+                <i className="fas fa-asterisk text-red-400 text-xs"></i>
+              </div>
+            </div>
           </div>
 
           {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={submitting}
-            className={`w-full px-6 py-3 text-lg font-medium text-white rounded-lg transition-colors duration-200 ${
-              submitting
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-indigo-600 hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500"
-            }`}
-          >
-            {submitting ? (
-              <span className="flex items-center justify-center">
-                <svg
-                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Submitting...
-              </span>
-            ) : (
-              "Submit Snippet"
-            )}
-          </button>
+          <div className="form-group pt-2">
+            <button
+              type="submit"
+              disabled={submitting}
+              className={`w-full relative overflow-hidden px-6 py-4 text-base font-bold text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-2xl transform hover:scale-105 ${
+                submitting
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-700 hover:via-purple-700 hover:to-indigo-800"
+              }`}
+            >
+              {submitting ? (
+                <span className="flex items-center justify-center gap-3">
+                  <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Publishing Your Code...</span>
+                </span>
+              ) : (
+                <span className="flex items-center justify-center gap-3">
+                  <i className="fas fa-rocket text-xl"></i>
+                  <span>Submit Code Snippet</span>
+                  <i className="fas fa-arrow-right"></i>
+                </span>
+              )}
+              
+              {/* Animated background effect */}
+              {!submitting && (
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-indigo-600 opacity-0 hover:opacity-100 transition-opacity duration-300 rounded-xl"></div>
+              )}
+            </button>
+            
+            {/* Success message area */}
+            <div className="mt-3 text-center">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                <i className="fas fa-info-circle mr-1"></i>
+                Happy Coding</p>
+            </div>
+          </div>
         </form>
+        
+        {/* Footer */}
+        
+        </div>
+      </div>
+      
+      {/* Background decorations */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-purple-400 to-indigo-600 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-indigo-400 to-purple-600 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
       </div>
     </div>
   );

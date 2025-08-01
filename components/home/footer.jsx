@@ -13,7 +13,14 @@ export function FooterComponent() {
         <div
           className={`grid w-full justify-between sm:flex sm:justify-between md:flex md:grid-cols-1 `}
         >
-          <div className={`flex items-center pb-6 lg:pb-0`}>
+          <div className={`flex items-center justify-center sm:justify-start pb-6 lg:pb-0`}>
+            <Image
+              src={"/images/lg/ruet.png"}
+              alt="ruet logo"
+              width={70}
+              height={70}
+              className="mr-4"
+            />
             <Image
               src={"/images/logo.png"}
               alt="logo"
@@ -121,23 +128,23 @@ export function FooterComponent() {
               href="/contact/developers"
               className={`ml-1 hover:underline `}
             >
-              Avengers(sec c)™
+              Avengers (sec c)
             </Link>
           </div>
           <div className={`mt-4 flex  space-x-6 sm:mt-0 justify-center `}>
-            <a target="_blank" href="">
+            <a target="_blank" href="" className="hover:scale-110 transition-transform duration-300">
               <i
-                className={`fa-brands fa-facebook text-gray-600 dark:text-gray-200 text-2xl `}
+                className={`fa-brands fa-facebook text-[#1877F2] text-2xl `}
               ></i>
             </a>
-            <a target="_blank" href="">
+            <a target="_blank" href="" className="hover:scale-110 transition-transform duration-300">
               <i
-                className={`fa-brands fa-instagram text-gray-600 dark:text-gray-200 text-2xl `}
+                className={`fa-brands fa-instagram text-[#E4405F] text-2xl `}
               ></i>
             </a>
-            <a target="_blank" href="">
+            <a target="_blank" href="" className="hover:scale-110 transition-transform duration-300">
               <i
-                className={`fa-brands fa-twitter text-gray-600 dark:text-gray-200 text-2xl `}
+                className={`fa-brands fa-twitter text-[#1DA1F2] text-2xl `}
               ></i>
             </a>
           </div>

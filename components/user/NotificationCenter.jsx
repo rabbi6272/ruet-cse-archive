@@ -376,6 +376,22 @@ const NotificationCenter = ({ userRoll }) => {
 
                       {/* Actions */}
                       <div className="flex-shrink-0 flex flex-col items-end space-y-1 sm:space-y-2">
+                        {/* View My Doubts Button for doubt_solved notifications */}
+                        {notification.type === "doubt_solved" && (
+                          <Link
+                            href="/user/my-doubts"
+                            onClick={() => {
+                              markAsRead(notification.id);
+                              setShowNotifications(false);
+                            }}
+                            className="text-xs px-2 sm:px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-full transition-colors duration-200 font-medium flex items-center gap-1"
+                          >
+                            <i className="fas fa-external-link-alt text-xs"></i>
+                            <span className="hidden sm:inline">View Solution</span>
+                            <span className="sm:hidden">Solution</span>
+                          </Link>
+                        )}
+
                         {/* View Snippet Button */}
                         {notification.relatedSnippetId && (
                           <Link

@@ -45,6 +45,7 @@ const Dashboard = () => {
   });
   const [nutrinosHistory, setNutrinosHistory] = useState([]);
   const [showNutrinosHistory, setShowNutrinosHistory] = useState(false);
+  const [unsolvedDoubtsCount, setUnsolvedDoubtsCount] = useState(0);
 
   const maxCodeLines = 20;
 
@@ -59,6 +60,10 @@ const Dashboard = () => {
       setIsCodeReviewer(isAuthorizedReviewer(parsedUser));
       loadUserSnippets(parsedUser.roll);
       loadUserNutrinosData(parsedUser.roll);
+      // Load unsolved doubts count if user is a code reviewer
+      if (isAuthorizedReviewer(parsedUser)) {
+        loadUnsolvedDoubtsCount();
+      }
       // Record daily visit for Nutrinos
       recordDailyVisit(parsedUser.roll);
     }
@@ -74,6 +79,30 @@ const Dashboard = () => {
       setNutrinosHistory(history);
     } catch (error) {
       console.error("Error loading Nutrinos data:", error);
+    }
+  };
+
+  // Load unsolved doubts count for reviewers
+  const loadUnsolvedDoubtsCount = () => {
+    try {
+      const doubtsRef = ref(db, "doubts");
+      onValue(doubtsRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const unsolvedCount = Object.keys(data)
+            .filter((key) => {
+              const doubt = data[key];
+              return doubt.status === "pending" || doubt.status === "assigned";
+            })
+            .length;
+          setUnsolvedDoubtsCount(unsolvedCount);
+        } else {
+          setUnsolvedDoubtsCount(0);
+        }
+      });
+    } catch (error) {
+      console.error("Error loading unsolved doubts count:", error);
+      setUnsolvedDoubtsCount(0);
     }
   };
 
@@ -240,81 +269,103 @@ const Dashboard = () => {
       <div className="w-full lg:max-w-6xl mx-auto">
         {/* User Profile Section */}
         <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl p-4 lg:p-6 mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex items-center gap-4">
-              {/* Name icon */}
-              <div className="flex-shrink-0 h-12 w-12 lg:h-16 lg:w-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-lg lg:text-2xl font-bold shadow-lg">
+          {/* Main Profile Header */}
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-6">
+            {/* Left Section - User Info */}
+            <div className="flex items-start gap-4 flex-1">
+              {/* Avatar */}
+              <div className="flex-shrink-0 h-16 w-16 lg:h-20 lg:w-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xl lg:text-3xl font-bold shadow-lg">
                 {user.name.charAt(0)}
               </div>
 
-              {/* User Info */}
-              <div>
-                <h1 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {/* User Details */}
+              <div className="flex-1 min-w-0">
+                <h1 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
                   {user.name}
                 </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Roll: {user.roll}
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {snippets.length}{" "}
-                  {snippets.length === 1 ? "snippet" : "snippets"}
-                </p>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  <span className="flex items-center gap-1">
+                    <i className="fas fa-id-badge text-blue-500"></i>
+                    Roll: {user.roll}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <i className="fas fa-code text-green-500"></i>
+                    {snippets.length} {snippets.length === 1 ? "snippet" : "snippets"}
+                  </span>
+                </div>
 
-                {/* Nutrinos Display */}
-                <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  {/* User Role Badge */}
-                  <div className="flex items-center gap-1 bg-gradient-to-r from-purple-500 via-indigo-600 to-purple-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg role-badge">
+                {/* Status Badges */}
+                <div className="flex flex-wrap gap-2">
+                  {/* Role Badge */}
+                  <div className="flex items-center gap-1 bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-md">
                     <span>🛡️</span>
                     <span>{getUserDisplayRole(user)}</span>
                   </div>
 
-                  {/* Nutrinos Count - More Lively */}
-                  <div className="flex items-center gap-1 bg-gradient-to-r from-green-400 to-emerald-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg transform hover:scale-110 transition-all duration-300 nutrinos-badge cursor-pointer">
-                    <span className="lightning-icon">⚡</span>
-                    <span className="font-extrabold bg-gradient-to-r from-white to-green-100 bg-clip-text text-transparent">
-                      {userNutrinos.totalNutrinos.toFixed(2)} Nutrinos
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-2 py-1 rounded-full text-xs font-medium shadow-sm hover:shadow-lg transition-all duration-200 hover:scale-105">
+                  {/* Rank Badge */}
+                  <div className="flex items-center gap-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-md hover:shadow-lg transition-all duration-200">
                     <span>🏆</span>
                     <span>{userNutrinos.rank}</span>
                   </div>
 
-                  <div className="flex items-center gap-1 bg-gradient-to-r from-green-500 to-teal-600 text-white px-2 py-1 rounded-full text-xs font-medium shadow-sm hover:shadow-lg transition-all duration-200 hover:scale-105">
+                  {/* Level Badge */}
+                  <div className="flex items-center gap-1 bg-gradient-to-r from-green-500 to-teal-600 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-md hover:shadow-lg transition-all duration-200">
                     <span>📊</span>
                     <span>Level {userNutrinos.level}</span>
                   </div>
-
-                  <button
-                    onClick={() => setShowNutrinosHistory(!showNutrinosHistory)}
-                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-all duration-200 hover:scale-105 transform px-2 py-1 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
-                  >
-                    <i className="fas fa-history mr-1"></i>
-                    History
-                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Notification Center */}
-            <div className="flex items-center gap-4">
+            {/* Right Section - Notifications */}
+            <div className="flex flex-col items-end gap-3">
               <NotificationCenter userRoll={user?.roll} />
               <Link
                 href="/user/notifications"
-                className="text-xs   text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors flex flex-col items-center gap-1"
+                className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors px-3 py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-1"
               >
-                <i className="fas fa-external-link-alt"></i>
-                <span className="inline">View All</span>
+                <i className="fas fa-external-link-alt text-xs"></i>
+                <span>View all notifications</span>
               </Link>
+            </div>
+          </div>
+
+          {/* Nutrinos Section */}
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-4 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              {/* Nutrinos Display */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 bg-gradient-to-r from-green-400 to-emerald-500 text-white px-4 py-2 rounded-lg shadow-lg">
+                  <span className="text-lg">⚡</span>
+                  <div className="text-left">
+                    <div className="text-xs opacity-90">Total Nutrinos</div>
+                    <div className="text-lg font-bold">{userNutrinos.totalNutrinos.toFixed(2)}</div>
+                  </div>
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <div>Current Progress</div>
+                  <div className="font-semibold text-green-600 dark:text-green-400">
+                    {userNutrinos.rank} • Level {userNutrinos.level}
+                  </div>
+                </div>
+              </div>
+
+              {/* History Button */}
+              <button
+                onClick={() => setShowNutrinosHistory(!showNutrinosHistory)}
+                className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-all duration-200 px-4 py-2 rounded-lg hover:bg-white dark:hover:bg-gray-800 border border-indigo-200 dark:border-indigo-800 flex items-center gap-2"
+              >
+                <i className="fas fa-history"></i>
+                <span>Activity History</span>
+              </button>
             </div>
           </div>
 
           {/* Nutrinos History Dropdown */}
           {showNutrinosHistory && (
-            <div className="relative">
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto">
-                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+            <div className="relative mb-6">
+              <div className="absolute top-0 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                     Recent Nutrinos Activity
                   </h3>
@@ -322,9 +373,9 @@ const Dashboard = () => {
                 <div className="divide-y divide-gray-100 dark:divide-gray-700">
                   {nutrinosHistory.length > 0 ? (
                     nutrinosHistory.map((entry) => (
-                      <div key={entry.id} className="px-4 py-3">
+                      <div key={entry.id} className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                         <div className="flex justify-between items-center">
-                          <div>
+                          <div className="flex-1">
                             <p className="text-sm text-gray-900 dark:text-gray-100">
                               {typeof entry.reason === "string"
                                 ? entry.reason
@@ -335,10 +386,10 @@ const Dashboard = () => {
                             </p>
                           </div>
                           <div
-                            className={`text-sm font-bold ${
+                            className={`text-sm font-bold px-2 py-1 rounded ${
                               entry.nutrinos >= 0
-                                ? "text-green-600"
-                                : "text-red-600"
+                                ? "text-green-600 bg-green-100 dark:bg-green-900/30"
+                                : "text-red-600 bg-red-100 dark:bg-red-900/30"
                             }`}
                           >
                             {entry.nutrinos >= 0 ? "+" : ""}
@@ -348,7 +399,8 @@ const Dashboard = () => {
                       </div>
                     ))
                   ) : (
-                    <div className="px-4 py-6 text-center text-gray-500 dark:text-gray-400">
+                    <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                      <i className="fas fa-inbox text-2xl mb-2 opacity-50"></i>
                       <p className="text-sm">No Nutrinos activity yet</p>
                     </div>
                   )}
@@ -365,45 +417,54 @@ const Dashboard = () => {
             />
           )}
 
-          {/* Action Buttons */}
-          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3">
+          {/* Quick Actions */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              Quick Actions
+            </h3>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <button
                 onClick={handleNewSnippet}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 lg:px-6 lg:py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center gap-2"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg transform hover:scale-105"
               >
-                <i className="fas fa-plus text-xs"></i>
-                <span className="hidden sm:inline">Add Code</span>
-                <span className="sm:hidden">Add</span>
+                <i className="fas fa-plus text-sm"></i>
+                <span className="hidden sm:inline text-sm font-medium">Add Codesnippet</span>
+                <span className="sm:hidden text-sm font-medium">Add</span>
               </button>
 
               <Link
                 href="/contact&help/help"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 lg:px-6 lg:py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center gap-2"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg transform hover:scale-105"
               >
-                <i className="fas fa-question-circle text-xs"></i>
-                <span className="hidden sm:inline">Post Doubt</span>
-                <span className="sm:hidden">Doubt</span>
+                <i className="fas fa-question-circle text-sm"></i>
+                <span className="hidden sm:inline text-sm font-medium">Ask Help</span>
+                <span className="sm:hidden text-sm font-medium">Help</span>
               </Link>
 
               <Link
                 href="/user/my-doubts"
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 lg:px-6 lg:py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center gap-2"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg transform hover:scale-105"
               >
-                <i className="fas fa-list text-xs"></i>
-                <span className="hidden sm:inline">My Doubts</span>
-                <span className="sm:hidden">Doubts</span>
+                <i className="fas fa-list text-sm"></i>
+                <span className="hidden sm:inline text-sm font-medium">My Doubts</span>
+                <span className="sm:hidden text-sm font-medium">Doubts</span>
               </Link>
 
               {/* Code Reviewer Button - Only show for authorized reviewers */}
               {isCodeReviewer && (
                 <Link
                   href="/reviewers/dashboard"
-                  className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 lg:px-6 lg:py-2.5 rounded-lg shadow transition duration-200 flex items-center justify-center gap-2"
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-3 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg transform hover:scale-105 relative"
                 >
-                  <i className="fas fa-clipboard-check text-xs"></i>
-                  <span className="hidden sm:inline">Resolve Doubts</span>
-                  <span className="sm:hidden">Resolve</span>
+                  <i className="fas fa-clipboard-check text-sm"></i>
+                  <span className="hidden sm:inline text-sm font-medium">Solve Doubts</span>
+                  <span className="sm:hidden text-sm font-medium">Solve</span>
+                  {/* Unsolved doubts count badge */}
+                  {unsolvedDoubtsCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-lg">
+                      {unsolvedDoubtsCount > 99 ? '99+' : unsolvedDoubtsCount}
+                    </span>
+                  )}
                 </Link>
               )}
             </div>
@@ -546,7 +607,7 @@ const Dashboard = () => {
                         {snippet.description}
                       </p>
 
-                      <div className="code-container dark:bg-gray-900 bg-gray-200 rounded-xl overflow-hidden relative group">
+                      <div className="code-container bg-gray-900 rounded-xl overflow-hidden relative group">
                         {/* Code snippet */}
                         <pre
                           className={`p-4 overflow-x-auto transition-transform duration-500 ${
@@ -575,7 +636,7 @@ const Dashboard = () => {
                         {isCodeLong(snippet.codeSnippet) && (
                           <div className="flex justify-center p-3">
                             <button
-                              className="px-4 py-2 text-sm font-medium rounded-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors shadow-sm"
+                              className="px-4 py-2 text-sm font-medium rounded-full bg-gray-800 hover:bg-gray-700 text-gray-300 transition-colors shadow-sm"
                               onClick={() => {
                                 // Remove highlighting before animation
                                 const codeBlocks =
