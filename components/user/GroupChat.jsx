@@ -559,7 +559,37 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
                 </button>
               </div>
               <div className="space-y-2 max-h-40 overflow-y-auto">
-                {userGroup.participants.map((roll) => {
+                {userGroup.participants
+                  .sort((a, b) => {
+                    const aIsOnline = activeUsers[a]?.online || a === userRoll;
+                    const bIsOnline = activeUsers[b]?.online || b === userRoll;
+                    const aLastSeen = activeUsers[a]?.lastSeen;
+                    const bLastSeen = activeUsers[b]?.lastSeen;
+                    
+                    // Priority: 1. Active users, 2. Users with last seen, 3. Offline users
+                    if (aIsOnline && !bIsOnline) return -1;
+                    if (!aIsOnline && bIsOnline) return 1;
+                    if (aIsOnline && bIsOnline) {
+                      // Both online: current user first
+                      if (a === userRoll) return -1;
+                      if (b === userRoll) return 1;
+                      return 0;
+                    }
+                    
+                    // Both offline: prioritize those with last seen time
+                    const aHasLastSeen = !!aLastSeen;
+                    const bHasLastSeen = !!bLastSeen;
+                    
+                    if (aHasLastSeen && !bHasLastSeen) return -1;
+                    if (!aHasLastSeen && bHasLastSeen) return 1;
+                    if (aHasLastSeen && bHasLastSeen) {
+                      // Both have last seen: sort by most recent
+                      return new Date(bLastSeen) - new Date(aLastSeen);
+                    }
+                    
+                    return 0; // Both completely offline
+                  })
+                  .map((roll) => {
                   const memberName = userGroup.participantNames[roll];
                   const isOnline = activeUsers[roll]?.online || false;
                   const lastSeen = activeUsers[roll]?.lastSeen;
