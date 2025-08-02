@@ -18,6 +18,7 @@ import {
 } from "firebase/database";
 import toast from "react-hot-toast";
 import { getUserGroup, isUserInGroup, getGroupName } from "@/lib/group-utils";
+import EmojiPanel from "@/components/ui/EmojiPanel";
 
 // Link detection and preview utilities
 const SUPPORTED_PLATFORMS = {
@@ -395,7 +396,9 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
   const [userGroup, setUserGroup] = useState(null);
   const [showMemberList, setShowMemberList] = useState(false);
   const messagesEndRef = useRef(null);
+  const messageInputRef = useRef(null);
   const [swipeState, setSwipeState] = useState({ startX: 0, currentX: 0, messageId: null, swiping: false });
+  const [showEmojiPanel, setShowEmojiPanel] = useState(false);
 
   // Get user's group on component mount
   useEffect(() => {
@@ -679,6 +682,13 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
       senderName: message.senderName,
       senderRoll: message.senderRoll,
     });
+    
+    // Focus the input field after setting reply
+    setTimeout(() => {
+      if (messageInputRef.current) {
+        messageInputRef.current.focus();
+      }
+    }, 100);
   };
 
   // Cancel reply
@@ -728,6 +738,29 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
     if (swipeState.messageId !== messageId || !swipeState.swiping) return 0;
     const deltaX = swipeState.currentX - swipeState.startX;
     return Math.min(Math.max(deltaX, 0), 100);
+  };
+
+  // Handle emoji selection
+  const handleEmojiSelect = (emoji) => {
+    const input = messageInputRef.current;
+    if (input) {
+      const start = input.selectionStart;
+      const end = input.selectionEnd;
+      const text = newMessage;
+      const newText = text.substring(0, start) + emoji + text.substring(end);
+      setNewMessage(newText);
+      
+      // Set cursor position after the emoji
+      setTimeout(() => {
+        input.selectionStart = input.selectionEnd = start + emoji.length;
+        input.focus();
+      }, 0);
+    } else {
+      setNewMessage(prev => prev + emoji);
+    }
+    
+    // Close emoji panel
+    setShowEmojiPanel(false);
   };
 
   // Send message
@@ -1273,35 +1306,54 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
           )}
           
           <div className="p-3 sm:p-4 md:p-5">
-            <div className="flex gap-2 sm:gap-3 md:gap-4">
-              <input
-                type="text"
-                placeholder="Type a message..."
-                value={newMessage}
-                onChange={(e) => {
-                  setNewMessage(e.target.value);
-                  if (e.target.value.trim()) {
-                    handleTyping();
-                  } else {
-                    clearTyping();
-                  }
-                }}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    sendMessage();
-                  }
-                }}
-                onBlur={clearTyping}
-                className="flex-1 px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
-              />
-              <button
-                onClick={sendMessage}
-                disabled={!newMessage.trim()}
-                className="px-4 sm:px-5 py-2 sm:py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-              >
-                <i className="fas fa-paper-plane text-sm sm:text-base"></i>
-              </button>
+            <div className="relative">
+              <div className="flex gap-2 sm:gap-3 md:gap-4">
+                <div className="flex-1 relative">
+                  <input
+                    ref={messageInputRef}
+                    type="text"
+                    placeholder="Type a message..."
+                    value={newMessage}
+                    onChange={(e) => {
+                      setNewMessage(e.target.value);
+                      if (e.target.value.trim()) {
+                        handleTyping();
+                      } else {
+                        clearTyping();
+                      }
+                    }}
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        sendMessage();
+                      }
+                    }}
+                    onBlur={clearTyping}
+                    className="w-full pr-10 px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowEmojiPanel(!showEmojiPanel)}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                    title="Add emoji"
+                  >
+                    <span className="text-lg">😀</span>
+                  </button>
+                  <EmojiPanel
+                    isOpen={showEmojiPanel}
+                    onClose={() => setShowEmojiPanel(false)}
+                    onEmojiSelect={handleEmojiSelect}
+                    inputRef={messageInputRef}
+                  />
+                </div>
+                <button
+                  onClick={sendMessage}
+                  disabled={!newMessage.trim()}
+                  className="px-4 sm:px-5 py-2 sm:py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                >
+                  <i className="fas fa-paper-plane text-sm sm:text-base"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>
