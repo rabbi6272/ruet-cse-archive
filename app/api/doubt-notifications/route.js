@@ -270,6 +270,23 @@ export async function POST(request) {
       }
     }
 
+    if (action === "check_assembly_removal") {
+      // Check if assembly notification should be removed after solution submission
+      try {
+        await removeAssemblyNotificationIfResolved();
+        return Response.json({ 
+          success: true, 
+          message: "Assembly notification check completed"
+        });
+      } catch (assemblyError) {
+        console.error('Failed to check assembly notification:', assemblyError);
+        return Response.json({ 
+          success: false, 
+          message: "Failed to check assembly notification" 
+        }, { status: 500 });
+      }
+    }
+
     return Response.json({ success: false, message: "Invalid action" }, { status: 400 });
 
   } catch (error) {

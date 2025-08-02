@@ -307,6 +307,22 @@ const ReviewerDashboard = () => {
         console.error("Failed to notify user:", notifError);
       }
 
+      // Check if assembly notification should be removed after solution submission
+      try {
+        await fetch("/api/doubt-notifications", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "check_assembly_removal",
+            userRoll: user.roll,
+          }),
+        });
+      } catch (assemblyError) {
+        console.error("Failed to check assembly notification removal:", assemblyError);
+      }
+
       toast.success("Solution submitted successfully! User will be notified.");
       setSelectedDoubt(null);
       setSolution("");
