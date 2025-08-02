@@ -1,7 +1,6 @@
 import { db } from "@/lib/firebase";
 import { ref, onValue, push, update, remove } from "firebase/database";
 import { calculateSolverPoints } from "@/lib/points-system";
-import { isAuthorizedReviewer } from "@/lib/auth-utils";
 import { 
   sendAvengersAssemblyNotification, 
   removeAssemblyNotificationIfResolved 
@@ -11,23 +10,12 @@ export async function POST(request) {
   try {
     const { doubtId, action, userId, userRoll } = await request.json();
 
-    // Check authorization for reviewer-only actions
-    const reviewerOnlyActions = ["notify_solution"];
-    if (reviewerOnlyActions.includes(action)) {
-      if (!userRoll || !isAuthorizedReviewer({ roll: userRoll })) {
-        return Response.json(
-          { success: false, message: "Unauthorized: Only code reviewers can perform this action" },
-          { status: 403 }
-        );
-      }
-    }
-
     if (action === "notify_solution") {
       // Create notification for user when solution is available
       const notificationData = {
         type: "doubt_solved",
         title: "Your doubt has been solved!",
-        message: "A code reviewer has provided a solution to your doubt. Check it out!",
+        message: "A classmate has provided a solution to your doubt. Check it out!",
         doubtId: doubtId,
         timestamp: Date.now(),
         createdAt: new Date().toISOString(),
