@@ -17,6 +17,7 @@ import {
   serverTimestamp,
 } from "firebase/database";
 import toast from "react-hot-toast";
+import { users } from "@/lib/mino";
 
 const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState("chats");
@@ -545,14 +546,9 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
 
     setLoading(true);
     try {
-      // First, validate if the user exists in the registered users
-      const studentsRef = ref(db, "students");
-      const studentsSnapshot = await get(studentsRef);
-      const studentsData = studentsSnapshot.val() || {};
-      
-      // Check if user exists in students database
-      const userExists = Object.values(studentsData).some(
-        (student) => student.roll === requestRoll
+      // First, validate if the user exists in the registered users from mino.js
+      const userExists = users.some(
+        (user) => user.roll === requestRoll
       );
 
       if (!userExists) {
@@ -608,9 +604,9 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
         return;
       }
 
-      // Get the target user's name from students data
-      const targetUser = Object.values(studentsData).find(
-        (student) => student.roll === requestRoll
+      // Get the target user's name from mino.js users array
+      const targetUser = users.find(
+        (user) => user.roll === requestRoll
       );
 
       await push(requestsRef, {
