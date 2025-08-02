@@ -538,6 +538,13 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
       return;
     }
 
+    // Validate roll number format (must be exactly 7 digits)
+    const rollPattern = /^\d{7}$/;
+    if (!rollPattern.test(requestRoll.trim())) {
+      toast.error("Roll number must be exactly 7 digits");
+      return;
+    }
+
     if (requestRoll === userRoll) {
       toast.error("You cannot send a request to yourself");
       return;
@@ -1150,11 +1157,16 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                     <div className="flex gap-2 sm:gap-3">
                       <input
                         type="text"
-                        placeholder="Enter roll number"
+                        placeholder="Enter 7-digit roll number"
                         value={requestRoll}
-                        onChange={(e) => setRequestRoll(e.target.value)}
+                        onChange={(e) => {
+                          // Only allow numeric input and limit to 7 digits
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 7);
+                          setRequestRoll(value);
+                        }}
                         className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         onKeyPress={(e) => e.key === "Enter" && sendChatRequest()}
+                        maxLength={7}
                       />
                       <button
                         onClick={sendChatRequest}
