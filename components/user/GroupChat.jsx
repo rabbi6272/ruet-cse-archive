@@ -205,6 +205,22 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
     return () => unsubscribeUnread();
   }, [userRoll, isOpen, userGroup]);
 
+  // Track message read status
+  useEffect(() => {
+    if (!userGroup || !userRoll) return;
+
+    const readStatusRef = ref(db, `groupMessageReadStatus/${userGroup.id}`);
+    
+    const unsubscribeReadStatus = onValue(readStatusRef, (snapshot) => {
+      const data = snapshot.val() || {};
+      setMessageReadStatus(data);
+    }, (error) => {
+      console.error("Error listening to message read status:", error);
+    });
+
+    return () => unsubscribeReadStatus();
+  }, [userGroup, userRoll]);
+
   // Mark messages as read when group is active
   useEffect(() => {
     if (!userGroup || !userRoll) return;
@@ -453,6 +469,28 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
   // Get online count
   const getOnlineCount = () => {
     return Object.values(activeUsers).filter(user => user.online).length + 1; // +1 for current user
+  };
+
+  // Get users who have seen a specific message
+  const getMessageSeenBy = (messageId) => {
+    if (!messageReadStatus[messageId] || !userGroup) return [];
+    
+    const seenBy = [];
+    const messageReads = messageReadStatus[messageId];
+    
+    userGroup.participants.forEach(roll => {
+      if (messageReads[roll] && roll !== userRoll) { // Exclude current user
+        const memberName = userGroup.participantNames[roll];
+        seenBy.push({
+          roll,
+          name: toProperCase(memberName) || roll,
+          readAt: messageReads[roll].readAt
+        });
+      }
+    });
+    
+    // Sort by read time (most recent first)
+    return seenBy.sort((a, b) => new Date(b.readAt) - new Date(a.readAt));
   };
 
   if (!isOpen || !userGroup) return null;
@@ -741,6 +779,45 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
                   )}
 
                   <p className="text-sm sm:text-base break-words">{message.text}</p>
+                  
+                  {/* Seen by display (Facebook-style) - inside message bubble */}
+                  {isOwnMessage && (() => {
+                    const seenBy = getMessageSeenBy(message.id);
+                    if (seenBy.length === 0) return null;
+                    
+                    return (
+                      <div className="flex items-center gap-1 mt-1 mb-1">
+                        {/* Show up to 3 profile initials */}
+                        <div className="flex -space-x-1">
+                          {seenBy.slice(0, 3).map((user, index) => (
+                            <div
+                              key={user.roll}
+                              className="w-3 h-3 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center text-white text-[7px] font-bold border border-white dark:border-indigo-600"
+                              style={{ zIndex: 3 - index }}
+                              title={`Seen by ${user.name}`}
+                            >
+                              {user.name.charAt(0)}
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* Seen by text */}
+                        <span className={`text-[9px] ml-1 ${
+                          isOwnMessage 
+                            ? "text-indigo-200" 
+                            : "text-gray-500 dark:text-gray-400"
+                        }`}>
+                          {seenBy.length === 1 
+                            ? `Seen by ${seenBy[0].name}`
+                            : seenBy.length <= 3
+                              ? `Seen by ${seenBy.map(u => u.name).join(', ')}`
+                              : `Seen by ${seenBy.slice(0, 2).map(u => u.name).join(', ')} and ${seenBy.length - 2} others`
+                          }
+                        </span>
+                      </div>
+                    );
+                  })()}
+
                   <p
                     className={`text-xs mt-1 ${
                       isOwnMessage
