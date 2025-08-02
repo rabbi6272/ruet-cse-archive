@@ -12,7 +12,7 @@ import {
   update,
   remove,
 } from "firebase/database";
-import { isAuthorizedReviewer, getUserDisplayRole } from "@/lib/auth-utils";
+import { getUserDisplayRole } from "@/lib/auth-utils";
 import toast, { Toaster } from "react-hot-toast";
 import NotificationCenter from "./NotificationCenter";
 import Link from "next/link";
@@ -43,7 +43,6 @@ const Dashboard = () => {
   const [editForm, setEditForm] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState(null);
-  const [isCodeReviewer, setIsCodeReviewer] = useState(false);
   const [expandedSnippets, setExpandedSnippets] = useState({});
   const [userNutrinos, setUserNutrinos] = useState({
     totalNutrinos: 0,
@@ -73,7 +72,6 @@ const Dashboard = () => {
     } else {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
-      setIsCodeReviewer(isAuthorizedReviewer(parsedUser));
       loadUserSnippets(parsedUser.roll);
       loadUserNutrinosData(parsedUser.roll);
       // Load unsolved doubts count for all users
