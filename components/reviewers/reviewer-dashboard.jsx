@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import { ref, onValue, update, remove } from "firebase/database";
-import { isAuthorizedReviewer } from "@/lib/auth-utils";
 import { calculateSolverPoints } from "@/lib/points-system";
 import { addNutrinos } from "@/lib/nutrinos-system";
 import toast, { Toaster } from "react-hot-toast";
@@ -33,15 +32,7 @@ const ReviewerDashboard = () => {
 
     const parsedUser = JSON.parse(userData);
 
-    // Check if user is authorized reviewer using utility function
-    if (!isAuthorizedReviewer(parsedUser)) {
-      toast.error(
-        "Access denied. You are not authorized to access this dashboard."
-      );
-      router.push("/user/dashboard");
-      return;
-    }
-
+    // All users are now allowed to solve doubts
     setUser(parsedUser);
     loadDoubts();
   }, [router]);
@@ -286,7 +277,7 @@ const ReviewerDashboard = () => {
         await addNutrinos(
           user.roll,
           "doubt_solve",
-          "Solved doubt in reviewer dashboard",
+          "Solved doubt in doubts dashboard",
           {
             title: selectedDoubt.title,
             category: selectedDoubt.category,
@@ -382,10 +373,10 @@ const ReviewerDashboard = () => {
       <div className="max-w-[95%] sm:max-w-7xl mx-auto px-4">
         <div className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-200">
-            Code Reviewers Dashboard
+            Doubts Solving Dashboard
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Help coders/programmers with their coding doubts
+            Help your classmates with their coding doubts
           </p>
         </div>
 
