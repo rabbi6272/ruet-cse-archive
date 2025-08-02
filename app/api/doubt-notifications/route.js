@@ -3,8 +3,14 @@ import { ref, onValue, push, update, remove } from "firebase/database";
 import { calculateSolverPoints } from "@/lib/points-system";
 import { 
   sendAvengersAssemblyNotification, 
-  removeAssemblyNotificationIfResolved 
+  removeAssemblyNotificationIfResolved,
+  manageAssemblyNotification
 } from "@/lib/global-notifications";
+
+// Debug logging function
+const debugLog = (message, data = null) => {
+  console.log(`[DOUBT NOTIFICATIONS API] ${message}`, data ? data : '');
+};
 
 export async function POST(request) {
   try {
@@ -30,6 +36,8 @@ export async function POST(request) {
     }
 
     if (action === "notify_reviewers") {
+      debugLog('🔔 Processing notify_reviewers action', { doubtId });
+      
       // Create notification for all reviewers when new doubt is submitted
       const reviewerNotificationData = {
         type: "new_doubt",
@@ -41,17 +49,36 @@ export async function POST(request) {
         link: `/reviewers/dashboard`
       };
 
-      // You can expand this to notify specific reviewers
+      // Notify reviewers
       const notificationsRef = ref(db, "reviewerNotifications");
       await push(notificationsRef, reviewerNotificationData);
+      debugLog('✅ Reviewer notification sent');
 
-      // Send Avengers assembly notification to all users
-      try {
-        await sendAvengersAssemblyNotification();
-        console.log('Avengers assembly notification sent to all users');
-      } catch (assemblyError) {
-        console.error('Failed to send assembly notification:', assemblyError);
-        // Don't fail the main request if assembly notification fails
+      // Get doubt data for personalized assembly notification
+      debugLog('📖 Fetching doubt data for assembly notification...');
+      const doubtRef = ref(db, `doubts/${doubtId}`);
+      const doubtSnapshot = await new Promise((resolve) => {
+        onValue(doubtRef, resolve, { onlyOnce: true });
+      });
+      const doubtData = doubtSnapshot.val();
+      
+      if (doubtData) {
+        debugLog('📋 Doubt data retrieved', { 
+          title: doubtData.title, 
+          asker: doubtData.userDetails?.name 
+        });
+        
+        // Send Avengers assembly notification to all users with doubt information
+        try {
+          debugLog('🦸‍♂️ Sending Avengers Assembly notification...');
+          const assemblyResult = await sendAvengersAssemblyNotification(doubtData);
+          debugLog('✅ Assembly notification result:', assemblyResult);
+        } catch (assemblyError) {
+          console.error('❌ Failed to send assembly notification:', assemblyError);
+          // Don't fail the main request if assembly notification fails
+        }
+      } else {
+        debugLog('❌ Doubt data not found for assembly notification');
       }
 
       return Response.json({ success: true, message: "Reviewers notified and Avengers assembled" });
@@ -134,12 +161,12 @@ export async function POST(request) {
         // Remove from pending/active doubts
         await remove(doubtRef);
         
-        // Check if assembly notification should be removed
+        // Check and manage assembly notification after doubt resolution
         try {
-          await removeAssemblyNotificationIfResolved();
-          console.log('Checked assembly notification after doubt resolution');
+          const result = await manageAssemblyNotification();
+          console.log('Assembly notification managed after doubt resolution:', result.message);
         } catch (assemblyError) {
-          console.error('Failed to check assembly notification:', assemblyError);
+          console.error('Failed to manage assembly notification:', assemblyError);
         }
         
         return Response.json({ 
@@ -260,6 +287,14 @@ export async function POST(request) {
         const notificationsRef = ref(db, "reviewerNotifications");
         await push(notificationsRef, reviewerNotificationData);
         
+        // Manage assembly notification for reopened doubt
+        try {
+          const result = await manageAssemblyNotification();
+          console.log('Assembly notification managed for reopened doubt:', result.message);
+        } catch (assemblyError) {
+          console.error('Failed to manage assembly notification for reopened doubt:', assemblyError);
+        }
+        
         return Response.json({ 
           success: true, 
           message: "Doubt reopened for further assistance",
@@ -271,18 +306,19 @@ export async function POST(request) {
     }
 
     if (action === "check_assembly_removal") {
-      // Check if assembly notification should be removed after solution submission
+      // Check and manage assembly notification after solution submission
       try {
-        await removeAssemblyNotificationIfResolved();
+        const result = await manageAssemblyNotification();
         return Response.json({ 
           success: true, 
-          message: "Assembly notification check completed"
+          message: result.message,
+          action: result.action
         });
       } catch (assemblyError) {
-        console.error('Failed to check assembly notification:', assemblyError);
+        console.error('Failed to manage assembly notification:', assemblyError);
         return Response.json({ 
           success: false, 
-          message: "Failed to check assembly notification" 
+          message: "Failed to manage assembly notification" 
         }, { status: 500 });
       }
     }

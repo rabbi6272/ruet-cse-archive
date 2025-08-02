@@ -26,6 +26,7 @@ import {
 } from "@/lib/nutrinos-system";
 import { presenceTracker } from "@/lib/presence-tracker";
 import ActiveUsersIndicator from "@/components/ui/ActiveUsersIndicator";
+import AvengersStatusIndicator from "@/components/ui/AvengersStatusIndicator";
 import { useP2PChat } from "@/components/providers/P2PChatProvider";
 import P2PChat from "./P2PChat";
 import GroupChat from "./GroupChat";
@@ -102,7 +103,7 @@ const Dashboard = () => {
     }
   };
 
-  // Load unsolved doubts count for reviewers
+  // Load unsolved doubts count for all users
   const loadUnsolvedDoubtsCount = () => {
     try {
       const doubtsRef = ref(db, "doubts");
@@ -114,13 +115,57 @@ const Dashboard = () => {
             return doubt.status === "pending" || doubt.status === "assigned";
           }).length;
           setUnsolvedDoubtsCount(unsolvedCount);
+          
+          // Auto-manage assembly notification based on doubt count
+          manageAssemblyNotificationForCount(unsolvedCount);
         } else {
           setUnsolvedDoubtsCount(0);
+          // Auto-manage assembly notification when no doubts
+          manageAssemblyNotificationForCount(0);
         }
       });
     } catch (error) {
       console.error("Error loading unsolved doubts count:", error);
       setUnsolvedDoubtsCount(0);
+    }
+  };
+
+  // Auto-manage assembly notification based on doubt count
+  const manageAssemblyNotificationForCount = async (doubtCount) => {
+    try {
+      // Only call API if user is available
+      if (!user?.roll) return;
+      
+      console.log(`[DASHBOARD] Managing assembly notification for ${doubtCount} doubts`);
+      
+      // Use the improved management API
+      const response = await fetch("/api/doubt-notifications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "check_assembly_removal",
+          userRoll: user.roll,
+        }),
+      });
+      
+      const result = await response.json();
+      console.log(`[DASHBOARD] Assembly notification management result:`, result);
+      
+      // Show user feedback for important actions
+      if (result.success && result.action) {
+        switch (result.action) {
+          case 'sent':
+            console.log('🦸‍♂️ Avengers Assembly notification sent to all users!');
+            break;
+          case 'removed':
+            console.log('✅ Mission complete! Assembly notification removed.');
+            break;
+        }
+      }
+    } catch (error) {
+      console.error("Error managing assembly notification:", error);
     }
   };
 
@@ -581,12 +626,19 @@ const Dashboard = () => {
                 <span className="sm:hidden text-sm font-medium">Solve</span>
                 {/* Unsolved doubts count badge */}
                 {unsolvedDoubtsCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-lg">
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-lg animate-pulse">
                     {unsolvedDoubtsCount > 99 ? "99+" : unsolvedDoubtsCount}
+                  </span>
+                )}
+                {/* Avengers Assembly indicator */}
+                {unsolvedDoubtsCount > 0 && (
+                  <span className="absolute -top-1 -left-1 text-yellow-400 text-lg animate-bounce" title="Avenger Assemble!! Go to solve doubts section">
+                    🚨
                   </span>
                 )}
               </Link>
             </div>
+
           </div>
         </div>
 
@@ -596,6 +648,9 @@ const Dashboard = () => {
             {error}
           </div>
         )}
+
+        {/* Avengers Assembly Status */}
+        <AvengersStatusIndicator unsolvedDoubtsCount={unsolvedDoubtsCount} />
 
         {/* Snippets Section */}
         <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden">

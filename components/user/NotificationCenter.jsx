@@ -154,9 +154,22 @@ const NotificationCenter = ({ userRoll }) => {
           time: timeAgo,
         };
       case "doubt_assembly":
+        // Display enhanced message with asker's name if available
+        const assemblyTitle = notification.title || "🦸‍♂️ Avengers, Assemble! 🦸‍♀️";
+        let assemblyMessage = notification.message || "A fellow coder needs your help! Join the mission to solve doubts and save the day.";
+        
+        // Add doubt-specific information if available
+        if (notification.doubtInfo) {
+          const { askerName, doubtTitle, category } = notification.doubtInfo;
+          if (askerName && doubtTitle) {
+            assemblyMessage = `${askerName} needs help with: "${doubtTitle}" (${category || 'General'})`;
+          }
+        }
+        
         return {
-          main: notification.title || "🦸‍♂️ Avengers, Assemble! 🦸‍♀️",
+          main: assemblyTitle,
           time: timeAgo,
+          subtitle: assemblyMessage
         };
       default:
         return {
@@ -316,6 +329,13 @@ const NotificationCenter = ({ userRoll }) => {
                           <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 leading-relaxed">
                             {formatNotificationMessage(notification).main}
                           </p>
+
+                          {/* Subtitle for assembly notifications */}
+                          {formatNotificationMessage(notification).subtitle && (
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 italic">
+                              {formatNotificationMessage(notification).subtitle}
+                            </p>
+                          )}
 
                           {/* Time ago */}
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
