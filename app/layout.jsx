@@ -3,6 +3,7 @@ import "./globals.css";
 import { Navbar } from "@/components/home/navbar/navbar";
 import { FooterComponent } from "@/components/home/footer";
 import { PageTitleProvider } from "@/components/providers/PageTitleProvider";
+import { P2PChatProvider } from "@/components/providers/P2PChatProvider";
 import GlobalPresenceTracker from "@/components/providers/GlobalPresenceTracker";
 import AIAssistant from "@/components/ai/AIAssistant";
 import NoSSR from "@/components/ui/NoSSR";
@@ -164,18 +165,20 @@ export default function RootLayout({ children }) {
         suppressHydrationWarning={true}
       >
         <PageTitleProvider>
-          <SpeedInsights />
-          <Analytics />
-          <Toaster />
-          <GlobalPresenceTracker />
-          <Navbar />
+          <P2PChatProvider>
+            <SpeedInsights />
+            <Analytics />
+            <Toaster />
+            <GlobalPresenceTracker />
+            <Navbar />
 
-          {children}
+            {children}
 
-          <FooterComponent />
-          <NoSSR fallback={null}>
-            <AIAssistant />
-          </NoSSR>
+            <FooterComponent />
+            <NoSSR fallback={null}>
+              <AIAssistant />
+            </NoSSR>
+          </P2PChatProvider>
         </PageTitleProvider>
       </body>
     </html>

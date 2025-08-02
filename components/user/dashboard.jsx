@@ -26,11 +26,15 @@ import {
 } from "@/lib/nutrinos-system";
 import { presenceTracker } from "@/lib/presence-tracker";
 import ActiveUsersIndicator from "@/components/ui/ActiveUsersIndicator";
+import { useP2PChat } from "@/components/providers/P2PChatProvider";
+import P2PChat from "./P2PChat";
+import { notificationSound } from "@/lib/notificationSound";
 
 const ITEMS_PER_PAGE = 5;
 
 const Dashboard = () => {
   const router = useRouter();
+  const { isP2PChatOpen, openP2PChat, closeP2PChat } = useP2PChat();
   const [user, setUser] = useState(null);
   const [snippets, setSnippets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +52,12 @@ const Dashboard = () => {
   const [nutrinosHistory, setNutrinosHistory] = useState([]);
   const [showNutrinosHistory, setShowNutrinosHistory] = useState(false);
   const [unsolvedDoubtsCount, setUnsolvedDoubtsCount] = useState(0);
+  const [pendingChatRequests, setPendingChatRequests] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  
+  // Previous counts for sound notification tracking
+  const [prevPendingChatRequests, setPrevPendingChatRequests] = useState(0);
+  const [prevUnreadMessagesCount, setPrevUnreadMessagesCount] = useState(0);
 
   const maxCodeLines = 20;
 
@@ -64,6 +74,10 @@ const Dashboard = () => {
       loadUserNutrinosData(parsedUser.roll);
       // Load unsolved doubts count for all users
       loadUnsolvedDoubtsCount();
+      // Load pending chat requests count
+      loadPendingChatRequestsCount(parsedUser.roll);
+      // Load unread messages count
+      loadUnreadMessagesCount(parsedUser.roll);
       // Record daily visit for Nutrinos
       recordDailyVisit(parsedUser.roll);
     }
@@ -103,6 +117,60 @@ const Dashboard = () => {
     } catch (error) {
       console.error("Error loading unsolved doubts count:", error);
       setUnsolvedDoubtsCount(0);
+    }
+  };
+
+  // Load pending chat requests count
+  const loadPendingChatRequestsCount = (rollNumber) => {
+    try {
+      const requestsRef = ref(db, "p2pChatRequests");
+      const incomingRequestsQuery = query(
+        requestsRef,
+        orderByChild("toRoll"),
+        equalTo(rollNumber)
+      );
+
+      onValue(incomingRequestsQuery, (snapshot) => {
+        const data = snapshot.val() || {};
+        const pendingCount = Object.keys(data).filter((key) => {
+          const request = data[key];
+          return request.status === "pending";
+        }).length;
+        
+        // Play sound notification if count increased (new request received)
+        if (pendingCount > prevPendingChatRequests && prevPendingChatRequests !== 0) {
+          notificationSound.playNotificationSound().catch(console.error);
+        }
+        
+        setPrevPendingChatRequests(pendingChatRequests);
+        setPendingChatRequests(pendingCount);
+      });
+    } catch (error) {
+      console.error("Error loading pending chat requests count:", error);
+      setPendingChatRequests(0);
+    }
+  };
+
+  // Load unread messages count
+  const loadUnreadMessagesCount = (rollNumber) => {
+    try {
+      const unreadRef = ref(db, `unreadCounts/${rollNumber}`);
+      
+      onValue(unreadRef, (snapshot) => {
+        const data = snapshot.val() || {};
+        const totalUnread = Object.values(data).reduce((total, count) => total + (count || 0), 0);
+        
+        // Play sound notification if count increased (new message received)
+        if (totalUnread > prevUnreadMessagesCount && prevUnreadMessagesCount !== 0) {
+          notificationSound.playNotificationSound().catch(console.error);
+        }
+        
+        setPrevUnreadMessagesCount(unreadMessagesCount);
+        setUnreadMessagesCount(totalUnread);
+      });
+    } catch (error) {
+      console.error("Error loading unread messages count:", error);
+      setUnreadMessagesCount(0);
     }
   };
 
@@ -344,7 +412,7 @@ const Dashboard = () => {
               {/* Nutrinos Display */}
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 bg-gradient-to-r from-green-400 to-emerald-500 text-white px-4 py-2 rounded-lg shadow-lg">
-                  <span className="text-lg">⚡</span>
+                  <i className="fas fa-bolt text-lg"></i>
                   <div className="text-left">
                     <div className="text-xs opacity-90">Total Nutrinos</div>
                     <div className="text-lg font-bold">
@@ -750,6 +818,59 @@ const Dashboard = () => {
           )}
         </div>
       </div>
+
+      {/* P2P Chat Bubble */}
+      <div className="fixed bottom-6 right-6 z-[55] sm:bottom-8 sm:right-8">
+        <button
+          onClick={() => openP2PChat()}
+          className="relative group w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-700 hover:from-blue-400 hover:via-indigo-500 hover:to-purple-600 text-white rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-110 border-2 border-white/20 backdrop-blur-sm flex items-center justify-center"
+          title="P2P Chat"
+        >
+          {/* Chat icon with enhanced styling */}
+          <div className="relative">
+            <i className="fab fa-facebook-messenger text-xl sm:text-2xl filter drop-shadow-sm"></i>
+            {/* Notification badge for pending requests or unread messages */}
+            {(pendingChatRequests > 0 || unreadMessagesCount > 0) && (
+              <span className="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center shadow-lg border-2 border-white animate-pulse">
+                {(pendingChatRequests + unreadMessagesCount) > 9 ? "9+" : (pendingChatRequests + unreadMessagesCount)}
+              </span>
+            )}
+            {/* Online indicator pulse */}
+            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
+          </div>
+          
+          {/* Enhanced tooltip */}
+          <div className="hidden sm:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 px-4 py-2 bg-gray-900/95 backdrop-blur-sm text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap shadow-xl border border-gray-700">
+            <div className="flex items-center gap-2">
+              <i className="fab fa-facebook-messenger text-blue-400"></i>
+              <span className="font-medium">P2P Chat with Classmates</span>
+            </div>
+            {(pendingChatRequests > 0 || unreadMessagesCount > 0) && (
+              <div className="text-xs text-yellow-300 mt-1 text-center">
+                {pendingChatRequests > 0 && (
+                  <div>🔔 {pendingChatRequests} pending request{pendingChatRequests > 1 ? 's' : ''}</div>
+                )}
+                {unreadMessagesCount > 0 && (
+                  <div>💬 {unreadMessagesCount} unread message{unreadMessagesCount > 1 ? 's' : ''}</div>
+                )}
+              </div>
+            )}
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900/95"></div>
+          </div>
+
+          {/* Floating animation rings */}
+          <div className="absolute inset-0 rounded-full border-2 border-white/30 animate-ping"></div>
+          <div className="absolute inset-0 rounded-full border border-white/20 animate-pulse"></div>
+        </button>
+      </div>
+
+      {/* P2P Chat Modal */}
+      <P2PChat
+        userRoll={user?.roll}
+        userName={user?.name}
+        isOpen={isP2PChatOpen}
+        onClose={() => closeP2PChat()}
+      />
     </div>
   );
 };

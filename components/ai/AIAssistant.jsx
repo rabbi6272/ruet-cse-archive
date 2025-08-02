@@ -1,7 +1,9 @@
 'use client';
 //new commit
 import { useState, useRef, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import AI_CONFIG from '@/lib/ai-config';
+import { useP2PChat } from '@/components/providers/P2PChatProvider';
 import hljs from "highlight.js";
 import "highlight.js/styles/monokai.css";
 
@@ -130,6 +132,8 @@ const formatBotMessage = (text) => {
 };
 
 export default function AIAssistant() {
+  const { isP2PChatOpen } = useP2PChat();
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -864,6 +868,16 @@ ${fileContent}
   // Only render after hydration to prevent SSR mismatch
   if (!isHydrated) {
     return null; // Don't show anything during SSR
+  }
+
+  // Hide AI Assistant on dashboard pages
+  if (pathname === '/user/dashboard') {
+    return null;
+  }
+
+  // Hide Pikachu when P2P chat is open
+  if (isP2PChatOpen) {
+    return null;
   }
 
   return (
