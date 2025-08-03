@@ -57,7 +57,7 @@ const Dashboard = () => {
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [isGroupChatOpen, setIsGroupChatOpen] = useState(false);
   const [groupUnreadCount, setGroupUnreadCount] = useState(0);
-  
+
   // Previous counts for sound notification tracking
   const [prevPendingChatRequests, setPrevPendingChatRequests] = useState(0);
   const [prevUnreadMessagesCount, setPrevUnreadMessagesCount] = useState(0);
@@ -115,7 +115,7 @@ const Dashboard = () => {
             return doubt.status === "pending" || doubt.status === "assigned";
           }).length;
           setUnsolvedDoubtsCount(unsolvedCount);
-          
+
           // Auto-manage assembly notification based on doubt count
           manageAssemblyNotificationForCount(unsolvedCount);
         } else {
@@ -135,9 +135,11 @@ const Dashboard = () => {
     try {
       // Only call API if user is available
       if (!user?.roll) return;
-      
-      console.log(`[DASHBOARD] Managing assembly notification for ${doubtCount} doubts`);
-      
+
+      console.log(
+        `[DASHBOARD] Managing assembly notification for ${doubtCount} doubts`
+      );
+
       // Use the improved management API
       const response = await fetch("/api/doubt-notifications", {
         method: "POST",
@@ -149,18 +151,21 @@ const Dashboard = () => {
           userRoll: user.roll,
         }),
       });
-      
+
       const result = await response.json();
-      console.log(`[DASHBOARD] Assembly notification management result:`, result);
-      
+      console.log(
+        `[DASHBOARD] Assembly notification management result:`,
+        result
+      );
+
       // Show user feedback for important actions
       if (result.success && result.action) {
         switch (result.action) {
-          case 'sent':
-            console.log('🦸‍♂️ Avengers Assembly notification sent to all users!');
+          case "sent":
+            console.log("🦸‍♂️ Avengers Assembly notification sent to all users!");
             break;
-          case 'removed':
-            console.log('✅ Mission complete! Assembly notification removed.');
+          case "removed":
+            console.log("✅ Mission complete! Assembly notification removed.");
             break;
         }
       }
@@ -185,12 +190,15 @@ const Dashboard = () => {
           const request = data[key];
           return request.status === "pending";
         }).length;
-        
+
         // Play sound notification if count increased (new request received)
-        if (pendingCount > prevPendingChatRequests && prevPendingChatRequests !== 0) {
+        if (
+          pendingCount > prevPendingChatRequests &&
+          prevPendingChatRequests !== 0
+        ) {
           notificationSound.playNotificationSound().catch(console.error);
         }
-        
+
         setPrevPendingChatRequests(pendingChatRequests);
         setPendingChatRequests(pendingCount);
       });
@@ -204,16 +212,22 @@ const Dashboard = () => {
   const loadUnreadMessagesCount = (rollNumber) => {
     try {
       const unreadRef = ref(db, `unreadCounts/${rollNumber}`);
-      
+
       onValue(unreadRef, (snapshot) => {
         const data = snapshot.val() || {};
-        const totalUnread = Object.values(data).reduce((total, count) => total + (count || 0), 0);
-        
+        const totalUnread = Object.values(data).reduce(
+          (total, count) => total + (count || 0),
+          0
+        );
+
         // Play sound notification if count increased (new message received)
-        if (totalUnread > prevUnreadMessagesCount && prevUnreadMessagesCount !== 0) {
+        if (
+          totalUnread > prevUnreadMessagesCount &&
+          prevUnreadMessagesCount !== 0
+        ) {
           notificationSound.playNotificationSound().catch(console.error);
         }
-        
+
         setPrevUnreadMessagesCount(unreadMessagesCount);
         setUnreadMessagesCount(totalUnread);
       });
@@ -231,16 +245,19 @@ const Dashboard = () => {
         const userGroup = getUserGroup(rollNumber);
         if (!userGroup) return;
 
-        const unreadRef = ref(db, `groupUnreadCounts/${userGroup.id}/${rollNumber}`);
-        
+        const unreadRef = ref(
+          db,
+          `groupUnreadCounts/${userGroup.id}/${rollNumber}`
+        );
+
         onValue(unreadRef, (snapshot) => {
           const count = snapshot.val() || 0;
-          
+
           // Play sound notification if count increased (new group message received)
           if (count > prevGroupUnreadCount && prevGroupUnreadCount !== 0) {
             notificationSound.playNotificationSound().catch(console.error);
           }
-          
+
           setPrevGroupUnreadCount(groupUnreadCount);
           setGroupUnreadCount(count);
         });
@@ -464,22 +481,22 @@ const Dashboard = () => {
             </div>
 
             {/* Right Section - Active Users & Notifications */}
-            <div className="flex flex-col lg:items-end gap-3 w-full lg:w-auto">
+            <div className="flex flex-row lg:flex-col items-baseline lg:items-end gap-3 w-full lg:w-auto">
+              <ActiveUsersIndicator
+                showDetails={true}
+                className="flex-shrink-0 "
+              />
               {/* Mobile: Stack horizontally, Desktop: Stack vertically */}
-              <div className="flex flex-row lg:flex-col items-start lg:items-end gap-3">
-                <ActiveUsersIndicator
-                  showDetails={true}
-                  className="flex-shrink-0"
-                />
+              <div className="flex flex-col items-center ">
                 <NotificationCenter userRoll={user?.roll} />
+                <Link
+                  href="/user/notifications"
+                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors px-3 py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-1 self-start lg:self-end"
+                >
+                  <i className="fas fa-external-link-alt text-xs"></i>
+                  <span>View all notifications</span>
+                </Link>
               </div>
-              <Link
-                href="/user/notifications"
-                className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors px-3 py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-1 self-start lg:self-end"
-              >
-                <i className="fas fa-external-link-alt text-xs"></i>
-                <span>View all notifications</span>
-              </Link>
             </div>
           </div>
 
@@ -632,13 +649,15 @@ const Dashboard = () => {
                 )}
                 {/* Avengers Assembly indicator */}
                 {unsolvedDoubtsCount > 0 && (
-                  <span className="absolute -top-1 -left-1 text-yellow-400 text-lg animate-bounce" title="Avenger Assemble!! Go to solve doubts section">
+                  <span
+                    className="absolute -top-1 -left-1 text-yellow-400 text-lg animate-bounce"
+                    title="Avenger Assemble!! Go to solve doubts section"
+                  >
                     🚨
                   </span>
                 )}
               </Link>
             </div>
-
           </div>
         </div>
 
@@ -911,7 +930,7 @@ const Dashboard = () => {
         {/* Group Chat Bubble */}
         <button
           onClick={() => setIsGroupChatOpen(true)}
-          className="relative group w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-green-500 via-emerald-600 to-teal-700 hover:from-green-400 hover:via-emerald-500 hover:to-teal-600 text-white rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-110 border-2 border-white/20 backdrop-blur-sm flex items-center justify-center"
+          className="relative group w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-green-500 via-emerald-600 to-teal-700 hover:from-green-400 hover:via-emerald-500 hover:to-teal-600 text-white rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-110 border-2 border-white/20 backdrop-blur-sm flex items-center justify-center"
           title="Group Chat"
         >
           {/* Group chat icon */}
@@ -926,7 +945,7 @@ const Dashboard = () => {
             {/* Online indicator pulse */}
             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
           </div>
-          
+
           {/* Enhanced tooltip */}
           <div className="hidden sm:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 px-4 py-2 bg-gray-900/95 backdrop-blur-sm text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap shadow-xl border border-gray-700">
             <div className="flex items-center gap-2">
@@ -935,7 +954,8 @@ const Dashboard = () => {
             </div>
             {groupUnreadCount > 0 && (
               <div className="text-xs text-yellow-300 mt-1 text-center">
-                💬 {groupUnreadCount} unread message{groupUnreadCount > 1 ? 's' : ''}
+                💬 {groupUnreadCount} unread message
+                {groupUnreadCount > 1 ? "s" : ""}
               </div>
             )}
             <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900/95"></div>
@@ -949,7 +969,7 @@ const Dashboard = () => {
         {/* P2P Chat Bubble */}
         <button
           onClick={() => openP2PChat()}
-          className="relative group w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-700 hover:from-blue-400 hover:via-indigo-500 hover:to-purple-600 text-white rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-110 border-2 border-white/20 backdrop-blur-sm flex items-center justify-center"
+          className="relative group w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-700 hover:from-blue-400 hover:via-indigo-500 hover:to-purple-600 text-white rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-110 border-2 border-white/20 backdrop-blur-sm flex items-center justify-center"
           title="P2P Chat"
         >
           {/* Chat icon with enhanced styling */}
@@ -958,13 +978,15 @@ const Dashboard = () => {
             {/* Notification badge for pending requests or unread messages */}
             {(pendingChatRequests > 0 || unreadMessagesCount > 0) && (
               <span className="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center shadow-lg border-2 border-white animate-pulse">
-                {(pendingChatRequests + unreadMessagesCount) > 9 ? "9+" : (pendingChatRequests + unreadMessagesCount)}
+                {pendingChatRequests + unreadMessagesCount > 9
+                  ? "9+"
+                  : pendingChatRequests + unreadMessagesCount}
               </span>
             )}
             {/* Online indicator pulse */}
             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
           </div>
-          
+
           {/* Enhanced tooltip */}
           <div className="hidden sm:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 px-4 py-2 bg-gray-900/95 backdrop-blur-sm text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap shadow-xl border border-gray-700">
             <div className="flex items-center gap-2">
@@ -974,10 +996,16 @@ const Dashboard = () => {
             {(pendingChatRequests > 0 || unreadMessagesCount > 0) && (
               <div className="text-xs text-yellow-300 mt-1 text-center">
                 {pendingChatRequests > 0 && (
-                  <div>🔔 {pendingChatRequests} pending request{pendingChatRequests > 1 ? 's' : ''}</div>
+                  <div>
+                    🔔 {pendingChatRequests} pending request
+                    {pendingChatRequests > 1 ? "s" : ""}
+                  </div>
                 )}
                 {unreadMessagesCount > 0 && (
-                  <div>💬 {unreadMessagesCount} unread message{unreadMessagesCount > 1 ? 's' : ''}</div>
+                  <div>
+                    💬 {unreadMessagesCount} unread message
+                    {unreadMessagesCount > 1 ? "s" : ""}
+                  </div>
                 )}
               </div>
             )}

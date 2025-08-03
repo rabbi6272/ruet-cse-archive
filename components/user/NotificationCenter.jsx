@@ -156,20 +156,24 @@ const NotificationCenter = ({ userRoll }) => {
       case "doubt_assembly":
         // Display enhanced message with asker's name if available
         const assemblyTitle = notification.title || "🦸‍♂️ Avengers, Assemble! 🦸‍♀️";
-        let assemblyMessage = notification.message || "A fellow coder needs your help! Join the mission to solve doubts and save the day.";
-        
+        let assemblyMessage =
+          notification.message ||
+          "A fellow coder needs your help! Join the mission to solve doubts and save the day.";
+
         // Add doubt-specific information if available
         if (notification.doubtInfo) {
           const { askerName, doubtTitle, category } = notification.doubtInfo;
           if (askerName && doubtTitle) {
-            assemblyMessage = `${askerName} needs help with: "${doubtTitle}" (${category || 'General'})`;
+            assemblyMessage = `${askerName} needs help with: "${doubtTitle}" (${
+              category || "General"
+            })`;
           }
         }
-        
+
         return {
           main: assemblyTitle,
           time: timeAgo,
-          subtitle: assemblyMessage
+          subtitle: assemblyMessage,
         };
       default:
         return {
@@ -239,7 +243,7 @@ const NotificationCenter = ({ userRoll }) => {
       {/* Notification Bell */}
       <button
         onClick={() => setShowNotifications(!showNotifications)}
-        className={`relative p-3 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full ${
+        className={`relative p-1 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full ${
           unreadCount > 0
             ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20"
             : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
@@ -416,7 +420,9 @@ const NotificationCenter = ({ userRoll }) => {
                             className="text-xs px-2 sm:px-3 py-1 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-full transition-all duration-200 font-bold flex items-center gap-1 animate-pulse shadow-lg"
                           >
                             <span>🦸‍♂️</span>
-                            <span className="hidden sm:inline">Assemble Now!</span>
+                            <span className="hidden sm:inline">
+                              Assemble Now!
+                            </span>
                             <span className="sm:hidden">Assemble!</span>
                           </Link>
                         )}
@@ -432,7 +438,9 @@ const NotificationCenter = ({ userRoll }) => {
                             className="text-xs px-2 sm:px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-full transition-colors duration-200 font-medium flex items-center gap-1"
                           >
                             <i className="fas fa-external-link-alt text-xs"></i>
-                            <span className="hidden sm:inline">View Solution</span>
+                            <span className="hidden sm:inline">
+                              View Solution
+                            </span>
                             <span className="sm:hidden">Solution</span>
                           </Link>
                         )}
@@ -463,7 +471,7 @@ const NotificationCenter = ({ userRoll }) => {
                             <span className="sm:hidden">Read</span>
                           </button>
                         )}
-                        
+
                         {/* Only show delete button for non-assembly notifications */}
                         {notification.type !== "doubt_assembly" && (
                           <button
@@ -474,11 +482,13 @@ const NotificationCenter = ({ userRoll }) => {
                             <span className="sm:hidden">✕</span>
                           </button>
                         )}
-                        
+
                         {/* Special message for assembly notifications */}
                         {notification.type === "doubt_assembly" && (
                           <div className="text-xs text-gray-500 dark:text-gray-400 italic text-center">
-                            Auto-removes when<br/>mission complete
+                            Auto-removes when
+                            <br />
+                            mission complete
                           </div>
                         )}
                       </div>
