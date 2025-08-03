@@ -1,7 +1,16 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { db } from "@/lib/firebase";
-import { ref, push, onValue, off, update, remove, query, orderByChild } from "firebase/database";
+import {
+  ref,
+  push,
+  onValue,
+  off,
+  update,
+  remove,
+  query,
+  orderByChild,
+} from "firebase/database";
 import { users } from "@/lib/mino";
 import { formatDistanceToNow } from "date-fns";
 import { addNutrinos } from "@/lib/nutrinos-system";
@@ -17,7 +26,11 @@ function getNameFromRoll(roll) {
     .join(" ");
 }
 
-const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Code" }) => {
+const CommentSection = ({
+  snippetId,
+  snippetAuthor,
+  snippetTitle = "Untitled Code",
+}) => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [replyingTo, setReplyingTo] = useState(null);
@@ -32,7 +45,10 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
   const [cursorPosition, setCursorPosition] = useState(0);
   const [expandedReplies, setExpandedReplies] = useState({});
   const [activeMentionInput, setActiveMentionInput] = useState(null); // Track which input is active for mentions
-  const [suggestionPosition, setSuggestionPosition] = useState({ top: 0, left: 0 }); // Track cursor position for suggestions
+  const [suggestionPosition, setSuggestionPosition] = useState({
+    top: 0,
+    left: 0,
+  }); // Track cursor position for suggestions
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0); // Track selected suggestion for keyboard navigation
   const [editingComment, setEditingComment] = useState(null);
   const [editingReply, setEditingReply] = useState(null);
@@ -59,10 +75,12 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
           .map((key) => ({
             id: key,
             ...data[key],
-            replies: data[key].replies ? Object.keys(data[key].replies).map(replyKey => ({
-              id: replyKey,
-              ...data[key].replies[replyKey]
-            })) : []
+            replies: data[key].replies
+              ? Object.keys(data[key].replies).map((replyKey) => ({
+                  id: replyKey,
+                  ...data[key].replies[replyKey],
+                }))
+              : [],
           }))
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setComments(commentsArray);
@@ -77,78 +95,83 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!showMentions || mentionSuggestions.length === 0) return;
-      
-      if (e.key === 'ArrowDown') {
+
+      if (e.key === "ArrowDown") {
         e.preventDefault();
-        setSelectedSuggestionIndex(prev => 
+        setSelectedSuggestionIndex((prev) =>
           prev < mentionSuggestions.length - 1 ? prev + 1 : 0
         );
-      } else if (e.key === 'ArrowUp') {
+      } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        setSelectedSuggestionIndex(prev => 
+        setSelectedSuggestionIndex((prev) =>
           prev > 0 ? prev - 1 : mentionSuggestions.length - 1
         );
-      } else if (e.key === 'Enter') {
+      } else if (e.key === "Enter") {
         e.preventDefault();
         const selectedUser = mentionSuggestions[selectedSuggestionIndex];
         if (selectedUser) {
-          insertMention(selectedUser, activeMentionInput === 'reply');
+          insertMention(selectedUser, activeMentionInput === "reply");
         }
-      } else if (e.key === 'Escape') {
+      } else if (e.key === "Escape") {
         setShowMentions(false);
         setActiveMentionInput(null);
       }
     };
 
     if (showMentions) {
-      document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
+      document.addEventListener("keydown", handleKeyDown);
+      return () => document.removeEventListener("keydown", handleKeyDown);
     }
-  }, [showMentions, mentionSuggestions, selectedSuggestionIndex, activeMentionInput]);
+  }, [
+    showMentions,
+    mentionSuggestions,
+    selectedSuggestionIndex,
+    activeMentionInput,
+  ]);
 
   // Handle mention detection and suggestions
   const handleInputChange = (value, isReply = false) => {
     if (isReply) {
       setReplyText(value);
-      setActiveMentionInput('reply');
+      setActiveMentionInput("reply");
     } else {
       setNewComment(value);
-      setActiveMentionInput('comment');
+      setActiveMentionInput("comment");
     }
 
     // Check for @ mentions
-    const words = value.split(' ');
+    const words = value.split(" ");
     const lastWord = words[words.length - 1];
-    
-    if (lastWord.startsWith('@') && lastWord.length > 1) {
+
+    if (lastWord.startsWith("@") && lastWord.length > 1) {
       const query = lastWord.slice(1).toLowerCase();
       const suggestions = users
-        .filter(user => 
-          user.name.toLowerCase().includes(query) || 
-          user.roll.includes(query)
+        .filter(
+          (user) =>
+            user.name.toLowerCase().includes(query) || user.roll.includes(query)
         )
         .slice(0, 5);
       setMentionSuggestions(suggestions);
       setMentionQuery(query);
       setShowMentions(true);
       setSelectedSuggestionIndex(0); // Reset selection index
-      
+
       // Calculate cursor position for suggestion box
       const textareaRef = isReply ? replyInputRef : commentInputRef;
       if (textareaRef.current) {
         const textarea = textareaRef.current;
         const cursorPos = textarea.selectionStart;
         const textBeforeCursor = value.substring(0, cursorPos);
-        const lines = textBeforeCursor.split('\n');
+        const lines = textBeforeCursor.split("\n");
         const currentLine = lines.length - 1;
         const currentColumn = lines[currentLine].length;
-        
+
         // Calculate approximate position (this is a rough estimate)
         const lineHeight = 20; // Approximate line height
         const charWidth = 8; // Approximate character width
         setSuggestionPosition({
           top: currentLine * lineHeight + 40, // Add some offset
-          left: currentColumn * charWidth + 20
+          left: currentColumn * charWidth + 20,
         });
       }
     } else {
@@ -159,10 +182,10 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
 
   const insertMention = (user, isReply = false) => {
     const currentText = isReply ? replyText : newComment;
-    const words = currentText.split(' ');
-    words[words.length - 1] = `@${user.name.replace(/\s+/g, '')}(${user.roll})`;
-    const newText = words.join(' ') + ' ';
-    
+    const words = currentText.split(" ");
+    words[words.length - 1] = `@${user.name.replace(/\s+/g, "")}(${user.roll})`;
+    const newText = words.join(" ") + " ";
+
     if (isReply) {
       setReplyText(newText);
       replyInputRef.current?.focus();
@@ -176,7 +199,7 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
 
   const addComment = async () => {
     if (!user || !newComment.trim()) return;
-    
+
     setLoading(true);
     try {
       const commentsRef = ref(db, `comments/${snippetId}`);
@@ -186,7 +209,7 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
         authorName: user.name,
         createdAt: new Date().toISOString(),
         likes: 0,
-        likedBy: {}
+        likedBy: {},
       });
 
       // Create notification for snippet author if comment is not from author
@@ -194,7 +217,7 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
         await createNotification(
           snippetAuthor,
           `${getNameFromRoll(user.roll)} commented on your code`,
-          'comment',
+          "comment",
           snippetId,
           newComment.trim()
         );
@@ -203,22 +226,30 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
       // Award Nutrinos points for comments
       try {
         // Commenter gets 2.5 points
-        await addNutrinos(user.roll, 'comment_made', 'Made Comment', {
+        await addNutrinos(user.roll, "comment_made", "Made Comment", {
           snippetId,
           commentText: newComment.trim(),
-          snippetAuthor
+          snippetAuthor,
         });
 
         // Snippet author gets 1.5 points (only if commenter is different)
         if (user.roll !== snippetAuthor) {
-          await addNutrinos(snippetAuthor, 'comment_received', 'Received Comment', {
-            snippetId,
-            commentText: newComment.trim(),
-            commenter: user.roll
-          });
+          await addNutrinos(
+            snippetAuthor,
+            "comment_received",
+            "Received Comment",
+            {
+              snippetId,
+              commentText: newComment.trim(),
+              commenter: user.roll,
+            }
+          );
         }
       } catch (nutritosError) {
-        console.error("Failed to award Nutrinos points for comment:", nutritosError);
+        console.error(
+          "Failed to award Nutrinos points for comment:",
+          nutritosError
+        );
         // Don't break the flow, just log the error
       }
 
@@ -230,21 +261,31 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
         if (mentionedRoll !== user.roll) {
           await createNotification(
             mentionedRoll,
-            `${getNameFromRoll(user.roll)} mentioned you in ${getNameFromRoll(snippetAuthor)}'s code`,
-            'mention',
+            `${getNameFromRoll(user.roll)} mentioned you in ${getNameFromRoll(
+              snippetAuthor
+            )}'s code`,
+            "mention",
             snippetId,
             newComment.trim()
           );
 
           // Award Nutrinos points for mention
           try {
-            await addNutrinos(mentionedRoll, 'mention_received', 'Got Mentioned', {
-              snippetId,
-              commentText: newComment.trim(),
-              mentioner: user.roll
-            });
+            await addNutrinos(
+              mentionedRoll,
+              "mention_received",
+              "Got Mentioned",
+              {
+                snippetId,
+                commentText: newComment.trim(),
+                mentioner: user.roll,
+              }
+            );
           } catch (nutritosError) {
-            console.error("Failed to award Nutrinos points for mention:", nutritosError);
+            console.error(
+              "Failed to award Nutrinos points for mention:",
+              nutritosError
+            );
           }
         }
       }
@@ -258,7 +299,7 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
 
   const addReply = async (commentId) => {
     if (!user || !replyText.trim()) return;
-    
+
     setLoading(true);
     try {
       const repliesRef = ref(db, `comments/${snippetId}/${commentId}/replies`);
@@ -268,17 +309,21 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
         authorName: user.name,
         createdAt: new Date().toISOString(),
         likes: 0,
-        likedBy: {}
+        likedBy: {},
       });
 
       // Find the comment author to notify
-      const comment = comments.find(c => c.id === commentId);
-      
+      const comment = comments.find((c) => c.id === commentId);
+
       if (comment && user.roll !== comment.authorRoll) {
         await createNotification(
           comment.authorRoll,
-          `${getNameFromRoll(user.roll)} replied to your comment on ${getNameFromRoll(snippetAuthor)}'s code`,
-          'reply',
+          `${getNameFromRoll(
+            user.roll
+          )} replied to your comment on ${getNameFromRoll(
+            snippetAuthor
+          )}'s code`,
+          "reply",
           snippetId,
           replyText.trim()
         );
@@ -287,24 +332,32 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
       // Award Nutrinos points for replies
       try {
         // Replier gets 1.5 points
-        await addNutrinos(user.roll, 'reply_made', 'Made Reply', {
+        await addNutrinos(user.roll, "reply_made", "Made Reply", {
           snippetId,
           commentId,
           replyText: replyText.trim(),
-          originalCommenter: comment?.authorRoll
+          originalCommenter: comment?.authorRoll,
         });
 
         // Original commenter gets 0.25 points (only if replier is different)
         if (comment && user.roll !== comment.authorRoll) {
-          await addNutrinos(comment.authorRoll, 'reply_received', 'Received Reply', {
-            snippetId,
-            commentId,
-            replyText: replyText.trim(),
-            replier: user.roll
-          });
+          await addNutrinos(
+            comment.authorRoll,
+            "reply_received",
+            "Received Reply",
+            {
+              snippetId,
+              commentId,
+              replyText: replyText.trim(),
+              replier: user.roll,
+            }
+          );
         }
       } catch (nutritosError) {
-        console.error("Failed to award Nutrinos points for reply:", nutritosError);
+        console.error(
+          "Failed to award Nutrinos points for reply:",
+          nutritosError
+        );
         // Don't break the flow, just log the error
       }
 
@@ -316,22 +369,32 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
         if (mentionedRoll !== user.roll) {
           await createNotification(
             mentionedRoll,
-            `${getNameFromRoll(user.roll)} mentioned you in ${getNameFromRoll(snippetAuthor)}'s code`,
-            'mention',
+            `${getNameFromRoll(user.roll)} mentioned you in ${getNameFromRoll(
+              snippetAuthor
+            )}'s code`,
+            "mention",
             snippetId,
             replyText.trim()
           );
 
           // Award Nutrinos points for mention in reply
           try {
-            await addNutrinos(mentionedRoll, 'mention_received', 'Got Mentioned in Reply', {
-              snippetId,
-              commentId,
-              replyText: replyText.trim(),
-              mentioner: user.roll
-            });
+            await addNutrinos(
+              mentionedRoll,
+              "mention_received",
+              "Got Mentioned in Reply",
+              {
+                snippetId,
+                commentId,
+                replyText: replyText.trim(),
+                mentioner: user.roll,
+              }
+            );
           } catch (nutritosError) {
-            console.error("Failed to award Nutrinos points for mention in reply:", nutritosError);
+            console.error(
+              "Failed to award Nutrinos points for mention in reply:",
+              nutritosError
+            );
           }
         }
       }
@@ -347,25 +410,28 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
   // Edit comment function
   const editComment = async (commentId) => {
     if (!user || !editCommentText.trim()) return;
-    
+
     setLoading(true);
     try {
       const commentRef = ref(db, `comments/${snippetId}/${commentId}`);
       await update(commentRef, {
         text: editCommentText.trim(),
         editedAt: new Date().toISOString(),
-        isEdited: true
+        isEdited: true,
       });
 
       // Award Nutrinos points for comment edit
       try {
-        await addNutrinos(user.roll, 'comment_edit', 'Edited Comment', {
+        await addNutrinos(user.roll, "comment_edit", "Edited Comment", {
           snippetId,
           commentId,
-          editedText: editCommentText.trim()
+          editedText: editCommentText.trim(),
         });
       } catch (nutritosError) {
-        console.error("Failed to award Nutrinos points for comment edit:", nutritosError);
+        console.error(
+          "Failed to award Nutrinos points for comment edit:",
+          nutritosError
+        );
       }
 
       setEditingComment(null);
@@ -381,9 +447,9 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
   // Delete comment function
   const deleteComment = async (commentId) => {
     if (!user) return;
-    
+
     if (!confirm("Are you sure you want to delete this comment?")) return;
-    
+
     setLoading(true);
     try {
       const commentRef = ref(db, `comments/${snippetId}/${commentId}`);
@@ -391,12 +457,15 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
 
       // Deduct Nutrinos points for comment deletion
       try {
-        await addNutrinos(user.roll, 'comment_delete', 'Comment Deleted', {
+        await addNutrinos(user.roll, "comment_delete", "Comment Deleted", {
           snippetId,
-          commentId
+          commentId,
         });
       } catch (nutritosError) {
-        console.error("Failed to deduct Nutrinos points for comment deletion:", nutritosError);
+        console.error(
+          "Failed to deduct Nutrinos points for comment deletion:",
+          nutritosError
+        );
       }
 
       toast.success("Comment deleted successfully!");
@@ -410,26 +479,32 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
   // Edit reply function
   const editReply = async (commentId, replyId) => {
     if (!user || !editReplyText.trim()) return;
-    
+
     setLoading(true);
     try {
-      const replyRef = ref(db, `comments/${snippetId}/${commentId}/replies/${replyId}`);
+      const replyRef = ref(
+        db,
+        `comments/${snippetId}/${commentId}/replies/${replyId}`
+      );
       await update(replyRef, {
         text: editReplyText.trim(),
         editedAt: new Date().toISOString(),
-        isEdited: true
+        isEdited: true,
       });
 
       // Award Nutrinos points for reply edit
       try {
-        await addNutrinos(user.roll, 'reply_edit', 'Edited Reply', {
+        await addNutrinos(user.roll, "reply_edit", "Edited Reply", {
           snippetId,
           commentId,
           replyId,
-          editedText: editReplyText.trim()
+          editedText: editReplyText.trim(),
         });
       } catch (nutritosError) {
-        console.error("Failed to award Nutrinos points for reply edit:", nutritosError);
+        console.error(
+          "Failed to award Nutrinos points for reply edit:",
+          nutritosError
+        );
       }
 
       setEditingReply(null);
@@ -445,23 +520,29 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
   // Delete reply function
   const deleteReply = async (commentId, replyId) => {
     if (!user) return;
-    
+
     if (!confirm("Are you sure you want to delete this reply?")) return;
-    
+
     setLoading(true);
     try {
-      const replyRef = ref(db, `comments/${snippetId}/${commentId}/replies/${replyId}`);
+      const replyRef = ref(
+        db,
+        `comments/${snippetId}/${commentId}/replies/${replyId}`
+      );
       await remove(replyRef); // Properly remove the reply
 
       // Deduct Nutrinos points for reply deletion
       try {
-        await addNutrinos(user.roll, 'reply_delete', 'Reply Deleted', {
+        await addNutrinos(user.roll, "reply_delete", "Reply Deleted", {
           snippetId,
           commentId,
-          replyId
+          replyId,
         });
       } catch (nutritosError) {
-        console.error("Failed to deduct Nutrinos points for reply deletion:", nutritosError);
+        console.error(
+          "Failed to deduct Nutrinos points for reply deletion:",
+          nutritosError
+        );
       }
 
       toast.success("Reply deleted successfully!");
@@ -472,19 +553,25 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
     setLoading(false);
   };
 
-  const createNotification = async (recipientRoll, message, type, relatedSnippetId, commentText = null) => {
+  const createNotification = async (
+    recipientRoll,
+    message,
+    type,
+    relatedSnippetId,
+    commentText = null
+  ) => {
     try {
       // Don't create notification for self
       if (recipientRoll === user.roll) {
         return;
       }
-      
+
       // Validate recipient roll
       if (!recipientRoll) {
         console.error("No recipient roll provided");
         return;
       }
-      
+
       const notificationRef = ref(db, `notifications/${recipientRoll}`);
       const notificationData = {
         message,
@@ -497,44 +584,50 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
         timestamp: Date.now(),
         read: false,
         fromUserRoll: user.roll,
-        fromUserName: user.name || getNameFromRoll(user.roll)
+        fromUserName: user.name || getNameFromRoll(user.roll),
       };
-      
+
       await push(notificationRef, notificationData);
     } catch (error) {
       console.error("Error creating notification:", error);
     }
   };
 
-  const toggleCommentLike = async (commentId, isReply = false, parentCommentId = null) => {
+  const toggleCommentLike = async (
+    commentId,
+    isReply = false,
+    parentCommentId = null
+  ) => {
     if (!user) return;
-    
-    const path = isReply 
+
+    const path = isReply
       ? `comments/${snippetId}/${parentCommentId}/replies/${commentId}`
       : `comments/${snippetId}/${commentId}`;
-    
+
     const itemRef = ref(db, path);
-    
+
     try {
-      const item = isReply 
-        ? comments.find(c => c.id === parentCommentId)?.replies.find(r => r.id === commentId)
-        : comments.find(c => c.id === commentId);
-      
+      const item = isReply
+        ? comments
+            .find((c) => c.id === parentCommentId)
+            ?.replies.find((r) => r.id === commentId)
+        : comments.find((c) => c.id === commentId);
+
       if (!item) return;
-      
+
       const hasLiked = item.likedBy && item.likedBy[user.roll];
       const newLikes = hasLiked ? (item.likes || 1) - 1 : (item.likes || 0) + 1;
       const newLikedBy = { ...item.likedBy };
-      
+
       if (hasLiked) {
         delete newLikedBy[user.roll];
       } else {
         newLikedBy[user.roll] = true;
       }
-      
+
       await update(itemRef, {
         likes: newLikes,
-        likedBy: newLikedBy
+        likedBy: newLikedBy,
       });
     } catch (error) {
       console.error("Error toggling like:", error);
@@ -543,13 +636,16 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
 
   const renderText = (text) => {
     // Replace mentions with styled spans - updated regex to match the new mention format
-    return text.replace(/@([^(]+)\((\d+)\)/g, '<span className="text-blue-500 font-medium">@$1</span>');
+    return text.replace(
+      /@([^(]+)\((\d+)\)/g,
+      '<span className="text-blue-500 font-medium">@$1</span>'
+    );
   };
 
   const toggleExpandReplies = (commentId) => {
-    setExpandedReplies(prev => ({
+    setExpandedReplies((prev) => ({
       ...prev,
-      [commentId]: !prev[commentId]
+      [commentId]: !prev[commentId],
     }));
   };
 
@@ -586,7 +682,7 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                 </div>
               </div>
             </div>
-            
+
             {/* Latest comment text or edit form */}
             {editingComment === comments[0].id ? (
               <div className="mb-3">
@@ -602,7 +698,7 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                     className="px-3 py-1 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
                     disabled={loading}
                   >
-                    {loading ? 'Saving...' : 'Save'}
+                    {loading ? "Saving..." : "Save"}
                   </button>
                   <button
                     onClick={() => {
@@ -617,9 +713,11 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
               </div>
             ) : (
               <div className="mb-3">
-                <div 
+                <div
                   className="text-gray-800 dark:text-gray-200 text-sm leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: renderText(comments[0].text) }}
+                  dangerouslySetInnerHTML={{
+                    __html: renderText(comments[0].text),
+                  }}
                 />
                 {comments[0].isEdited && (
                   <span className="text-xs text-gray-500 dark:text-gray-400 italic mt-1 block">
@@ -628,7 +726,7 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                 )}
               </div>
             )}
-            
+
             {/* Latest comment actions */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -642,15 +740,21 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                 >
                   <i
                     className={`${
-                      comments[0].likedBy && comments[0].likedBy[user?.roll] ? "fas" : "far"
+                      comments[0].likedBy && comments[0].likedBy[user?.roll]
+                        ? "fas"
+                        : "far"
                     } fa-heart`}
                   ></i>
                   <span className="font-medium">{comments[0].likes || 0}</span>
                 </button>
-                
+
                 {user && (
                   <button
-                    onClick={() => setReplyingTo(replyingTo === comments[0].id ? null : comments[0].id)}
+                    onClick={() =>
+                      setReplyingTo(
+                        replyingTo === comments[0].id ? null : comments[0].id
+                      )
+                    }
                     className="flex items-center space-x-1 px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 text-sm"
                   >
                     <i className="fas fa-reply"></i>
@@ -671,7 +775,7 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                       <i className="fas fa-edit"></i>
                       <span className="font-medium">Edit</span>
                     </button>
-                    
+
                     <button
                       onClick={() => deleteComment(comments[0].id)}
                       className="flex items-center space-x-1 px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 text-sm"
@@ -682,30 +786,39 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                   </>
                 )}
               </div>
-              
+
               {/* Show expand button if more comments exist */}
               {comments.length > 1 && (
                 <button
                   onClick={() => setShowAllComments(!showAllComments)}
                   className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors duration-200"
                 >
-                  {showAllComments 
-                    ? "Hide other comments" 
-                    : `View all ${comments.length} comments`
-                  }
+                  {showAllComments
+                    ? "Hide other comments"
+                    : `View all ${comments.length} comments`}
                 </button>
               )}
             </div>
-            
+
             {/* Show replies for latest comment */}
             {comments[0].replies && comments[0].replies.length > 0 && (
               <div className="mt-4 ml-4 space-y-3">
                 <div className="border-l-2 border-blue-200 dark:border-blue-800 pl-4">
                   {comments[0].replies
-                    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-                    .slice(0, expandedReplies[comments[0].id] ? comments[0].replies.length : maxRepliesPreview)
+                    .sort(
+                      (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+                    )
+                    .slice(
+                      0,
+                      expandedReplies[comments[0].id]
+                        ? comments[0].replies.length
+                        : maxRepliesPreview
+                    )
                     .map((reply) => (
-                      <div key={reply.id} className="bg-white dark:bg-gray-700 rounded-lg p-3 mb-3 shadow-sm border border-gray-100 dark:border-gray-600">
+                      <div
+                        key={reply.id}
+                        className="bg-white dark:bg-gray-700 rounded-lg p-3 mb-3 shadow-sm border border-gray-100 dark:border-gray-600"
+                      >
                         <div className="flex items-start space-x-2">
                           <div className="flex-shrink-0">
                             <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
@@ -721,23 +834,27 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                                 {formatTimeAgo(reply.createdAt)}
                               </span>
                             </div>
-                            
+
                             {/* Reply text or edit form (preview section) */}
                             {editingReply === reply.id ? (
                               <div className="mb-2">
                                 <textarea
                                   value={editReplyText}
-                                  onChange={(e) => setEditReplyText(e.target.value)}
+                                  onChange={(e) =>
+                                    setEditReplyText(e.target.value)
+                                  }
                                   className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-xs resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                   rows="2"
                                 />
                                 <div className="flex items-center space-x-2 mt-2">
                                   <button
-                                    onClick={() => editReply(comments[0].id, reply.id)}
+                                    onClick={() =>
+                                      editReply(comments[0].id, reply.id)
+                                    }
                                     className="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
                                     disabled={loading}
                                   >
-                                    {loading ? 'Saving...' : 'Save'}
+                                    {loading ? "Saving..." : "Save"}
                                   </button>
                                   <button
                                     onClick={() => {
@@ -752,9 +869,11 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                               </div>
                             ) : (
                               <div className="mb-2">
-                                <div 
+                                <div
                                   className="text-gray-800 dark:text-gray-200 text-xs leading-relaxed"
-                                  dangerouslySetInnerHTML={{ __html: renderText(reply.text) }}
+                                  dangerouslySetInnerHTML={{
+                                    __html: renderText(reply.text),
+                                  }}
                                 />
                                 {reply.isEdited && (
                                   <span className="text-xs text-gray-500 dark:text-gray-400 italic mt-1 block">
@@ -763,10 +882,16 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                                 )}
                               </div>
                             )}
-                            
+
                             <div className="flex items-center space-x-2">
                               <button
-                                onClick={() => toggleCommentLike(reply.id, true, comments[0].id)}
+                                onClick={() =>
+                                  toggleCommentLike(
+                                    reply.id,
+                                    true,
+                                    comments[0].id
+                                  )
+                                }
                                 className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-all duration-200 ${
                                   reply.likedBy && reply.likedBy[user?.roll]
                                     ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
@@ -775,10 +900,14 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                               >
                                 <i
                                   className={`${
-                                    reply.likedBy && reply.likedBy[user?.roll] ? "fas" : "far"
+                                    reply.likedBy && reply.likedBy[user?.roll]
+                                      ? "fas"
+                                      : "far"
                                   } fa-heart`}
                                 ></i>
-                                <span className="font-medium">{reply.likes || 0}</span>
+                                <span className="font-medium">
+                                  {reply.likes || 0}
+                                </span>
                               </button>
 
                               {/* Edit and Delete buttons for reply author (preview section) */}
@@ -794,9 +923,11 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                                     <i className="fas fa-edit"></i>
                                     <span className="font-medium">Edit</span>
                                   </button>
-                                  
+
                                   <button
-                                    onClick={() => deleteReply(comments[0].id, reply.id)}
+                                    onClick={() =>
+                                      deleteReply(comments[0].id, reply.id)
+                                    }
                                     className="flex items-center space-x-1 px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
                                   >
                                     <i className="fas fa-trash"></i>
@@ -809,7 +940,7 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                         </div>
                       </div>
                     ))}
-                    
+
                   {/* Show All Replies button for latest comment */}
                   {comments[0].replies.length > maxRepliesPreview && (
                     <div className="text-center">
@@ -817,17 +948,18 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                         onClick={() => toggleExpandReplies(comments[0].id)}
                         className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors duration-200"
                       >
-                        {expandedReplies[comments[0].id] 
-                          ? `Hide ${comments[0].replies.length - maxRepliesPreview} replies` 
-                          : `Show all ${comments[0].replies.length} replies`
-                        }
+                        {expandedReplies[comments[0].id]
+                          ? `Hide ${
+                              comments[0].replies.length - maxRepliesPreview
+                            } replies`
+                          : `Show all ${comments[0].replies.length} replies`}
                       </button>
                     </div>
                   )}
                 </div>
               </div>
             )}
-            
+
             {/* Reply form for latest comment */}
             {replyingTo === comments[0].id && user && (
               <div className="mt-4 ml-4 pl-4 border-l-2 border-blue-500 relative">
@@ -842,64 +974,73 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                       <textarea
                         ref={replyInputRef}
                         value={replyText}
-                        onChange={(e) => handleInputChange(e.target.value, true)}
+                        onChange={(e) =>
+                          handleInputChange(e.target.value, true)
+                        }
                         placeholder="Write a reply... Use @username to mention someone"
                         className="w-full bg-transparent resize-none focus:outline-none dark:text-white text-gray-800 placeholder-gray-500 dark:placeholder-gray-400 text-sm"
                         rows="2"
                       />
                     </div>
                   </div>
-                  
+
                   {/* Mention suggestions for reply */}
-                  {showMentions && activeMentionInput === 'reply' && mentionSuggestions.length > 0 && (
-                    <div 
-                      className="absolute z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-2xl overflow-hidden min-w-[280px] max-w-[320px]"
-                      style={{
-                        top: `${suggestionPosition.top}px`,
-                        left: `${Math.min(suggestionPosition.left, 200)}px`, // Prevent overflow
-                        transform: suggestionPosition.left > 200 ? 'translateX(-100%)' : 'none'
-                      }}
-                    >
-                      <div className="py-2">
-                        <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
-                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                            Mention Suggestions
-                          </span>
-                        </div>
-                        {mentionSuggestions.map((suggestedUser, index) => (
-                          <button
-                            key={suggestedUser.roll}
-                            onClick={() => insertMention(suggestedUser, true)}
-                            className={`w-full px-4 py-3 text-left hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all duration-150 flex items-center space-x-3 ${
-                              index === 0 ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                            }`}
-                          >
-                            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm">
-                              {getNameFromRoll(suggestedUser.roll).charAt(0)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
-                                {getNameFromRoll(suggestedUser.roll)}
+                  {showMentions &&
+                    activeMentionInput === "reply" &&
+                    mentionSuggestions.length > 0 && (
+                      <div
+                        className="absolute z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-2xl overflow-hidden min-w-[280px] max-w-[320px]"
+                        style={{
+                          top: `${suggestionPosition.top}px`,
+                          left: `${Math.min(suggestionPosition.left, 200)}px`, // Prevent overflow
+                          transform:
+                            suggestionPosition.left > 200
+                              ? "translateX(-100%)"
+                              : "none",
+                        }}
+                      >
+                        <div className="py-2">
+                          <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+                            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                              Mention Suggestions
+                            </span>
+                          </div>
+                          {mentionSuggestions.map((suggestedUser, index) => (
+                            <button
+                              key={suggestedUser.roll}
+                              onClick={() => insertMention(suggestedUser, true)}
+                              className={`w-full px-4 py-3 text-left hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all duration-150 flex items-center space-x-3 ${
+                                index === 0
+                                  ? "bg-blue-50 dark:bg-blue-900/20"
+                                  : ""
+                              }`}
+                            >
+                              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                                {getNameFromRoll(suggestedUser.roll).charAt(0)}
                               </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                Roll: {suggestedUser.roll}
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
+                                  {getNameFromRoll(suggestedUser.roll)}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  Roll: {suggestedUser.roll}
+                                </div>
                               </div>
-                            </div>
-                            <div className="text-purple-500 dark:text-purple-400">
-                              <i className="fas fa-at text-xs"></i>
-                            </div>
-                          </button>
-                        ))}
-                        <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            <i className="fas fa-keyboard mr-1"></i>
-                            Press Enter to select, Esc to dismiss
-                          </span>
+                              <div className="text-purple-500 dark:text-purple-400">
+                                <i className="fas fa-at text-xs"></i>
+                              </div>
+                            </button>
+                          ))}
+                          <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              <i className="fas fa-keyboard mr-1"></i>
+                              Press Enter to select, Esc to dismiss
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                  
+                    )}
+
                   <div className="flex justify-end space-x-2 px-3 py-2 border-t border-gray-200 dark:border-gray-700">
                     <button
                       onClick={() => setReplyingTo(null)}
@@ -932,14 +1073,28 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
               </span>
             ) : (
               <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
-                <span>{comments.length} {comments.length === 1 ? 'comment' : 'comments'}</span>
+                <span>
+                  {comments.length}{" "}
+                  {comments.length === 1 ? "comment" : "comments"}
+                </span>
                 {(() => {
-                  const totalReplies = comments.reduce((sum, comment) => sum + (comment.replies ? comment.replies.length : 0), 0);
-                  return totalReplies > 0 && <span>{totalReplies} {totalReplies === 1 ? 'reply' : 'replies'}</span>;
+                  const totalReplies = comments.reduce(
+                    (sum, comment) =>
+                      sum + (comment.replies ? comment.replies.length : 0),
+                    0
+                  );
+                  return (
+                    totalReplies > 0 && (
+                      <span>
+                        {totalReplies}{" "}
+                        {totalReplies === 1 ? "reply" : "replies"}
+                      </span>
+                    )
+                  );
                 })()}
               </div>
             )}
-            
+
             {user && (
               <button
                 onClick={() => setShowAddComment(true)}
@@ -969,61 +1124,69 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                 />
               </div>
             </div>
-            
+
             {/* Mention suggestions for main comment */}
-            {showMentions && activeMentionInput === 'comment' && mentionSuggestions.length > 0 && (
-              <div 
-                className="absolute z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-2xl overflow-hidden min-w-[280px] max-w-[320px]"
-                style={{
-                  top: `${suggestionPosition.top}px`,
-                  left: `${Math.min(suggestionPosition.left, 200)}px`, // Prevent overflow
-                  transform: suggestionPosition.left > 200 ? 'translateX(-100%)' : 'none'
-                }}
-              >
-                <div className="py-2">
-                  <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
-                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                      Mention Suggestions
-                    </span>
-                  </div>
-                  {mentionSuggestions.map((suggestedUser, index) => (
-                    <button
-                      key={suggestedUser.roll}
-                      onClick={() => insertMention(suggestedUser, false)}
-                      className={`w-full px-4 py-3 text-left hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all duration-150 flex items-center space-x-3 ${
-                        index === selectedSuggestionIndex ? 'bg-blue-100 dark:bg-blue-900/40 border-l-4 border-blue-500' : ''
-                      }`}
-                    >
-                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm">
-                        {getNameFromRoll(suggestedUser.roll).charAt(0)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
-                          {getNameFromRoll(suggestedUser.roll)}
+            {showMentions &&
+              activeMentionInput === "comment" &&
+              mentionSuggestions.length > 0 && (
+                <div
+                  className="absolute z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-2xl overflow-hidden min-w-[280px] max-w-[320px]"
+                  style={{
+                    top: `${suggestionPosition.top}px`,
+                    left: `${Math.min(suggestionPosition.left, 200)}px`, // Prevent overflow
+                    transform:
+                      suggestionPosition.left > 200
+                        ? "translateX(-100%)"
+                        : "none",
+                  }}
+                >
+                  <div className="py-2">
+                    <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+                      <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                        Mention Suggestions
+                      </span>
+                    </div>
+                    {mentionSuggestions.map((suggestedUser, index) => (
+                      <button
+                        key={suggestedUser.roll}
+                        onClick={() => insertMention(suggestedUser, false)}
+                        className={`w-full px-4 py-3 text-left hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all duration-150 flex items-center space-x-3 ${
+                          index === selectedSuggestionIndex
+                            ? "bg-blue-100 dark:bg-blue-900/40 border-l-4 border-blue-500"
+                            : ""
+                        }`}
+                      >
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                          {getNameFromRoll(suggestedUser.roll).charAt(0)}
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          Roll: {suggestedUser.roll}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
+                            {getNameFromRoll(suggestedUser.roll)}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            Roll: {suggestedUser.roll}
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-blue-500 dark:text-blue-400">
-                        <i className="fas fa-at text-xs"></i>
-                      </div>
-                    </button>
-                  ))}
-                  <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      <i className="fas fa-keyboard mr-1"></i>
-                      Press Enter to select, Esc to dismiss
-                    </span>
+                        <div className="text-blue-500 dark:text-blue-400">
+                          <i className="fas fa-at text-xs"></i>
+                        </div>
+                      </button>
+                    ))}
+                    <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        <i className="fas fa-keyboard mr-1"></i>
+                        Press Enter to select, Esc to dismiss
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-            
+              )}
+
             <div className="flex justify-between items-center px-4 py-3 border-t border-gray-200 dark:border-gray-700">
               <div className="flex items-center space-x-2">
                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                  <i className="fas fa-lightbulb mr-1"></i>Tip: Use @username to mention
+                  <i className="fas fa-lightbulb mr-1"></i>Tip: Use @username to
+                  mention
                 </span>
               </div>
               <div className="flex space-x-2">
@@ -1063,7 +1226,10 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
 
           <div className="space-y-6">
             {comments.slice(1).map((comment) => (
-              <div key={comment.id} className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-200 dark:border-gray-700">
+              <div
+                key={comment.id}
+                className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-200 dark:border-gray-700"
+              >
                 {/* Comment header */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-3">
@@ -1098,7 +1264,7 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                         className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                         disabled={loading}
                       >
-                        {loading ? 'Saving...' : 'Save'}
+                        {loading ? "Saving..." : "Save"}
                       </button>
                       <button
                         onClick={() => {
@@ -1113,9 +1279,11 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                   </div>
                 ) : (
                   <div className="mb-4">
-                    <div 
+                    <div
                       className="text-gray-800 dark:text-gray-200 leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: renderText(comment.text) }}
+                      dangerouslySetInnerHTML={{
+                        __html: renderText(comment.text),
+                      }}
                     />
                     {comment.isEdited && (
                       <span className="text-xs text-gray-500 dark:text-gray-400 italic mt-1 block">
@@ -1138,15 +1306,23 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                     >
                       <i
                         className={`${
-                          comment.likedBy && comment.likedBy[user?.roll] ? "fas" : "far"
+                          comment.likedBy && comment.likedBy[user?.roll]
+                            ? "fas"
+                            : "far"
                         } fa-heart`}
                       ></i>
-                      <span className="text-sm font-medium">{comment.likes || 0}</span>
+                      <span className="text-sm font-medium">
+                        {comment.likes || 0}
+                      </span>
                     </button>
-                    
+
                     {user && (
                       <button
-                        onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                        onClick={() =>
+                          setReplyingTo(
+                            replyingTo === comment.id ? null : comment.id
+                          )
+                        }
                         className="flex items-center space-x-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200"
                       >
                         <i className="fas fa-reply"></i>
@@ -1167,7 +1343,7 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                           <i className="fas fa-edit"></i>
                           <span className="text-sm font-medium">Edit</span>
                         </button>
-                        
+
                         <button
                           onClick={() => deleteComment(comment.id)}
                           className="flex items-center space-x-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
@@ -1178,10 +1354,11 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                       </>
                     )}
                   </div>
-                  
+
                   {comment.replies && comment.replies.length > 0 && (
                     <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {comment.replies.length} {comment.replies.length === 1 ? 'reply' : 'replies'}
+                      {comment.replies.length}{" "}
+                      {comment.replies.length === 1 ? "reply" : "replies"}
                     </span>
                   )}
                 </div>
@@ -1200,64 +1377,82 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                           <textarea
                             ref={replyInputRef}
                             value={replyText}
-                            onChange={(e) => handleInputChange(e.target.value, true)}
+                            onChange={(e) =>
+                              handleInputChange(e.target.value, true)
+                            }
                             placeholder="Write a reply... Use @username to mention someone"
                             className="w-full bg-transparent resize-none focus:outline-none dark:text-white text-gray-800 placeholder-gray-500 dark:placeholder-gray-400"
                             rows="2"
                           />
                         </div>
                       </div>
-                      
+
                       {/* Mention suggestions for expanded comment replies */}
-                      {showMentions && activeMentionInput === 'reply' && mentionSuggestions.length > 0 && (
-                        <div 
-                          className="absolute z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-2xl overflow-hidden min-w-[280px] max-w-[320px]"
-                          style={{
-                            top: `${suggestionPosition.top}px`,
-                            left: `${Math.min(suggestionPosition.left, 200)}px`, // Prevent overflow
-                            transform: suggestionPosition.left > 200 ? 'translateX(-100%)' : 'none'
-                          }}
-                        >
-                          <div className="py-2">
-                            <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
-                              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                                Mention Suggestions
-                              </span>
-                            </div>
-                            {mentionSuggestions.map((suggestedUser, index) => (
-                              <button
-                                key={suggestedUser.roll}
-                                onClick={() => insertMention(suggestedUser, true)}
-                                className={`w-full px-4 py-3 text-left hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all duration-150 flex items-center space-x-3 ${
-                                  index === selectedSuggestionIndex ? 'bg-blue-100 dark:bg-blue-900/40 border-l-4 border-green-500' : ''
-                                }`}
-                              >
-                                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm">
-                                  {getNameFromRoll(suggestedUser.roll).charAt(0)}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
-                                    {getNameFromRoll(suggestedUser.roll)}
-                                  </div>
-                                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                                    Roll: {suggestedUser.roll}
-                                  </div>
-                                </div>
-                                <div className="text-green-500 dark:text-green-400">
-                                  <i className="fas fa-at text-xs"></i>
-                                </div>
-                              </button>
-                            ))}
-                            <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
-                              <span className="text-xs text-gray-500 dark:text-gray-400">
-                                <i className="fas fa-keyboard mr-1"></i>
-                                Press Enter to select, Esc to dismiss
-                              </span>
+                      {showMentions &&
+                        activeMentionInput === "reply" &&
+                        mentionSuggestions.length > 0 && (
+                          <div
+                            className="absolute z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-2xl overflow-hidden min-w-[280px] max-w-[320px]"
+                            style={{
+                              top: `${suggestionPosition.top}px`,
+                              left: `${Math.min(
+                                suggestionPosition.left,
+                                200
+                              )}px`, // Prevent overflow
+                              transform:
+                                suggestionPosition.left > 200
+                                  ? "translateX(-100%)"
+                                  : "none",
+                            }}
+                          >
+                            <div className="py-2">
+                              <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+                                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                                  Mention Suggestions
+                                </span>
+                              </div>
+                              {mentionSuggestions.map(
+                                (suggestedUser, index) => (
+                                  <button
+                                    key={suggestedUser.roll}
+                                    onClick={() =>
+                                      insertMention(suggestedUser, true)
+                                    }
+                                    className={`w-full px-4 py-3 text-left hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all duration-150 flex items-center space-x-3 ${
+                                      index === selectedSuggestionIndex
+                                        ? "bg-blue-100 dark:bg-blue-900/40 border-l-4 border-green-500"
+                                        : ""
+                                    }`}
+                                  >
+                                    <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                                      {getNameFromRoll(
+                                        suggestedUser.roll
+                                      ).charAt(0)}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
+                                        {getNameFromRoll(suggestedUser.roll)}
+                                      </div>
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        Roll: {suggestedUser.roll}
+                                      </div>
+                                    </div>
+                                    <div className="text-green-500 dark:text-green-400">
+                                      <i className="fas fa-at text-xs"></i>
+                                    </div>
+                                  </button>
+                                )
+                              )}
+                              <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  <i className="fas fa-keyboard mr-1"></i>
+                                  Press Enter to select, Esc to dismiss
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      )}
-                      
+                        )}
+
                       <div className="flex justify-end space-x-2 px-3 py-2 border-t border-gray-200 dark:border-gray-700">
                         <button
                           onClick={() => setReplyingTo(null)}
@@ -1282,10 +1477,21 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                   <div className="mt-5 ml-4 space-y-3">
                     <div className="border-l-2 border-blue-200 dark:border-blue-800 pl-4">
                       {comment.replies
-                        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
-                        .slice(0, expandedReplies[comment.id] ? comment.replies.length : maxRepliesPreview)
+                        .sort(
+                          (a, b) =>
+                            new Date(a.createdAt) - new Date(b.createdAt)
+                        )
+                        .slice(
+                          0,
+                          expandedReplies[comment.id]
+                            ? comment.replies.length
+                            : maxRepliesPreview
+                        )
                         .map((reply) => (
-                          <div key={reply.id} className="bg-white dark:bg-gray-700 rounded-lg p-4 mb-3 shadow-sm border border-gray-100 dark:border-gray-600">
+                          <div
+                            key={reply.id}
+                            className="bg-white dark:bg-gray-700 rounded-lg p-4 mb-3 shadow-sm border border-gray-100 dark:border-gray-600"
+                          >
                             <div className="flex items-start space-x-3">
                               <div className="flex-shrink-0">
                                 <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
@@ -1300,28 +1506,34 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                                   <span className="text-xs text-gray-500 dark:text-gray-400">
                                     ({reply.authorRoll})
                                   </span>
-                                  <span className="text-xs text-gray-400 dark:text-gray-500">•</span>
+                                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                                    •
+                                  </span>
                                   <span className="text-xs text-gray-500 dark:text-gray-400">
                                     {formatTimeAgo(reply.createdAt)}
                                   </span>
                                 </div>
-                                
+
                                 {/* Reply text or edit form */}
                                 {editingReply === reply.id ? (
                                   <div className="mb-3">
                                     <textarea
                                       value={editReplyText}
-                                      onChange={(e) => setEditReplyText(e.target.value)}
+                                      onChange={(e) =>
+                                        setEditReplyText(e.target.value)
+                                      }
                                       className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                       rows="2"
                                     />
                                     <div className="flex items-center space-x-2 mt-2">
                                       <button
-                                        onClick={() => editReply(comment.id, reply.id)}
+                                        onClick={() =>
+                                          editReply(comment.id, reply.id)
+                                        }
                                         className="px-3 py-1 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-600 transition-colors"
                                         disabled={loading}
                                       >
-                                        {loading ? 'Saving...' : 'Save'}
+                                        {loading ? "Saving..." : "Save"}
                                       </button>
                                       <button
                                         onClick={() => {
@@ -1336,9 +1548,11 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                                   </div>
                                 ) : (
                                   <div className="mb-3">
-                                    <div 
+                                    <div
                                       className="text-gray-800 dark:text-gray-200 text-sm leading-relaxed"
-                                      dangerouslySetInnerHTML={{ __html: renderText(reply.text) }}
+                                      dangerouslySetInnerHTML={{
+                                        __html: renderText(reply.text),
+                                      }}
                                     />
                                     {reply.isEdited && (
                                       <span className="text-xs text-gray-500 dark:text-gray-400 italic mt-1 block">
@@ -1347,10 +1561,16 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                                     )}
                                   </div>
                                 )}
-                                
+
                                 <div className="flex items-center space-x-2">
                                   <button
-                                    onClick={() => toggleCommentLike(reply.id, true, comment.id)}
+                                    onClick={() =>
+                                      toggleCommentLike(
+                                        reply.id,
+                                        true,
+                                        comment.id
+                                      )
+                                    }
                                     className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-all duration-200 ${
                                       reply.likedBy && reply.likedBy[user?.roll]
                                         ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
@@ -1359,10 +1579,15 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                                   >
                                     <i
                                       className={`${
-                                        reply.likedBy && reply.likedBy[user?.roll] ? "fas" : "far"
+                                        reply.likedBy &&
+                                        reply.likedBy[user?.roll]
+                                          ? "fas"
+                                          : "far"
                                       } fa-heart`}
                                     ></i>
-                                    <span className="font-medium">{reply.likes || 0}</span>
+                                    <span className="font-medium">
+                                      {reply.likes || 0}
+                                    </span>
                                   </button>
 
                                   {/* Edit and Delete buttons for reply author */}
@@ -1376,15 +1601,21 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                                         className="flex items-center space-x-1 px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:text-yellow-600 dark:hover:text-yellow-400 transition-all duration-200"
                                       >
                                         <i className="fas fa-edit"></i>
-                                        <span className="font-medium">Edit</span>
+                                        <span className="font-medium">
+                                          Edit
+                                        </span>
                                       </button>
-                                      
+
                                       <button
-                                        onClick={() => deleteReply(comment.id, reply.id)}
+                                        onClick={() =>
+                                          deleteReply(comment.id, reply.id)
+                                        }
                                         className="flex items-center space-x-1 px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
                                       >
                                         <i className="fas fa-trash"></i>
-                                        <span className="font-medium">Delete</span>
+                                        <span className="font-medium">
+                                          Delete
+                                        </span>
                                       </button>
                                     </>
                                   )}
@@ -1393,7 +1624,7 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                             </div>
                           </div>
                         ))}
-                        
+
                       {/* Show All Replies button */}
                       {comment.replies.length > maxRepliesPreview && (
                         <div className="text-center">
@@ -1401,10 +1632,11 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
                             onClick={() => toggleExpandReplies(comment.id)}
                             className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors duration-200"
                           >
-                            {expandedReplies[comment.id] 
-                              ? `Hide ${comment.replies.length - maxRepliesPreview} replies` 
-                              : `Show all ${comment.replies.length} replies`
-                            }
+                            {expandedReplies[comment.id]
+                              ? `Hide ${
+                                  comment.replies.length - maxRepliesPreview
+                                } replies`
+                              : `Show all ${comment.replies.length} replies`}
                           </button>
                         </div>
                       )}
@@ -1425,8 +1657,8 @@ const CommentSection = ({ snippetId, snippetAuthor, snippetTitle = "Untitled Cod
           <p className="text-gray-600 dark:text-gray-400 mb-3">
             Login to join the conversation
           </p>
-          <a 
-            href="/user/login" 
+          <a
+            href="/user/login"
             className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 font-medium text-sm"
           >
             <i className="fas fa-rocket mr-2"></i>

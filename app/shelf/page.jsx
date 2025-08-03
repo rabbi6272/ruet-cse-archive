@@ -1,47 +1,44 @@
-import { BookShelfGrid } from "@/components/shelf/bookshelf";
+import { ShelfHeader } from "@/components/shelf/shelf-header";
+import { ShelfGrid } from "@/components/shelf/shelf-grid";
+import { Suspense } from "react";
+import Loading from "./loading";
 
 export const metadata = {
-  title: "Book Shelf - Digital Library & Academic Books",
-  description: "Browse our digital library collection of CSE textbooks, reference materials, and academic books. Access essential reading materials for computer science studies.",
+  title: "Digital Bookshelf || RUET CSE Archive",
+  description:
+    "Browse our curated collection of programming books, technical guides, and educational resources for computer science students at RUET.",
   keywords: [
-    "Digital Library", "CSE Books", "Textbooks", "Reference Materials", 
-    "Academic Books", "Computer Science Books", "Programming Books", 
-    "Algorithm Books", "Database Books", "Software Engineering Books",
-    "RUET Library", "Study Books", "Technical Books", "E-Books"
+    "RUET",
+    "CSE",
+    "programming books",
+    "technical books",
+    "computer science",
+    "bookshelf",
   ],
   openGraph: {
-    title: "Book Shelf - Digital Library & Academic Books | RUET CSE Archive",
-    description: "Browse our digital library collection of CSE textbooks, reference materials, and academic books. Access essential reading materials for computer science studies.",
-    url: "https://csearchive.vercel.app/shelf",
-    images: [
-      {
-        url: "/images/shelf-og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "RUET CSE Digital Library",
-      },
-    ],
+    title: "Digital Bookshelf || RUET CSE Archive",
+    description:
+      "Browse our curated collection of programming books, technical guides, and educational resources for computer science students at RUET.",
+    type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Book Shelf - Digital Library & Academic Books | RUET CSE Archive",
-    description: "Browse our digital library collection of CSE textbooks, reference materials, and academic books.",
-    images: ["/images/shelf-twitter-image.png"],
-  },
-  alternates: {
-    canonical: "https://csearchive.vercel.app/shelf",
+    title: "Digital Bookshelf || RUET CSE Archive",
+    description:
+      "Browse our curated collection of programming books, technical guides, and educational resources for computer science students at RUET.",
   },
 };
 
+// Server component - no client-side JavaScript needed for the page structure
 export default function Shelf() {
   return (
-    <div className="px-4 sm:px-6 lg:px-6">
-      {/*Card Grid*/}
-      <br />
-      <br />
-      <BookShelfGrid />
-      <br />
-      <br />
-    </div>
+    <main className="min-h-screen">
+      <Suspense fallback={<Loading />}>
+        <div className="container mx-auto px-4 md:px-6 lg:px-8 py-8">
+          <ShelfHeader />
+          <ShelfGrid />
+        </div>
+      </Suspense>
+    </main>
   );
 }

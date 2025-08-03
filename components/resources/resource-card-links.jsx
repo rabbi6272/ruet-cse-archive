@@ -1,30 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import toast from "react-hot-toast";
 
 // Minimal client component only for interactive links with lazy toast loading
 export function ResourceCardLinks({ links }) {
-  const [toastLoaded, setToastLoaded] = useState(false);
-
-  const showToast = async (message) => {
-    if (!toastLoaded) {
-      // Dynamically import toast only when needed
-      const { toast } = await import("react-hot-toast");
-      setToastLoaded(true);
-      toast.error(message, {
-        duration: 2000,
-        position: "bottom-center",
-      });
-    } else {
-      const { toast } = await import("react-hot-toast");
-      toast.error(message, {
-        duration: 2000,
-        position: "bottom-center",
-      });
-    }
-  };
-
   return (
     <div className="flex gap-3">
       {links.map((link, index) => (
@@ -39,7 +19,7 @@ export function ResourceCardLinks({ links }) {
           onClick={(e) => {
             if (link.url === "") {
               e.preventDefault();
-              showToast("Link not ready yet!");
+              toast.error("Link not ready yet!");
             }
           }}
           aria-label={`${link.label} ${link.url === "" ? "(coming soon)" : ""}`}

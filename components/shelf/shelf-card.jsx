@@ -2,7 +2,7 @@ import Image from "next/image";
 import { ShelfCardLinks } from "./shelf-card-links";
 
 // Server component for static book card structure
-export function ShelfCard({ id, title, description, image, links }) {
+export function ShelfCard({ id, title, image, links }) {
   return (
     <div className="book-card mx-auto lg:max-w-[330px] md:max-w-[300px] max-w-[280px] bg-white dark:bg-[#071a26] border border-gray-200 dark:border-gray-900 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
       <Image
@@ -14,17 +14,9 @@ export function ShelfCard({ id, title, description, image, links }) {
         priority={id <= 2} // Prioritize loading for first 2 cards
       />
       <div className="p-5">
-        <div className="mb-2">
-          <span className="inline-block px-2 py-1 text-xs font-semibold text-blue-800 bg-blue-100 dark:text-blue-200 dark:bg-blue-900 rounded-full">
-            📚 Programming Book
-          </span>
-        </div>
         <h5 className="mb-2 text-xl font-bold tracking-tight text-gray-900 dark:text-gray-200 line-clamp-2">
           {title}
         </h5>
-        <p className="mb-4 font-normal text-gray-700 dark:text-gray-400 leading-relaxed text-sm line-clamp-3">
-          {description}
-        </p>
         <ShelfCardLinks links={links} />
       </div>
     </div>

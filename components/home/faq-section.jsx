@@ -114,7 +114,7 @@ export function FAQSection() {
       </p>
       <br />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mx-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:px-10 gap-4 mx-auto">
         {cards.map((card, index) => (
           <AnimatedCards key={card.title} index={index}>
             <div className="p-4">

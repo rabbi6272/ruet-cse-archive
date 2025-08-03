@@ -4,12 +4,12 @@ import { ResourceCardLinks } from "./resource-card-links";
 // Server component for static card structure
 export function ResourceCard({ id, title, description, image, links }) {
   return (
-    <div className="resource-card mx-auto lg:max-w-[330px] md:max-w-[300px] max-w-[270px] bg-white dark:bg-[#071a26] border border-gray-200 dark:border-gray-900 rounded-lg shadow-md">
+    <div className="resource-card mx-auto lg:max-w-[350px] md:max-w-[300px] max-w-[290px] bg-white dark:bg-[#071a26] border border-gray-200 dark:border-gray-900 rounded-lg shadow-md">
       <Image
         className="rounded-t-lg w-full h-48 object-cover"
         src={image}
         alt={title}
-        sizes="(max-width: 768px) 270px, (max-width: 1024px) 300px, 330px"
+        sizes="(max-width: 768px) 290px, (max-width: 1024px) 300px, 330px"
         placeholder="blur"
         priority={id <= 2} // Prioritize loading for first 2 cards
       />

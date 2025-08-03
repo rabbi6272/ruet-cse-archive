@@ -48,47 +48,12 @@
 body {
   margin: 0;
   padding: 0;
-  /* Prevent iOS Safari scroll bounce when hero section touches navbar */
-  overscroll-behavior: none;
-  overscroll-behavior-y: none;
-  -webkit-overflow-scrolling: touch;
-  /* Prevent touch callouts and zooming that can trigger scroll resets */
-  -webkit-touch-callout: none;
-  -webkit-text-size-adjust: 100%;
-  /* Ensure proper touch action handling */
-  touch-action: manipulation;
 }
-
-/* Prevent scroll issues with sticky navbar */
-html {
-  overscroll-behavior: none;
-  overscroll-behavior-y: none;
-}
-
-/* Ensure main content area doesn't interfere with navbar */
 html,
 body {
   height: 100%;
   width: 100%;
   overflow-x: hidden;
-}
-
-/* Mobile-specific fixes for scroll issues when hero touches navbar */
-@media (max-width: 768px) {
-  body {
-    /* Prevent elastic scroll behavior on mobile */
-    overscroll-behavior: contain;
-    /* Prevent zoom and pan gestures that can cause scroll jumps */
-    touch-action: pan-y;
-  }
-
-  /* Removed navbar CSS that might interfere with Intersection Observer */
-
-  /* Prevent hero section from causing scroll issues */
-  .hero-section {
-    position: relative;
-    z-index: 1;
-  }
 }
 
 .morphic-effect {
