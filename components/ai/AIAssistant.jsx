@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import AI_CONFIG from '@/lib/ai-config';
 import { useP2PChat } from '@/components/providers/P2PChatProvider';
+import AuthUtils from '@/lib/auth-utils-secure';
 import hljs from "highlight.js";
 import "highlight.js/styles/monokai.css";
 
@@ -167,17 +168,11 @@ export default function AIAssistant() {
     const userCheckTimer = setTimeout(() => {
       const checkUser = () => {
         try {
-          const userData = localStorage.getItem('user');
-          if (userData) {
-            const user = JSON.parse(userData);
-            // Check if user session is still valid
-            if (user.expiry && new Date().getTime() < user.expiry) {
-              setCurrentUser(user);
-            } else {
-              // Session expired, remove from localStorage
-              localStorage.removeItem('user');
-              setCurrentUser(null);
-            }
+          if (AuthUtils.isAuthenticated() && AuthUtils.isSessionValid()) {
+            const userData = AuthUtils.getUserData();
+            setCurrentUser(userData);
+          } else {
+            setCurrentUser(null);
           }
         } catch (error) {
           console.error('Error checking user login:', error);

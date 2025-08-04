@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { presenceTracker, updateCurrentPage } from '@/lib/presence-tracker';
 import { usePathname } from 'next/navigation';
+import AuthUtils from '@/lib/auth-utils-secure';
 
 const GlobalPresenceTracker = () => {
   const isInitialized = useRef(false);
@@ -13,13 +14,12 @@ const GlobalPresenceTracker = () => {
     // Check if user is logged in
     const checkAndTrackUser = () => {
       try {
-        const userData = localStorage.getItem("user");
-        if (userData) {
-          const user = JSON.parse(userData);
+        if (AuthUtils.isAuthenticated()) {
+          const userData = AuthUtils.getUserData();
           
           // If user changed or we haven't initialized tracking yet
-          if (!isInitialized.current || currentUser.current?.roll !== user.roll) {
-            console.log('Starting global presence tracking for:', user.name);
+          if (!isInitialized.current || currentUser.current?.roll !== userData.roll) {
+            console.log('Starting global presence tracking for:', userData.name);
             
             // Stop previous tracking if exists
             if (isInitialized.current) {
@@ -27,8 +27,8 @@ const GlobalPresenceTracker = () => {
             }
             
             // Start tracking for the current user with current page
-            presenceTracker.startTracking(user.roll, user.name, pathname);
-            currentUser.current = user;
+            presenceTracker.startTracking(userData.roll, userData.name, pathname);
+            currentUser.current = userData;
             isInitialized.current = true;
           }
         } else {

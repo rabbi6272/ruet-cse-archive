@@ -13,6 +13,7 @@ import {
   remove,
 } from "firebase/database";
 import { getUserDisplayRole } from "@/lib/auth-utils";
+import AuthUtils from "@/lib/auth-utils-secure";
 import toast, { Toaster } from "react-hot-toast";
 import NotificationCenter from "./NotificationCenter";
 import Link from "next/link";
@@ -31,6 +32,7 @@ import { useP2PChat } from "@/components/providers/P2PChatProvider";
 import P2PChat from "./P2PChat";
 import GroupChat from "./GroupChat";
 import { notificationSound } from "@/lib/notificationSound";
+import LogoutButton from "@/components/ui/LogoutButton";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -67,24 +69,23 @@ const Dashboard = () => {
 
   // Check authentication and load user data
   useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (!userData) {
+    if (!AuthUtils.isAuthenticated()) {
       router.push("/user/login");
     } else {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-      loadUserSnippets(parsedUser.roll);
-      loadUserNutrinosData(parsedUser.roll);
+      const userData = AuthUtils.getUserData();
+      setUser(userData);
+      loadUserSnippets(userData.roll);
+      loadUserNutrinosData(userData.roll);
       // Load unsolved doubts count for all users
       loadUnsolvedDoubtsCount();
       // Load pending chat requests count
-      loadPendingChatRequestsCount(parsedUser.roll);
+      loadPendingChatRequestsCount(userData.roll);
       // Load unread messages count
-      loadUnreadMessagesCount(parsedUser.roll);
+      loadUnreadMessagesCount(userData.roll);
       // Load group unread count
-      loadGroupUnreadCount(parsedUser.roll);
+      loadGroupUnreadCount(userData.roll);
       // Record daily visit for Nutrinos
-      recordDailyVisit(parsedUser.roll);
+      recordDailyVisit(userData.roll);
     }
 
     // Note: Presence tracking is now handled globally by GlobalPresenceTracker
@@ -597,7 +598,7 @@ const Dashboard = () => {
             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">
               Quick Actions
             </h3>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
               <button
                 onClick={handleNewSnippet}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg transform hover:scale-105"
@@ -657,6 +658,15 @@ const Dashboard = () => {
                   </span>
                 )}
               </Link>
+
+              {/* Secure Logout Button */}
+              <LogoutButton 
+                variant="danger" 
+                className="px-4 py-3 text-sm font-medium shadow-md hover:shadow-lg transform hover:scale-105"
+              >
+                <span className="hidden sm:inline">Logout</span>
+                <span className="sm:hidden">Exit</span>
+              </LogoutButton>
             </div>
           </div>
         </div>

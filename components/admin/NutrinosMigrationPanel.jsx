@@ -6,6 +6,7 @@ import {
   checkMigrationStatus, 
   dryRunMigration 
 } from "@/lib/nutrinos-migration";
+import AuthUtils from "@/lib/auth-utils-secure";
 import toast from "react-hot-toast";
 
 const NutrinosMigrationPanel = ({ userRoll }) => {
@@ -14,8 +15,8 @@ const NutrinosMigrationPanel = ({ userRoll }) => {
   const [preview, setPreview] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
 
-  // Check if current user is admin (you can modify this logic)
-  const isAdmin = userRoll === "2403172" || userRoll === "2403142"; // Rabbi or Bitto
+  // Check if current user is admin using secure auth utils
+  const isAdmin = AuthUtils.isAdmin();
 
   const handleCheckStatus = async () => {
     try {

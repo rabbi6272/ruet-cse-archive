@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { users } from "@/lib/mino";
+import { secureStorage } from "@/lib/secure-storage";
 
 import toast, { Toaster } from "react-hot-toast";
 
@@ -44,16 +45,27 @@ export function LoginForm() {
       toast.success("Login successful!");
       setError("");
 
-      // Set localStorage with 24-hour expiration
+      // Set secure localStorage with 24-hour expiration
       const expiryTime = new Date().getTime() + 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          roll: user.roll,
-          name: user.name,
-          expiry: expiryTime,
-        })
-      );
+      
+      const userData = {
+        roll: user.roll,
+        name: user.name,
+        expiry: expiryTime,
+      };
+
+      // Store data securely using encryption instead of plain text
+      const success = secureStorage.setSecureUserData(userData);
+      
+      if (!success) {
+        toast.error("Failed to secure user data");
+        setIsLoading(false);
+        return;
+      }
+
+      console.log("🔒 User data stored securely. Original format would have been:");
+      console.log("Plain text (INSECURE):", userData);
+      console.log("Now stored as encrypted hashes for security ✅");
 
       // Redirect to dashboard after successful login
       router.push("/user/dashboard");

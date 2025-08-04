@@ -6,6 +6,7 @@ import { ref, push } from "firebase/database";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { addNutrinos } from "@/lib/nutrinos-system";
+import AuthUtils from "@/lib/auth-utils-secure";
 
 export function CodeSnippetForm() {
   const router = useRouter();
@@ -29,16 +30,15 @@ export function CodeSnippetForm() {
   // Check if user is logged in
   useEffect(() => {
     const checkAuth = () => {
-      const userData = localStorage.getItem("user");
-      if (!userData) {
+      if (!AuthUtils.isAuthenticated()) {
         router.push("/user/login");
       } else {
-        const user = JSON.parse(userData);
+        const userData = AuthUtils.getUserData();
         setIsLoggedIn(true);
-        // Auto-populate roll number from localStorage
+        // Auto-populate roll number from secure storage
         setFormData((prev) => ({
           ...prev,
-          rollNumber: user.roll,
+          rollNumber: userData.roll,
           uid: `uid-${Math.random().toString(36).slice(2, 11)}`,
           date: new Date().toISOString(),
         }));

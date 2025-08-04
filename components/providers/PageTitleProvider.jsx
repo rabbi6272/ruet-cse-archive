@@ -1,19 +1,19 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useNotificationCount } from "@/lib/useNotificationCount";
+import AuthUtils from "@/lib/auth-utils-secure";
 
 export function PageTitleProvider({ children }) {
   const [userRoll, setUserRoll] = useState(null);
 
   useEffect(() => {
-    // Get user data from localStorage
-    const userData = localStorage.getItem("user");
-    if (userData) {
+    // Get user data from secure storage
+    if (AuthUtils.isAuthenticated()) {
       try {
-        const parsedUser = JSON.parse(userData);
-        setUserRoll(parsedUser.roll);
+        const userRoll = AuthUtils.getUserRoll();
+        setUserRoll(userRoll);
       } catch (error) {
-        console.error("Error parsing user data:", error);
+        console.error("Error getting user data:", error);
         setUserRoll(null);
       }
     }
