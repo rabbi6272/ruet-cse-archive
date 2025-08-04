@@ -193,26 +193,26 @@ const EmojiPanel = ({ isOpen, onClose, onEmojiSelect, inputRef }) => {
     <div className="absolute bottom-full left-0 right-0 mb-2 z-50">
       <div 
         ref={panelRef}
-        className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-80 flex flex-col"
+        className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg min-h-48 max-h-72 sm:max-h-80 flex flex-col mx-1 sm:mx-0"
       >
         {/* Search bar */}
-        <div className="p-3 border-b border-gray-200 dark:border-gray-600">
+        <div className="p-2 sm:p-3 border-b border-gray-200 dark:border-gray-600">
           <input
             type="text"
             placeholder="Search emojis..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
 
         {/* Category tabs */}
         {!searchTerm && (
-          <div className="flex overflow-x-auto border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+          <div className="flex overflow-x-auto scrollbar-hide border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 flex-shrink-0">
             {showRecent && (
               <button
                 onClick={() => setActiveCategory("Recent")}
-                className={`px-3 py-2 text-sm font-medium whitespace-nowrap ${
+                className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium whitespace-nowrap flex-shrink-0 ${
                   activeCategory === "Recent"
                     ? "text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400"
                     : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
@@ -225,7 +225,7 @@ const EmojiPanel = ({ isOpen, onClose, onEmojiSelect, inputRef }) => {
               <button
                 key={category}
                 onClick={() => setActiveCategory(category)}
-                className={`px-3 py-2 text-sm font-medium whitespace-nowrap ${
+                className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium whitespace-nowrap flex-shrink-0 ${
                   activeCategory === category
                     ? "text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400"
                     : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
@@ -246,14 +246,14 @@ const EmojiPanel = ({ isOpen, onClose, onEmojiSelect, inputRef }) => {
         )}
 
         {/* Emoji grid */}
-        <div className="flex-1 overflow-y-auto p-2">
+        <div className="flex-1 overflow-y-auto p-1.5 sm:p-2">
           {showRecent && activeCategory === "Recent" ? (
-            <div className="grid grid-cols-8 gap-1">
+            <div className="grid grid-cols-6 sm:grid-cols-8 gap-0.5 sm:gap-1">
               {recentEmojis.map((emoji, index) => (
                 <button
                   key={`recent-${index}`}
                   onClick={() => handleEmojiClick(emoji)}
-                  className="w-8 h-8 flex items-center justify-center text-lg hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                  className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-sm sm:text-lg hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                   title={emoji}
                 >
                   {emoji}
@@ -261,7 +261,7 @@ const EmojiPanel = ({ isOpen, onClose, onEmojiSelect, inputRef }) => {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-8 gap-1">
+            <div className="grid grid-cols-6 sm:grid-cols-8 gap-0.5 sm:gap-1">
               {getFilteredEmojis(
                 searchTerm 
                   ? getAllEmojis().filter(emoji => 
@@ -273,7 +273,7 @@ const EmojiPanel = ({ isOpen, onClose, onEmojiSelect, inputRef }) => {
                 <button
                   key={`${activeCategory}-${index}`}
                   onClick={() => handleEmojiClick(emoji)}
-                  className="w-8 h-8 flex items-center justify-center text-lg hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                  className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-sm sm:text-lg hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                   title={emoji}
                 >
                   {emoji}
@@ -284,7 +284,7 @@ const EmojiPanel = ({ isOpen, onClose, onEmojiSelect, inputRef }) => {
         </div>
 
         {/* Footer */}
-        <div className="p-2 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+        <div className="p-1.5 sm:p-2 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-500 dark:text-gray-400">
               Click an emoji to add it
