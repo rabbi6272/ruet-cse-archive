@@ -15,6 +15,7 @@ import { users } from "@/lib/mino";
 import { formatDistanceToNow } from "date-fns";
 import { addNutrinos } from "@/lib/nutrinos-system";
 import toast from "react-hot-toast";
+import AuthUtils from "@/lib/auth-utils-secure";
 
 function getNameFromRoll(roll) {
   const user = users.find((u) => u.roll === roll);
@@ -59,10 +60,27 @@ const CommentSection = ({
   const maxRepliesPreview = 2;
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
+    // Check authentication status and get user data using secure auth utils
+    const checkAuth = () => {
+      if (AuthUtils.isAuthenticated()) {
+        const userData = AuthUtils.getUserData();
+        if (userData) {
+          setUser({
+            roll: userData.roll,
+            name: userData.name
+          });
+        }
+      } else {
+        setUser(null);
+      }
+    };
+
+    checkAuth();
+
+    // Check authentication periodically in case user logs out in another tab
+    const authCheckInterval = setInterval(checkAuth, 30000); // Check every 30 seconds
+
+    return () => clearInterval(authCheckInterval);
   }, []);
 
   // Fetch comments for this snippet

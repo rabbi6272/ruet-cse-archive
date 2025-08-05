@@ -6,6 +6,7 @@ import { users } from "@/lib/mino";
 import hljs from "highlight.js";
 import "highlight.js/styles/monokai.css";
 import CommentSection from "./CommentSection";
+import AuthUtils from "@/lib/auth-utils-secure";
 
 import { lato } from "@/app/ui/fonts";
 

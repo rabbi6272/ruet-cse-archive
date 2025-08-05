@@ -5,6 +5,7 @@ import Link from "next/link";
 import { inter } from "@/app/ui/fonts";
 import { useNotificationCount } from "@/lib/useNotificationCount";
 import { NotificationBadge } from "@/components/ui/NotificationBadge";
+import AuthUtils from "@/lib/auth-utils-secure";
 
 const mobileNavItems = [
   { label: "Resources", href: "/resources" },
@@ -172,20 +173,28 @@ export function LoginButton() {
   const [userRoll, setUserRoll] = useState(null);
 
   useEffect(() => {
-    const Data = localStorage.getItem("user");
-    setUserData(Data);
-
-    if (Data) {
-      try {
-        const parsedUser = JSON.parse(Data);
-        setUserRoll(parsedUser.roll);
-      } catch (error) {
-        console.error("Error parsing user data:", error);
+    const checkAuth = () => {
+      if (AuthUtils.isAuthenticated()) {
+        const authUserData = AuthUtils.getUserData();
+        if (authUserData) {
+          setUserData(authUserData);
+          setUserRoll(authUserData.roll);
+        } else {
+          setUserData(null);
+          setUserRoll(null);
+        }
+      } else {
+        setUserData(null);
         setUserRoll(null);
       }
-    } else {
-      setUserRoll(null);
-    }
+    };
+
+    checkAuth();
+
+    // Check authentication periodically in case user logs out in another tab
+    const authCheckInterval = setInterval(checkAuth, 30000); // Check every 30 seconds
+
+    return () => clearInterval(authCheckInterval);
   }, []);
 
   const { unreadCount, isLoading, error } = useNotificationCount(
