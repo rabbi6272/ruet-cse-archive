@@ -1,12 +1,12 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { db } from "@/lib/firebase";
 import { ref, onValue, off, update } from "firebase/database";
 import { users } from "@/lib/mino";
 import hljs from "highlight.js";
 import "highlight.js/styles/monokai.css";
 import CommentSection from "./CommentSection";
 import AuthUtils from "@/lib/auth-utils-secure";
+import ProtectedFirebaseDB from "@/lib/protected-firebase-db"; // Only for authenticated operations
 
 import { lato } from "@/app/ui/fonts";
 
@@ -59,41 +59,67 @@ const CodeLibrary = () => {
 
   // Fetch snippets from Firebase
   useEffect(() => {
-    const snippetsRef = ref(db, "codeSnippets");
-    const fetchData = onValue(
-      snippetsRef,
-      (snapshot) => {
-        try {
-          const data = snapshot.val();
-          if (data) {
-            const snippetsArray = Object.keys(data)
-              .map((key) => ({
-                id: key,
-                ...data[key],
-                isLiked: localStorage.getItem(`liked_${key}`) === "true",
-                likesCount: data[key].likesCount || 0,
-                copiesCount: data[key].copiesCount || 0,
-                language:
-                  data[key].language?.toLowerCase() === "js"
-                    ? "javascript"
-                    : data[key].language?.toLowerCase(),
-              }))
-              .sort((a, b) => new Date(b.date) - new Date(a.date));
-            setSnippets(snippetsArray);
-          } else {
+    let unsubscribe = null;
+    
+    const fetchData = async () => {
+      try {
+        // Import Firebase directly for public read access
+        const { db } = await import('@/lib/firebase');
+        
+        // Check if database is available (client-side only)
+        if (!db) {
+          console.log('Database not available on server-side');
+          return;
+        }
+        
+        const snippetsRef = ref(db, "codeSnippets");
+        
+        unsubscribe = onValue(
+          snippetsRef,
+          (snapshot) => {
+            try {
+              const data = snapshot.val();
+              if (data) {
+                const snippetsArray = Object.keys(data)
+                  .map((key) => ({
+                    id: key,
+                    ...data[key],
+                    isLiked: localStorage.getItem(`liked_${key}`) === "true",
+                    likesCount: data[key].likesCount || 0,
+                    copiesCount: data[key].copiesCount || 0,
+                    language:
+                      data[key].language?.toLowerCase() === "js"
+                        ? "javascript"
+                        : data[key].language?.toLowerCase(),
+                  }))
+                  .sort((a, b) => new Date(b.date) - new Date(a.date));
+                setSnippets(snippetsArray);
+              } else {
+                setSnippets([]);
+              }
+            } catch (error) {
+              console.error("Error processing snippets:", error);
+              setSnippets([]);
+            }
+          },
+          (error) => {
+            console.error("Firebase error:", error);
             setSnippets([]);
           }
-        } catch (error) {
-          console.error("Error fetching snippets:", error);
-          setSnippets([]);
-        }
-      },
-      (error) => {
-        console.error("Firebase error:", error);
+        );
+      } catch (error) {
+        console.error("Failed to load code snippets:", error);
         setSnippets([]);
       }
-    );
-    return () => off(snippetsRef, "value", fetchData);
+    };
+    
+    fetchData();
+    
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, []);
 
   // Filter snippets
@@ -178,10 +204,19 @@ const CodeLibrary = () => {
             : snippet
         )
       );
-      const snippetRef = ref(db, `codeSnippets/${id}`);
-      await update(snippetRef, {
-        copiesCount: (snippets.find((s) => s.id === id).copiesCount || 0) + 1,
-      });
+      
+      try {
+        // Import Firebase directly for copy count update
+        const { db } = await import('@/lib/firebase');
+        if (db) {
+          const snippetRef = ref(db, `codeSnippets/${id}`);
+          await update(snippetRef, {
+            copiesCount: (snippets.find((s) => s.id === id).copiesCount || 0) + 1,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to update copy count:", error);
+      }
     } catch (err) {
       console.error("Failed to copy:", err);
     }
@@ -190,6 +225,9 @@ const CodeLibrary = () => {
   const toggleLike = async (id) => {
     // Check if user is authenticated
     if (!AuthUtils.isAuthenticated()) {
+      console.log('🔒 Login required for liking snippets');
+      // Optionally show a toast or redirect to login
+      window.location.href = '/user/login';
       return;
     }
 
@@ -214,10 +252,29 @@ const CodeLibrary = () => {
 
     localStorage.setItem(`liked_${id}`, "true");
 
-    const snippetRef = ref(db, `codeSnippets/${id}`);
-    await update(snippetRef, {
-      likesCount: (snippet.likesCount || 0) + 1,
-    });
+    try {
+      // Use protected database for write operations (likes require authentication)
+      const database = await ProtectedFirebaseDB.getDatabase();
+      const snippetRef = ref(database, `codeSnippets/${id}`);
+      await update(snippetRef, {
+        likesCount: (snippet.likesCount || 0) + 1,
+      });
+    } catch (error) {
+      console.error("Failed to update like count:", error);
+      // Revert the like if the update failed
+      setSnippets((prevSnippets) =>
+        prevSnippets.map((s) =>
+          s.id === id
+            ? {
+                ...s,
+                likesCount: (s.likesCount || 1) - 1,
+                isLiked: false,
+              }
+            : s
+        )
+      );
+      localStorage.removeItem(`liked_${id}`);
+    }
   };
 
   const toggleExpand = (id) => {

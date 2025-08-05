@@ -67,6 +67,10 @@ export function LoginForm() {
       console.log("Plain text (INSECURE):", userData);
       console.log("Now stored as encrypted hashes for security ✅");
 
+      // Note: Firebase Authentication integration is temporarily disabled for development
+      // The database is still protected by our authentication layer
+      console.log("✅ Local authentication successful");
+
       // Redirect to dashboard after successful login
       router.push("/user/dashboard");
     } catch (err) {

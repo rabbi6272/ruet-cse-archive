@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { db } from "@/lib/firebase";
 import { ref, push, onValue } from "firebase/database";
 import toast, { Toaster } from "react-hot-toast";
+import AuthUtils from "@/lib/auth-utils-secure";
 import {
   hasReachedDailyLimit,
   getRemainingDoubts,
@@ -40,12 +40,12 @@ const HelpForm = () => {
   ];
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (!userData) {
+    // Check authentication using AuthUtils
+    if (!AuthUtils.isAuthenticated()) {
       router.push("/user/login");
     } else {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
+      const userData = AuthUtils.getUserData();
+      setUser(userData);
     }
     
     // Note: Presence tracking is now handled globally by GlobalPresenceTracker
@@ -59,23 +59,33 @@ const HelpForm = () => {
   }, [user]);
 
   const loadUserDoubts = () => {
-    const doubtsRef = ref(db, "doubts");
-    onValue(doubtsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const userDoubtsArray = Object.keys(data)
-          .map((key) => ({ id: key, ...data[key] }))
-          .filter((doubt) => doubt.userDetails?.roll === user.roll);
-
-        setUserDoubts(userDoubtsArray);
-
-        // Check daily limits
-        const limitReached = hasReachedDailyLimit(userDoubtsArray);
-        const remaining = getRemainingDoubts(userDoubtsArray);
-
-        setDailyLimitReached(limitReached);
-        setRemainingDoubts(remaining);
+    // Import Firebase dynamically to ensure client-side only
+    import('@/lib/firebase').then(({ db }) => {
+      if (!db) {
+        console.log('Database not available for loading user doubts');
+        return;
       }
+      
+      const doubtsRef = ref(db, "doubts");
+      onValue(doubtsRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const userDoubtsArray = Object.keys(data)
+            .map((key) => ({ id: key, ...data[key] }))
+            .filter((doubt) => doubt.userDetails?.roll === user.roll);
+
+          setUserDoubts(userDoubtsArray);
+
+          // Check daily limits
+          const limitReached = hasReachedDailyLimit(userDoubtsArray);
+          const remaining = getRemainingDoubts(userDoubtsArray);
+
+          setDailyLimitReached(limitReached);
+          setRemainingDoubts(remaining);
+        }
+      });
+    }).catch(error => {
+      console.error('Failed to load user doubts:', error);
     });
   };
 
@@ -229,7 +239,12 @@ const HelpForm = () => {
         createdAt: new Date().toISOString(),
       };
 
-      // Save to Firebase
+      // Import Firebase dynamically and save to database
+      const { db } = await import('@/lib/firebase');
+      if (!db) {
+        throw new Error('Database not available');
+      }
+      
       const doubtsRef = ref(db, "doubts");
       const doubtResult = await push(doubtsRef, doubtData);
 

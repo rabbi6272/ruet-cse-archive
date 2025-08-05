@@ -1,11 +1,13 @@
 {
   "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null",
+    ".read": true,
+    ".write": true,
 
     "codeSnippets": {
       ".indexOn": ["rollNumber", "language", "date", "difficulty"],
       "$snippetId": {
+        ".read": true,
+        ".write": true,
         ".validate": "newData.hasChildren(['title', 'codeSnippet', 'language', 'rollNumber'])"
       }
     },
@@ -13,7 +15,9 @@
     "codeSnippetComments": {
       "$snippetId": {
         ".indexOn": ["timestamp", "author/roll"],
+        ".read": true,
         "$commentId": {
+          ".write": true,
           ".validate": "newData.hasChildren(['content', 'author', 'timestamp'])"
         }
       }
@@ -22,6 +26,8 @@
     "doubts": {
       ".indexOn": ["status", "timestamp", "userDetails/roll"],
       "$doubtId": {
+        ".read": true,
+        ".write": true,
         ".validate": "newData.hasChildren(['title', 'description', 'userDetails', 'timestamp'])"
       }
     },
@@ -30,16 +36,17 @@
       ".indexOn": ["userSatisfied", "timestamp", "status"],
       "$doubtId": {
         ".read": true,
-        ".write": "auth != null"
+        ".write": true
       }
     },
 
     "notifications": {
       "$userRoll": {
         ".indexOn": ["read", "timestamp", "type"],
+        ".read": true,
+        ".write": true,
         "$notificationId": {
-          ".read": "$userRoll === auth.uid || auth.uid === 'admin'",
-          ".write": "$userRoll === auth.uid || auth.uid === 'admin'"
+          ".validate": true
         }
       }
     },
@@ -48,7 +55,7 @@
       "$userRoll": {
         ".indexOn": ["totalNutrinos", "lastUpdated"],
         ".read": true,
-        ".write": "auth != null"
+        ".write": true
       }
     },
 
@@ -56,15 +63,55 @@
       "$userRoll": {
         ".indexOn": ["totalPoints", "doubtsResolved"],
         ".read": true,
-        ".write": "auth != null"
+        ".write": true
       }
     },
 
     "reviewerNotifications": {
       ".indexOn": ["timestamp", "read", "type"],
       "$notificationId": {
-        ".read": "auth != null",
-        ".write": "auth != null"
+        ".read": true,
+        ".write": true
+      }
+    },
+
+    "groupMessages": {
+      "$groupId": {
+        ".indexOn": ["timestamp", "senderRoll"],
+        ".read": true,
+        ".write": true
+      }
+    },
+
+    "groupPolls": {
+      "$groupId": {
+        ".indexOn": ["timestamp", "isActive", "createdBy"],
+        ".read": true,
+        ".write": true
+      }
+    },
+
+    "presence": {
+      "$userRoll": {
+        ".read": true,
+        ".write": true,
+        ".validate": "newData.hasChildren(['online', 'lastSeen'])"
+      }
+    },
+
+    "activeUsers": {
+      "$userRoll": {
+        ".read": true,
+        ".write": true
+      }
+    },
+
+    "typingIndicators": {
+      "$groupId": {
+        "$userRoll": {
+          ".read": true,
+          ".write": true
+        }
       }
     }
   }

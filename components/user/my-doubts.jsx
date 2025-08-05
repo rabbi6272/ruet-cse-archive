@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { db } from "@/lib/firebase";
 import { ref, onValue, query, orderByChild, equalTo } from "firebase/database";
 import toast, { Toaster } from "react-hot-toast";
+import AuthUtils from "@/lib/auth-utils-secure";
 import Link from "next/link";
 import hljs from "highlight.js";
 import "highlight.js/styles/monokai.css";
@@ -21,13 +21,13 @@ const MyDoubts = () => {
   const maxCodeLines = 20;
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (!userData) {
+    // Check authentication using AuthUtils
+    if (!AuthUtils.isAuthenticated()) {
       router.push("/user/login");
     } else {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-      loadUserDoubts(parsedUser.roll);
+      const userData = AuthUtils.getUserData();
+      setUser(userData);
+      loadUserDoubts(userData.roll);
     }
   }, [router]);
 
@@ -39,59 +39,74 @@ const MyDoubts = () => {
     });
   });
 
-  const loadUserDoubts = (userRoll) => {
+  const loadUserDoubts = async (userRoll) => {
     setLoading(true);
 
-    // Load pending/assigned doubts
-    const doubtsRef = ref(db, "doubts");
-    const userDoubtsQuery = query(
-      doubtsRef,
-      orderByChild("userDetails/roll"),
-      equalTo(userRoll)
-    );
-
-    onValue(userDoubtsQuery, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const doubtsArray = Object.keys(data)
-          .map((key) => ({
-            id: key,
-            ...data[key],
-          }))
-          .sort((a, b) => b.timestamp - a.timestamp);
-        setDoubts(doubtsArray);
-      } else {
-        setDoubts([]);
+    try {
+      // Import Firebase dynamically to ensure client-side only
+      const { db } = await import('@/lib/firebase');
+      if (!db) {
+        console.log('Database not available for loading user doubts');
+        setLoading(false);
+        return;
       }
-    });
 
-    // Load resolved doubts
-    const resolvedDoubtsRef = ref(db, "resolvedDoubts");
-    const userResolvedQuery = query(
-      resolvedDoubtsRef,
-      orderByChild("userDetails/roll"),
-      equalTo(userRoll)
-    );
+      // Load pending/assigned doubts
+      const doubtsRef = ref(db, "doubts");
+      const userDoubtsQuery = query(
+        doubtsRef,
+        orderByChild("userDetails/roll"),
+        equalTo(userRoll)
+      );
 
-    onValue(userResolvedQuery, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const resolvedArray = Object.keys(data)
-          .map((key) => ({
-            id: key,
-            ...data[key],
-          }))
-          .sort(
-            (a, b) =>
-              (b.solution?.solvedAt || b.timestamp) -
-              (a.solution?.solvedAt || a.timestamp)
-          );
-        setResolvedDoubts(resolvedArray);
-      } else {
-        setResolvedDoubts([]);
-      }
+      onValue(userDoubtsQuery, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const doubtsArray = Object.keys(data)
+            .map((key) => ({
+              id: key,
+              ...data[key],
+            }))
+            .sort((a, b) => b.timestamp - a.timestamp);
+          setDoubts(doubtsArray);
+        } else {
+          setDoubts([]);
+        }
+      });
+
+      // Load resolved doubts
+      const resolvedDoubtsRef = ref(db, "resolvedDoubts");
+      const userResolvedQuery = query(
+        resolvedDoubtsRef,
+        orderByChild("userDetails/roll"),
+        equalTo(userRoll)
+      );
+
+      onValue(userResolvedQuery, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          const resolvedArray = Object.keys(data)
+            .map((key) => ({
+              id: key,
+              ...data[key],
+            }))
+            .sort(
+              (a, b) =>
+                (b.solution?.solvedAt || b.timestamp) -
+                (a.solution?.solvedAt || a.timestamp)
+            );
+          setResolvedDoubts(resolvedArray);
+        } else {
+          setResolvedDoubts([]);
+        }
+        setLoading(false);
+      });
+    } catch (error) {
+      console.error('Failed to load user doubts:', error);
+      setDoubts([]);
+      setResolvedDoubts([]);
       setLoading(false);
-    });
+    }
   };
 
   const markAsSatisfied = async (doubtId) => {

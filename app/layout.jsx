@@ -7,6 +7,7 @@ import { P2PChatProvider } from "@/components/providers/P2PChatProvider";
 import GlobalPresenceTracker from "@/components/providers/GlobalPresenceTracker";
 import AIAssistant from "@/components/ai/AIAssistant";
 import NoSSR from "@/components/ui/NoSSR";
+import FirebaseObfuscationInit from "@/components/security/FirebaseObfuscationInit";
 
 import { lato } from "./ui/fonts";
 import { Toaster } from "react-hot-toast";
@@ -169,6 +170,9 @@ export default function RootLayout({ children }) {
             <SpeedInsights />
             <Analytics />
             <Toaster />
+            <NoSSR fallback={null}>
+              <FirebaseObfuscationInit />
+            </NoSSR>
             <GlobalPresenceTracker />
             <Navbar />
 

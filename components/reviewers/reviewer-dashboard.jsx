@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { db } from "@/lib/firebase";
 import { ref, onValue, update, remove } from "firebase/database";
 import { calculateSolverPoints } from "@/lib/points-system";
 import { addNutrinos } from "@/lib/nutrinos-system";
+import AuthUtils from "@/lib/auth-utils-secure";
 import toast, { Toaster } from "react-hot-toast";
 import hljs from "highlight.js";
 import "highlight.js/styles/monokai.css";
@@ -24,17 +24,15 @@ const ReviewerDashboard = () => {
   const maxCodeLines = 20;
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (!userData) {
+    // Check authentication using AuthUtils
+    if (!AuthUtils.isAuthenticated()) {
       router.push("/user/login");
-      return;
+    } else {
+      const userData = AuthUtils.getUserData();
+      // All users are now allowed to solve doubts
+      setUser(userData);
+      loadDoubts();
     }
-
-    const parsedUser = JSON.parse(userData);
-
-    // All users are now allowed to solve doubts
-    setUser(parsedUser);
-    loadDoubts();
   }, [router]);
 
   useEffect(() => {
@@ -45,9 +43,17 @@ const ReviewerDashboard = () => {
     });
   });
 
-  const loadDoubts = () => {
+  const loadDoubts = async () => {
     setLoading(true);
     try {
+      // Import Firebase dynamically to ensure client-side only
+      const { db } = await import('@/lib/firebase');
+      if (!db) {
+        console.log('Database not available for loading doubts');
+        setLoading(false);
+        return;
+      }
+      
       const doubtsRef = ref(db, "doubts");
       onValue(doubtsRef, (snapshot) => {
         const data = snapshot.val();
@@ -78,6 +84,12 @@ const ReviewerDashboard = () => {
 
   const assignDoubtToMe = async (doubtId) => {
     try {
+      // Import Firebase dynamically
+      const { db } = await import('@/lib/firebase');
+      if (!db) {
+        throw new Error('Database not available');
+      }
+      
       const doubtRef = ref(db, `doubts/${doubtId}`);
       await update(doubtRef, {
         status: "assigned",
@@ -205,6 +217,12 @@ const ReviewerDashboard = () => {
 
     setSubmittingSolution(true);
     try {
+      // Import Firebase dynamically
+      const { db } = await import('@/lib/firebase');
+      if (!db) {
+        throw new Error('Database not available');
+      }
+
       // Clean solution attachments to remove undefined properties
       const cleanAttachments = solutionAttachments.map((attachment) => {
         const cleanAttachment = {
