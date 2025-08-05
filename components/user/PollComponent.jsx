@@ -252,13 +252,218 @@ const PollCreationModal = ({ isOpen, onClose, onCreatePoll, groupId }) => {
   );
 };
 
+// Poll edit modal component
+const PollEditModal = ({ isOpen, onClose, onUpdatePoll, poll }) => {
+  const [question, setQuestion] = useState("");
+  const [options, setOptions] = useState([]);
+  const [allowMultiple, setAllowMultiple] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  useEffect(() => {
+    if (poll && isOpen) {
+      setQuestion(poll.question || "");
+      setOptions(poll.options?.map(opt => opt.text) || ["", ""]);
+      setAllowMultiple(poll.allowMultiple || false);
+      setIsAnonymous(poll.isAnonymous || false);
+    }
+  }, [poll, isOpen]);
+
+  const addOption = () => {
+    if (options.length < 10) {
+      setOptions([...options, ""]);
+    }
+  };
+
+  const removeOption = (index) => {
+    if (options.length > 2) {
+      setOptions(options.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateOption = (index, value) => {
+    const newOptions = [...options];
+    newOptions[index] = value;
+    setOptions(newOptions);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!question.trim()) {
+      toast.error("Poll question is required");
+      return;
+    }
+    
+    const validOptions = options.filter(opt => opt.trim() !== "");
+    if (validOptions.length < 2) {
+      toast.error("At least 2 options are required");
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const updatedPollData = {
+        question: question.trim(),
+        options: validOptions.map(text => ({
+          text: text.trim(),
+          votes: poll.options.find(opt => opt.text === text.trim())?.votes || 0,
+          voters: poll.options.find(opt => opt.text === text.trim())?.voters || {}
+        })),
+        allowMultiple,
+        isAnonymous
+      };
+
+      await onUpdatePoll(poll.id, updatedPollData);
+      onClose();
+      toast.success("Poll updated successfully!");
+    } catch (error) {
+      console.error("Error updating poll:", error);
+      toast.error("Failed to update poll");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full max-h-[90vh] overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Edit Poll
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="p-4 overflow-y-auto max-h-[calc(90vh-120px)]">
+          {/* Question */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Question <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              rows="3"
+              placeholder="What would you like to ask?"
+              maxLength="200"
+              required
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              {question.length}/200 characters
+            </p>
+          </div>
+
+          {/* Options */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Options <span className="text-red-500">*</span>
+            </label>
+            <div className="space-y-2">
+              {options.map((option, index) => (
+                <div key={index} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={option}
+                    onChange={(e) => updateOption(index, e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={`Option ${index + 1}`}
+                    maxLength="100"
+                    required
+                  />
+                  {options.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => removeOption(index)}
+                      className="px-3 py-2 text-red-500 hover:text-red-700 transition-colors"
+                      title="Remove option"
+                    >
+                      <i className="fas fa-trash"></i>
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {options.length < 10 && (
+              <button
+                type="button"
+                onClick={addOption}
+                className="mt-2 text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-2"
+              >
+                <i className="fas fa-plus"></i>
+                Add Option
+              </button>
+            )}
+          </div>
+
+          {/* Settings */}
+          <div className="mb-6 space-y-3">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="edit-allowMultiple"
+                checked={allowMultiple}
+                onChange={(e) => setAllowMultiple(e.target.checked)}
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+              />
+              <label htmlFor="edit-allowMultiple" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                Allow multiple selections
+              </label>
+            </div>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="edit-isAnonymous"
+                checked={isAnonymous}
+                onChange={(e) => setIsAnonymous(e.target.checked)}
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+              />
+              <label htmlFor="edit-isAnonymous" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                Anonymous voting
+              </label>
+            </div>
+          </div>
+
+          {/* Buttons */}
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isUpdating}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isUpdating && <i className="fas fa-spinner fa-spin"></i>}
+              Update Poll
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 // Poll display component
-const PollDisplay = ({ poll, onVote, onClosePoll, currentUserRoll, isHistoryView = false }) => {
+const PollDisplay = ({ poll, onVote, onClosePoll, currentUserRoll, isHistoryView = false, onEditPoll = null }) => {
   const [userVotes, setUserVotes] = useState(new Set());
   const [isVoting, setIsVoting] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [showVotersModal, setShowVotersModal] = useState(false);
   const [selectedOptionIndex, setSelectedOptionIndex] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     // Check if user has already voted
@@ -368,6 +573,15 @@ const PollDisplay = ({ poll, onVote, onClosePoll, currentUserRoll, isHistoryView
           }`}>
             {getTimeRemaining()}
           </span>
+          {canClosePoll && poll.isActive && !isHistoryView && (
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="text-blue-500 hover:text-blue-700 text-xs"
+              title="Edit Poll"
+            >
+              <i className="fas fa-edit"></i>
+            </button>
+          )}
           {canClosePoll && !isHistoryView && (
             <button
               onClick={() => onClosePoll(poll.id)}
@@ -572,8 +786,18 @@ const PollDisplay = ({ poll, onVote, onClosePoll, currentUserRoll, isHistoryView
           </div>
         </div>
       )}
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <PollEditModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onUpdatePoll={onEditPoll}
+          poll={poll}
+        />
+      )}
     </div>
   );
 };
 
-export { PollCreationModal, PollDisplay };
+export { PollCreationModal, PollEditModal, PollDisplay };

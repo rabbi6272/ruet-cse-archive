@@ -19,7 +19,7 @@ import {
 import toast from "react-hot-toast";
 import { getUserGroup, isUserInGroup, getGroupName } from "@/lib/group-utils";
 import EmojiPanel from "@/components/ui/EmojiPanel";
-import { PollCreationModal, PollDisplay } from "./PollComponent";
+import { PollCreationModal, PollEditModal, PollDisplay } from "./PollComponent";
 import AuthUtils from "@/lib/auth-utils-secure";
 
 // Link detection and preview utilities
@@ -1002,6 +1002,67 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
     }
   };
 
+  const editPoll = async (pollId, updatedPollData) => {
+    if (!userGroup || !AuthUtils.isAuthenticated()) return;
+
+    try {
+      const pollRef = ref(db, `groupPolls/${userGroup.id}/${pollId}`);
+      const pollSnapshot = await get(pollRef);
+      const currentPoll = pollSnapshot.val();
+
+      if (!currentPoll) {
+        throw new Error("Poll not found");
+      }
+
+      if (currentPoll.createdBy !== AuthUtils.getUserRoll()) {
+        throw new Error("Only the poll creator can edit this poll");
+      }
+
+      if (!currentPoll.isActive) {
+        throw new Error("Cannot edit a closed poll");
+      }
+
+      // Preserve existing votes when updating options
+      const updatedOptions = updatedPollData.options.map((newOption, index) => {
+        // Try to find a matching option from the current poll
+        const existingOption = currentPoll.options.find(opt => opt.text === newOption.text);
+        return {
+          text: newOption.text,
+          votes: existingOption ? existingOption.votes : 0,
+          voters: existingOption ? existingOption.voters : {}
+        };
+      });
+
+      // Recalculate total votes
+      const totalVotes = updatedOptions.reduce((sum, option) => sum + (option.votes || 0), 0);
+
+      await update(pollRef, {
+        question: updatedPollData.question,
+        options: updatedOptions,
+        allowMultiple: updatedPollData.allowMultiple,
+        isAnonymous: updatedPollData.isAnonymous,
+        totalVotes,
+        editedAt: Date.now(),
+        editedBy: AuthUtils.getUserRoll()
+      });
+
+      // Send a message about poll edit
+      const messagesRef = ref(db, `groupMessages/${userGroup.id}`);
+      await push(messagesRef, {
+        text: `📝 ${AuthUtils.getUserName()} updated the poll`,
+        senderRoll: "system", 
+        senderName: "System",
+        timestamp: serverTimestamp(),
+        type: "poll_notification",
+        pollId
+      });
+
+    } catch (error) {
+      console.error("Error editing poll:", error);
+      throw error;
+    }
+  };
+
   // Get users who have seen a specific message
   const getMessageSeenBy = (messageId) => {
     if (!messageReadStatus[messageId] || !userGroup) return [];
@@ -1251,6 +1312,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
                         poll={poll}
                         onVote={votePoll}
                         onClosePoll={closePoll}
+                        onEditPoll={editPoll}
                         currentUserRoll={userRoll}
                         isHistoryView={true}
                       />
@@ -1448,6 +1510,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
               poll={poll}
               onVote={votePoll}
               onClosePoll={closePoll}
+              onEditPoll={editPoll}
               currentUserRoll={userRoll}
             />
           ))}
