@@ -464,6 +464,7 @@ const PollDisplay = ({ poll, onVote, onClosePoll, currentUserRoll, isHistoryView
   const [showVotersModal, setShowVotersModal] = useState(false);
   const [selectedOptionIndex, setSelectedOptionIndex] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
 
   useEffect(() => {
     // Check if user has already voted
@@ -584,7 +585,7 @@ const PollDisplay = ({ poll, onVote, onClosePoll, currentUserRoll, isHistoryView
           )}
           {canClosePoll && !isHistoryView && (
             <button
-              onClick={() => onClosePoll(poll.id)}
+              onClick={() => setShowCloseConfirmation(true)}
               className="text-red-500 hover:text-red-700 text-xs"
               title="Close Poll"
             >
@@ -782,6 +783,69 @@ const PollDisplay = ({ poll, onVote, onClosePoll, currentUserRoll, isHistoryView
                   No voters yet
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Close Confirmation Modal */}
+      {showCloseConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Close Poll
+              </h3>
+              <button
+                onClick={() => setShowCloseConfirmation(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="p-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center">
+                  <i className="fas fa-exclamation-triangle text-red-600 dark:text-red-400 text-xl"></i>
+                </div>
+                <div>
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-white">
+                    Are you sure?
+                  </h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mb-4">
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  <strong>Poll:</strong> {poll.question}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {poll.totalVotes} vote{poll.totalVotes !== 1 ? 's' : ''} • Created by {poll.createdByName}
+                </p>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                Once closed, participants will no longer be able to vote, and the poll will be moved to the poll history section.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowCloseConfirmation(false)}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    onClosePoll(poll.id);
+                    setShowCloseConfirmation(false);
+                  }}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <i className="fas fa-times-circle"></i>
+                  Close Poll
+                </button>
+              </div>
             </div>
           </div>
         </div>
