@@ -19,6 +19,8 @@ import {
 import toast from "react-hot-toast";
 import { getUserGroup, isUserInGroup, getGroupName } from "@/lib/group-utils";
 import EmojiPanel from "@/components/ui/EmojiPanel";
+import { PollCreationModal, PollDisplay } from "./PollComponent";
+import AuthUtils from "@/lib/auth-utils-secure";
 
 // Link detection and preview utilities
 const SUPPORTED_PLATFORMS = {
@@ -400,6 +402,10 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
   const [swipeState, setSwipeState] = useState({ startX: 0, currentX: 0, messageId: null, swiping: false });
   const [showEmojiPanel, setShowEmojiPanel] = useState(false);
 
+  // Poll-related state
+  const [polls, setPolls] = useState([]);
+  const [showPollModal, setShowPollModal] = useState(false);
+
   // Get user's group on component mount
   useEffect(() => {
     if (userRoll) {
@@ -530,6 +536,24 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
     });
 
     return () => unsubscribeMessages();
+  }, [userGroup]);
+
+  // Load polls
+  useEffect(() => {
+    if (!userGroup) return;
+
+    const pollsRef = ref(db, `groupPolls/${userGroup.id}`);
+    const unsubscribePolls = onValue(pollsRef, (snapshot) => {
+      const data = snapshot.val() || {};
+      const pollsList = Object.entries(data).map(([id, poll]) => ({
+        id,
+        ...poll,
+      })).sort((a, b) => b.createdAt - a.createdAt);
+      
+      setPolls(pollsList);
+    });
+
+    return () => unsubscribePolls();
   }, [userGroup]);
 
   // Track typing status
@@ -863,6 +887,118 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
   // Get online count
   const getOnlineCount = () => {
     return Object.values(activeUsers).filter(user => user.online).length + 1; // +1 for current user
+  };
+
+  // Poll functions
+  const createPoll = async (pollData) => {
+    if (!userGroup) return;
+
+    try {
+      const pollsRef = ref(db, `groupPolls/${userGroup.id}`);
+      const newPollRef = await push(pollsRef, pollData);
+      
+      // Send a message about the poll creation
+      const messagesRef = ref(db, `groupMessages/${userGroup.id}`);
+      await push(messagesRef, {
+        text: `📊 ${AuthUtils.getUserName()} created a new poll: "${pollData.question}"`,
+        senderRoll: "system",
+        senderName: "System",
+        timestamp: serverTimestamp(),
+        type: "poll_notification",
+        pollId: newPollRef.key
+      });
+
+      toast.success("Poll created successfully!");
+    } catch (error) {
+      console.error("Error creating poll:", error);
+      throw error;
+    }
+  };
+
+  const votePoll = async (pollId, optionIndexes) => {
+    if (!userGroup || !AuthUtils.isAuthenticated()) return;
+
+    try {
+      const pollRef = ref(db, `groupPolls/${userGroup.id}/${pollId}`);
+      const pollSnapshot = await get(pollRef);
+      const poll = pollSnapshot.val();
+
+      if (!poll || !poll.isActive) {
+        toast.error("This poll is no longer active");
+        return;
+      }
+
+      // Remove user's previous votes
+      const updatedOptions = poll.options.map(option => ({
+        ...option,
+        votes: option.voters && option.voters[userRoll] 
+          ? Math.max(0, option.votes - 1) 
+          : option.votes,
+        voters: {
+          ...option.voters,
+          [userRoll]: null
+        }
+      }));
+
+      // Add new votes
+      let totalVotes = 0;
+      optionIndexes.forEach(index => {
+        if (updatedOptions[index]) {
+          updatedOptions[index].votes = (updatedOptions[index].votes || 0) + 1;
+          updatedOptions[index].voters = {
+            ...updatedOptions[index].voters,
+            [userRoll]: {
+              votedAt: Date.now(),
+              voterRoll: userRoll,
+              voterName: AuthUtils.getUserName()
+            }
+          };
+        }
+      });
+
+      // Calculate total votes
+      updatedOptions.forEach(option => {
+        totalVotes += option.votes || 0;
+      });
+
+      await update(pollRef, {
+        options: updatedOptions,
+        totalVotes
+      });
+
+    } catch (error) {
+      console.error("Error voting on poll:", error);
+      throw error;
+    }
+  };
+
+  const closePoll = async (pollId) => {
+    if (!userGroup || !AuthUtils.isAuthenticated()) return;
+
+    try {
+      const pollRef = ref(db, `groupPolls/${userGroup.id}/${pollId}`);
+      await update(pollRef, {
+        isActive: false,
+        closedAt: Date.now(),
+        closedBy: AuthUtils.getUserRoll()
+      });
+
+      // Send a message about poll closure
+      const messagesRef = ref(db, `groupMessages/${userGroup.id}`);
+      await push(messagesRef, {
+        text: `📊 ${AuthUtils.getUserName()} closed the poll`,
+        senderRoll: "system", 
+        senderName: "System",
+        timestamp: serverTimestamp(),
+        type: "poll_notification",
+        pollId
+      });
+
+      toast.success("Poll closed successfully!");
+    } catch (error) {
+      console.error("Error closing poll:", error);
+      toast.error("Failed to close poll");
+    }
   };
 
   // Get users who have seen a specific message
@@ -1255,6 +1391,17 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
             );
           })}
 
+          {/* Active Polls */}
+          {polls.filter(poll => poll.isActive).map((poll) => (
+            <PollDisplay
+              key={poll.id}
+              poll={poll}
+              onVote={votePoll}
+              onClosePoll={closePoll}
+              currentUserRoll={userRoll}
+            />
+          ))}
+
           {/* Typing indicator */}
           {getTypingUsers().length > 0 && (
             <div className="flex justify-start">
@@ -1347,6 +1494,13 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
                   />
                 </div>
                 <button
+                  onClick={() => setShowPollModal(true)}
+                  className="px-3 sm:px-4 py-2 sm:py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex-shrink-0"
+                  title="Create Poll"
+                >
+                  <i className="fas fa-poll text-sm sm:text-base"></i>
+                </button>
+                <button
                   onClick={sendMessage}
                   disabled={!newMessage.trim()}
                   className="px-4 sm:px-5 py-2 sm:py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
@@ -1358,6 +1512,14 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
           </div>
         </div>
       </div>
+
+      {/* Poll Creation Modal */}
+      <PollCreationModal
+        isOpen={showPollModal}
+        onClose={() => setShowPollModal(false)}
+        onCreatePoll={createPoll}
+        groupId={userGroup?.id}
+      />
     </div>
   );
 };

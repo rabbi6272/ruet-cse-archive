@@ -188,6 +188,11 @@ const CodeLibrary = () => {
   };
 
   const toggleLike = async (id) => {
+    // Check if user is authenticated
+    if (!AuthUtils.isAuthenticated()) {
+      return;
+    }
+
     const snippet = snippets.find((s) => s.id === id);
     if (snippet.isLiked) return;
 
