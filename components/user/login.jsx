@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { users } from "@/lib/mino";
 import { secureStorage } from "@/lib/secure-storage";
+import AuthUtils from "@/lib/auth-utils-secure";
 
 import toast, { Toaster } from "react-hot-toast";
 
@@ -15,6 +16,13 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Check if user is already authenticated and redirect to dashboard
+  useEffect(() => {
+    if (AuthUtils.isAuthenticated()) {
+      router.push("/user/dashboard");
+    }
+  }, [router]);
 
   // Mock data (since we can't access @/db/data.json in browser)
   const handleSubmit = async (e) => {
