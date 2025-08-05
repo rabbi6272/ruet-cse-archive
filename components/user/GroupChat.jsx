@@ -405,6 +405,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
   // Poll-related state
   const [polls, setPolls] = useState([]);
   const [showPollModal, setShowPollModal] = useState(false);
+  const [showPollHistory, setShowPollHistory] = useState(false);
 
   // Get user's group on component mount
   useEffect(() => {
@@ -1095,6 +1096,13 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setShowPollHistory(!showPollHistory)}
+              className="p-2 sm:p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              title="Poll History"
+            >
+              <i className="fas fa-history text-gray-500 text-sm sm:text-base md:text-lg"></i>
+            </button>
+            <button
               onClick={() => setShowMemberList(!showMemberList)}
               className="p-2 sm:p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               title="Group Members"
@@ -1206,6 +1214,48 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Poll History */}
+        {showPollHistory && (
+          <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <div className="p-3 sm:p-4 md:p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  Poll History ({polls.filter(poll => !poll.isActive).length})
+                </h3>
+                <button
+                  onClick={() => setShowPollHistory(false)}
+                  className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  title="Close poll history"
+                >
+                  <i className="fas fa-times text-gray-500 dark:text-gray-400 text-sm"></i>
+                </button>
+              </div>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {polls.filter(poll => !poll.isActive).length === 0 ? (
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <i className="fas fa-poll text-2xl mb-2 opacity-50"></i>
+                    <p className="text-sm">No poll history yet</p>
+                  </div>
+                ) : (
+                  polls
+                    .filter(poll => !poll.isActive)
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                    .map((poll) => (
+                      <PollDisplay
+                        key={poll.id}
+                        poll={poll}
+                        onVote={votePoll}
+                        onClosePoll={closePoll}
+                        currentUserRoll={userRoll}
+                        isHistoryView={true}
+                      />
+                    ))
+                )}
               </div>
             </div>
           </div>
