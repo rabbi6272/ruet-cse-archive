@@ -624,8 +624,8 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
   };
 
   // Scroll to bottom
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = (behavior = "smooth") => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
   // Track the last message to only scroll on new messages, not reactions
@@ -636,9 +636,9 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
     if (userGroup && messages.length > 0) {
       const latestMessage = messages[messages.length - 1];
       
-      // Initial scroll when chat opens
+      // Initial scroll when chat opens - use instant scroll to avoid animation
       if (!hasInitialScrolled.current) {
-        scrollToBottom();
+        scrollToBottom("auto"); // Use "auto" for instant positioning
         lastMessageRef.current = latestMessage;
         hasInitialScrolled.current = true;
         return;
@@ -1416,10 +1416,29 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
     return seenBy.sort((a, b) => new Date(b.readAt) - new Date(a.readAt));
   };
 
-  if (!isOpen || !userGroup) return null;
+  // Add state for smooth transitions
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
+
+  // Handle smooth modal transitions
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      // Small delay to ensure DOM is ready for animation
+      setTimeout(() => setIsAnimating(true), 10);
+    } else {
+      setIsAnimating(false);
+      // Wait for animation to complete before unmounting
+      setTimeout(() => setShouldRender(false), 300);
+    }
+  }, [isOpen]);
+
+  if (!shouldRender || !userGroup) return null;
 
   return (
-    <div className="fixed inset-0 bg-white dark:bg-gray-900 z-[60] flex flex-col">
+    <div className={`fixed inset-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm z-[60] flex flex-col transition-all duration-300 ease-in-out transform ${
+      isAnimating ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
+    }`}>
       <style jsx>{`
         .group-scrollbar::-webkit-scrollbar {
           width: 8px;
@@ -1703,7 +1722,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
         )}
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-5 space-y-3 sm:space-y-4 min-h-0 group-scrollbar">
+        <div className="flex-1 overflow-y-auto p-2 sm:p-3 space-y-1 sm:space-y-2 min-h-0 group-scrollbar">
           {showOlderMessages && (
             <div className="text-center">
               <button
@@ -1752,7 +1771,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                 )}
 
                 <div
-                  className={`max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[55%] px-3 sm:px-4 py-2 sm:py-3 rounded-lg relative transition-transform duration-150 ${
+                  className={`max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[55%] px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg relative transition-transform duration-150 ${
                     isOwnMessage
                       ? "bg-indigo-600 text-white"
                       : isMentioned
@@ -1818,7 +1837,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                   </button>
 
                   {/* Sender name for group chat */}
-                  <p className={`text-xs font-medium mb-1 ${
+                  <p className={`text-xs font-medium mb-0.5 ${
                     isOwnMessage 
                       ? "text-indigo-200" 
                       : isMentioned
@@ -1830,7 +1849,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
 
                   {/* Reply context */}
                   {message.replyTo && (
-                    <div className={`mb-2 p-2 rounded border-l-4 ${
+                    <div className={`mb-1.5 p-1.5 rounded border-l-4 ${
                       isOwnMessage 
                         ? "bg-indigo-700/50 border-indigo-300" 
                         : "bg-gray-300 dark:bg-gray-600 border-gray-500"

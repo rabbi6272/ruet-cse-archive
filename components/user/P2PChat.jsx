@@ -480,8 +480,8 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
   };
 
   // Scroll to bottom
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = (behavior = "smooth") => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
   // Track the last message to only scroll on new messages, not reactions
@@ -492,9 +492,9 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
     if (selectedChat && messages.length > 0) {
       const latestMessage = messages[messages.length - 1];
       
-      // Initial scroll when chat opens
+      // Initial scroll when chat opens - use instant scroll to avoid animation
       if (!hasInitialScrolled.current) {
-        scrollToBottom();
+        scrollToBottom("auto"); // Use "auto" for instant positioning
         lastMessageRef.current = latestMessage;
         hasInitialScrolled.current = true;
         return;
@@ -1643,10 +1643,29 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
     return messageTime.toLocaleDateString();
   };
 
-  if (!isOpen) return null;
+  // Add state for smooth transitions
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
+
+  // Handle smooth modal transitions
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      // Small delay to ensure DOM is ready for animation
+      setTimeout(() => setIsAnimating(true), 10);
+    } else {
+      setIsAnimating(false);
+      // Wait for animation to complete before unmounting
+      setTimeout(() => setShouldRender(false), 300);
+    }
+  }, [isOpen]);
+
+  if (!shouldRender) return null;
 
   return (
-    <div className="fixed inset-0 bg-white dark:bg-gray-900 z-[60] flex flex-col">
+    <div className={`fixed inset-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm z-[60] flex flex-col transition-all duration-300 ease-in-out transform ${
+      isAnimating ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
+    }`}>
       <style jsx>{`
         /* Custom scrollbar styling for the entire P2P chat */
         .p2p-scrollbar::-webkit-scrollbar {
@@ -1798,7 +1817,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
             {/* Tab Content */}
             <div className="flex-1 overflow-y-auto p2p-scrollbar">
               {activeTab === "chats" ? (
-                <div className="p-3 sm:p-4 md:p-5 space-y-3 sm:space-y-4">
+                <div className="p-2 sm:p-3 space-y-1 sm:space-y-2">
                   {/* New Chat Request */}
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 sm:p-4">
                     <h3 className="text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100 mb-3">
@@ -1919,7 +1938,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                   )}
                 </div>
               ) : (
-                <div className="p-3 sm:p-4 md:p-5 space-y-3 sm:space-y-4">
+                <div className="p-2 sm:p-3 space-y-1 sm:space-y-2">
                   {chatRequests.length === 0 ? (
                     <div className="text-center py-8 sm:py-12 text-gray-500 dark:text-gray-400">
                       <i className="fas fa-inbox text-2xl sm:text-3xl mb-3 opacity-50"></i>
@@ -2045,7 +2064,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-5 space-y-3 sm:space-y-4 min-h-0 p2p-scrollbar">
+                <div className="flex-1 overflow-y-auto p-2 sm:p-3 space-y-1 sm:space-y-2 min-h-0 p2p-scrollbar">
                   {showOlderMessages && (
                     <div className="text-center">
                       <button
@@ -2076,7 +2095,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                         key={message.id}
                         className={`flex ${
                           isOwnMessage ? "justify-end " : "justify-start "
-                        } group relative mb-1`}
+                        } group relative mb-0.5`}
                       >
                         {/* Reply icon that appears during swipe (mobile only) */}
                         {swipeOffset > 10 && (
@@ -2099,7 +2118,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                         )}
 
                         <div
-                          className={`max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[55%] px-3 py-1 rounded-lg relative transition-transform duration-150 ${
+                          className={`max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[55%] px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg relative transition-transform duration-150 ${
                             isOwnMessage
                               ? "bg-indigo-600 text-white "
                               : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 "
@@ -2164,7 +2183,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                           {/* Show replied message context */}
                           {message.replyTo && (
                             <div
-                              className={`mb-1 p-1 rounded border-l-4 ${
+                              className={`mb-1.5 p-1.5 rounded border-l-4 ${
                                 isOwnMessage
                                   ? "bg-indigo-700/50 border-indigo-300"
                                   : "bg-gray-300 dark:bg-gray-600 border-gray-500"
@@ -2271,7 +2290,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                   {/* Typing Indicator */}
                   {getTypingUsers().length > 0 && (
                     <div className="flex justify-start">
-                      <div className="bg-gray-200 dark:bg-gray-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg max-w-[75%] sm:max-w-[65%]">
+                      <div className="bg-gray-200 dark:bg-gray-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg max-w-[75%] sm:max-w-[65%]">
                         <div className="flex items-center gap-3">
                           <div className="flex gap-1">
                             <div className="w-2 h-2 bg-gray-500 dark:bg-gray-400 rounded-full animate-bounce"></div>
