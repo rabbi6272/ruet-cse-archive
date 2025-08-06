@@ -2118,10 +2118,10 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                         )}
 
                         <div
-                          className={`max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[55%] px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg relative transition-transform duration-150 ${
+                          className={`max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[55%] px-3 py-2 rounded-2xl relative transition-transform duration-150 shadow-sm ${
                             isOwnMessage
-                              ? "bg-indigo-600 text-white "
-                              : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 "
+                              ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white "
+                              : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 "
                           }`}
                           style={{
                             transform: `translateX(${swipeOffset}px)`,
@@ -2213,7 +2213,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                           )}
 
                           {/* Message text */}
-                          <p className="text-sm sm:text-base break-words"
+                          <p className="text-sm sm:text-base break-words leading-relaxed"
                              style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>
                             {message.text}
                           </p>
@@ -2271,14 +2271,16 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                               </div>
                             )}
                           </div>
+                        </div>
 
-                          {/* Message Reactions - Real-time updates */}
+                        {/* Message Reactions - positioned outside the message bubble with proper spacing */}
+                        <div className={`${isOwnMessage ? 'flex justify-end mr-3' : 'flex justify-start ml-3'}`}>
                           <MessageReactions
                             messageId={message.id}
                             chatPath={`p2pChats/${selectedChat.id}`}
                             currentUserRoll={userRoll}
                             isOwnMessage={isOwnMessage}
-                            className=""
+                            className="max-w-[75%]"
                             showEmojiPanel={longPressState.activeMessagePanel === message.id}
                             onShowEmojiPanelChange={(isOpen) => handleEmojiPanelChange(message.id, isOpen)}
                           />

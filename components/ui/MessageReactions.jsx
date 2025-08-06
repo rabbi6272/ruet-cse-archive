@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { ref, update, get, onValue } from "firebase/database";
+import { users } from "@/lib/mino.js";
 
 // Popular emoji reactions like WhatsApp
 const EMOJI_REACTIONS = [
@@ -16,6 +17,12 @@ const EMOJI_REACTIONS = [
   { emoji: "🔥", name: "fire" },
 ];
 
+// Helper function to get user name from roll number
+const getUserName = (rollNumber) => {
+  const user = users.find(u => u.roll === rollNumber);
+  return user ? user.name : rollNumber; // Fallback to roll if name not found
+};
+
 const MessageReactions = ({
   messageId,
   chatPath, // Firebase path string (e.g., 'p2pChats/chatId' or 'groupMessages/groupId')
@@ -28,7 +35,10 @@ const MessageReactions = ({
   const [internalShowEmojiPanel, setInternalShowEmojiPanel] = useState(false);
   const [reactions, setReactions] = useState({});
   const [userCurrentReaction, setUserCurrentReaction] = useState(null);
+  const [showReactionsModal, setShowReactionsModal] = useState(false);
+  const [selectedReactionFilter, setSelectedReactionFilter] = useState('all');
   const panelRef = useRef(null);
+  const modalRef = useRef(null);
 
   // Use external control if provided, otherwise use internal state
   const isEmojiPanelOpen = onShowEmojiPanelChange ? showEmojiPanel : internalShowEmojiPanel;
@@ -72,11 +82,21 @@ const MessageReactions = ({
       if (panelRef.current && !panelRef.current.contains(event.target)) {
         setShowEmojiPanelState(false);
       }
+      
+      // Close reactions modal when clicking outside
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        setShowReactionsModal(false);
+      }
     };
 
     const handleTouchOutside = (event) => {
       if (panelRef.current && !panelRef.current.contains(event.target)) {
         setShowEmojiPanelState(false);
+      }
+      
+      // Close reactions modal when clicking outside
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        setShowReactionsModal(false);
       }
     };
 
@@ -185,13 +205,14 @@ const MessageReactions = ({
     const count = userList.length;
     
     if (count === 1) {
-      return userList[0] === currentUserRoll ? "You" : userList[0];
+      const rollNumber = userList[0];
+      return rollNumber === currentUserRoll ? "You" : getUserName(rollNumber);
     } else if (count === 2) {
       const others = userList.filter(u => u !== currentUserRoll);
       if (userList.includes(currentUserRoll)) {
-        return `You and ${others[0]}`;
+        return `You and ${getUserName(others[0])}`;
       } else {
-        return `${userList[0]} and ${userList[1]}`;
+        return `${getUserName(userList[0])} and ${getUserName(userList[1])}`;
       }
     } else {
       const hasCurrentUser = userList.includes(currentUserRoll);
@@ -232,6 +253,56 @@ const MessageReactions = ({
       .sort((a, b) => b.count - a.count); // Sort by count descending
   };
 
+  // Get total reactions count
+  const getTotalReactionsCount = () => {
+    const displayReactions = getDisplayReactions();
+    return displayReactions.reduce((total, reaction) => total + reaction.count, 0);
+  };
+
+  // Get user details for reactions modal
+  const getUsersForReaction = (emoji) => {
+    if (!reactions[emoji]) return [];
+    
+    return Object.entries(reactions[emoji])
+      .map(([userRoll, userData]) => ({
+        roll: userRoll,
+        name: getUserName(userRoll),
+        timestamp: userData.timestamp || Date.now()
+      }))
+      .sort((a, b) => b.timestamp - a.timestamp); // Sort by timestamp descending
+  };
+
+  // Get all users who reacted (for "All" filter)
+  const getAllReactedUsers = () => {
+    const allUsers = {};
+    
+    Object.entries(reactions).forEach(([emoji, users]) => {
+      Object.entries(users).forEach(([userRoll, userData]) => {
+        if (!allUsers[userRoll]) {
+          allUsers[userRoll] = {
+            roll: userRoll,
+            name: getUserName(userRoll),
+            emoji: emoji,
+            timestamp: userData.timestamp || Date.now()
+          };
+        }
+      });
+    });
+    
+    return Object.values(allUsers).sort((a, b) => b.timestamp - a.timestamp);
+  };
+
+  // Handle clicking on reactions summary (WhatsApp-style)
+  const handleReactionsSummaryClick = () => {
+    setShowReactionsModal(true);
+    setSelectedReactionFilter('all');
+  };
+
+  // Handle clicking on specific reaction emoji in modal
+  const handleReactionFilterClick = (emoji) => {
+    setSelectedReactionFilter(emoji);
+  };
+
   console.log('🎭 [Render] Component state:', {
     messageId,
     hasValidReactions,
@@ -241,32 +312,45 @@ const MessageReactions = ({
   });
 
   return (
-    <div className={`relative ${className}`}>
-      {/* Reaction Display - Show under message timestamp */}
+    <div className={`${className}`}>
+      {/* Reaction Display - Positioned with proper spacing to avoid overlap */}
       {hasValidReactions && (
-        <div className={`flex flex-wrap gap-1 mt-2 mb-1 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
-          {getDisplayReactions().map(({ emoji, users, count, hasUserReacted }) => (
-            <div
-              key={emoji}
-              className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs cursor-pointer transition-all duration-200 shadow-sm hover:scale-105 ${
-                hasUserReacted
-                  ? 'bg-blue-100 dark:bg-blue-900/40 border-2 border-blue-400 dark:border-blue-500 text-blue-800 dark:text-blue-200'
-                  : 'bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
-              }`}
-              onClick={() => handleReaction(emoji)}
-              title={getReactionSummary(emoji, users)}
-              style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
-            >
-              <span className="text-sm" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>{emoji}</span>
-              <span className={`font-medium text-xs ${
-                hasUserReacted 
-                  ? 'text-blue-700 dark:text-blue-300' 
-                  : 'text-gray-600 dark:text-gray-400'
-              }`} style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
-                {count}
-              </span>
-            </div>
-          ))}
+        <div className={`flex gap-1 mt-1 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+          {(() => {
+            const displayReactions = getDisplayReactions();
+            const totalCount = getTotalReactionsCount();
+            const maxDisplay = 3; // Show max 3 reactions
+            
+            return displayReactions.slice(0, maxDisplay).map(({ emoji, users, count, hasUserReacted }) => (
+              <div
+                key={emoji}
+                className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs cursor-pointer transition-all duration-200 shadow-md hover:scale-105 hover:shadow-lg ${
+                  hasUserReacted
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                } ${count === 1 ? 'min-w-[28px] justify-center' : ''}`}
+                onClick={() => {
+                  // Open modal with this reaction filter
+                  setSelectedReactionFilter(emoji);
+                  setShowReactionsModal(true);
+                }}
+                title={getReactionSummary(emoji, users)}
+                style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+              >
+                <span className="text-sm" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>{emoji}</span>
+                {/* Only show count if more than 1 reaction */}
+                {count > 1 && (
+                  <span className={`font-semibold text-xs ${
+                    hasUserReacted 
+                      ? 'text-white' 
+                      : 'text-gray-600 dark:text-gray-400'
+                  }`} style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
+                    {count}
+                  </span>
+                )}
+              </div>
+            ));
+          })()}
         </div>
       )}
 
@@ -410,6 +494,111 @@ const MessageReactions = ({
           </div>
         )}
       </div>
+
+      {/* WhatsApp-Style Reactions Modal */}
+      {showReactionsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
+          <div
+            ref={modalRef}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden animate-in fade-in-0 zoom-in-95 duration-300"
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                Message reactions
+              </h3>
+              <button
+                onClick={() => setShowReactionsModal(false)}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Reaction Filter Tabs */}
+            <div className="flex items-center gap-2 p-3 border-b border-gray-100 dark:border-gray-700 overflow-x-auto">
+              {/* All reactions tab */}
+              <button
+                onClick={() => handleReactionFilterClick('all')}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex-shrink-0 ${
+                  selectedReactionFilter === 'all'
+                    ? 'bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-150 dark:hover:bg-gray-650'
+                }`}
+              >
+                All {getTotalReactionsCount()}
+              </button>
+
+              {/* Individual reaction tabs */}
+              {getDisplayReactions().map(({ emoji, count }) => (
+                <button
+                  key={emoji}
+                  onClick={() => handleReactionFilterClick(emoji)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex-shrink-0 flex items-center gap-1.5 ${
+                    selectedReactionFilter === emoji
+                      ? 'bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-150 dark:hover:bg-gray-650'
+                  }`}
+                >
+                  <span>{emoji}</span>
+                  <span>{count}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Users List */}
+            <div className="overflow-y-auto max-h-80">
+              {(() => {
+                const usersToShow = selectedReactionFilter === 'all' 
+                  ? getAllReactedUsers() 
+                  : getUsersForReaction(selectedReactionFilter);
+                
+                if (usersToShow.length === 0) {
+                  return (
+                    <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                      <span className="text-2xl mb-2 block">😊</span>
+                      No reactions yet
+                    </div>
+                  );
+                }
+
+                return usersToShow.map((user, index) => (
+                  <div
+                    key={user.roll}
+                    className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    {/* User Avatar */}
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+
+                    {/* User Info */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-800 dark:text-gray-200">
+                          {user.name}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          Click to view profile
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Reaction Emoji */}
+                    {selectedReactionFilter === 'all' && user.emoji && (
+                      <div className="flex items-center justify-center w-8 h-8 bg-gray-100 dark:bg-gray-600 rounded-full">
+                        <span className="text-lg">{user.emoji}</span>
+                      </div>
+                    )}
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

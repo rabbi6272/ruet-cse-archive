@@ -1771,12 +1771,12 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                 )}
 
                 <div
-                  className={`max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[55%] px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg relative transition-transform duration-150 ${
+                  className={`max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[55%] px-3 py-2 rounded-2xl relative transition-transform duration-150 shadow-sm ${
                     isOwnMessage
-                      ? "bg-indigo-600 text-white"
+                      ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
                       : isMentioned
                         ? "bg-yellow-100 dark:bg-yellow-900/30 text-gray-900 dark:text-gray-100 border-2 border-yellow-300 dark:border-yellow-600"
-                        : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   }`}
                   style={{
                     transform: `translateX(${swipeOffset}px)`,
@@ -1836,16 +1836,16 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                     </svg>
                   </button>
 
-                  {/* Sender name for group chat */}
-                  <p className={`text-xs font-medium mb-0.5 ${
-                    isOwnMessage 
-                      ? "text-indigo-200" 
-                      : isMentioned
+                  {/* Sender name for group chat - don't show "You" for own messages */}
+                  {!isOwnMessage && (
+                    <p className={`text-xs font-medium mb-0.5 ${
+                      isMentioned
                         ? "text-yellow-700 dark:text-yellow-300"
                         : "text-indigo-600 dark:text-indigo-400"
-                  }`}>
-                    {isOwnMessage ? "You" : senderName}
-                  </p>
+                    }`}>
+                      {senderName}
+                    </p>
+                  )}
 
                   {/* Reply context */}
                   {message.replyTo && (
@@ -1869,7 +1869,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
 
                   {/* Message text with mentions */}
                   <div 
-                    className="text-sm sm:text-base break-words"
+                    className="text-sm sm:text-base break-words leading-relaxed"
                     dangerouslySetInnerHTML={{
                       __html: parseMentions(message.text)
                     }}
@@ -1951,14 +1951,16 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                   >
                     {getRelativeTime(message.timestamp)}
                   </p>
+                </div>
 
-                  {/* Message Reactions - Real-time updates */}
+                {/* Message Reactions - positioned outside the message bubble with proper spacing */}
+                <div className={`${isOwnMessage ? 'flex justify-end mr-3' : 'flex justify-start ml-3'}`}>
                   <MessageReactions
                     messageId={message.id}
                     chatPath={`groupMessages/${userGroup.id}`}
                     currentUserRoll={userRoll}
                     isOwnMessage={isOwnMessage}
-                    className=""
+                    className="max-w-[75%]"
                     showEmojiPanel={longPressState.activeMessagePanel === message.id}
                     onShowEmojiPanelChange={(isOpen) => handleEmojiPanelChange(message.id, isOpen)}
                   />
