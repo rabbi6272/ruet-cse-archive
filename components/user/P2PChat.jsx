@@ -2117,6 +2117,35 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                           </div>
                         )}
 
+                        {/* Message Container with Action Buttons */}
+                        <div className={`flex items-start gap-2 ${isOwnMessage ? "flex-row-reverse" : "flex-row"}`}>
+                          
+                          {/* Action Buttons Column */}
+                          <div className={`flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 ${isOwnMessage ? "items-end" : "items-start"}`}>
+                            {/* Reply Button */}
+                            <button
+                              onClick={() => handleReplyToMessage(message)}
+                              className="p-1.5 rounded-full bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-600 dark:text-gray-300 hover:scale-110 transition-all duration-200"
+                              title="Reply"
+                            >
+                              <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+                                <path d="M8.354 1.646a.5.5 0 0 1 0 .708L5.707 5H14.5a.5.5 0 0 1 0 1H5.707l2.647 2.646a.5.5 0 0 1-.708.708l-3.5-3.5a.5.5 0 0 1 0-.708l3.5-3.5a.5.5 0 0 1 .708 0z"/>
+                              </svg>
+                            </button>
+
+                            {/* React Button */}
+                            <button
+                              onClick={() => handleEmojiPanelChange(message.id, !longPressState.activeMessagePanel)}
+                              className="p-1.5 rounded-full bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-600 dark:text-gray-300 hover:scale-110 transition-all duration-200"
+                              title="Add reaction"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </button>
+                          </div>
+
+                          {/* Message Bubble */}
                         <div
                           className={`max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[55%] px-3 py-2 rounded-2xl relative transition-transform duration-150 shadow-sm ${
                             isOwnMessage
@@ -2163,23 +2192,6 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                             handleLongPressCancel(e, message);
                           }}
                         >
-                          {/* Reply button (desktop hover) */}
-                          <button
-                            onClick={() => handleReplyToMessage(message)}
-                            className={`absolute -top-2 ${
-                              isOwnMessage ? "-left-8" : "-right-8"
-                            } opacity-0 group-hover:opacity-100 transition-opacity bg-gray-600 hover:bg-gray-700 text-white rounded-full p-1 text-xs hidden sm:block`}
-                            title="Reply"
-                          >
-                            <svg
-                              className="w-3 h-3"
-                              viewBox="0 0 16 16"
-                              fill="currentColor"
-                            >
-                              <path d="M8.354 1.646a.5.5 0 0 1 0 .708L5.707 5H14.5a.5.5 0 0 1 0 1H5.707l2.647 2.646a.5.5 0 0 1-.708.708l-3.5-3.5a.5.5 0 0 1 0-.708l3.5-3.5a.5.5 0 0 1 .708 0z" />
-                            </svg>
-                          </button>
-
                           {/* Show replied message context */}
                           {message.replyTo && (
                             <div
@@ -2271,19 +2283,18 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                               </div>
                             )}
                           </div>
-                        </div>
 
-                        {/* Message Reactions - positioned outside the message bubble with proper spacing */}
-                        <div className={`${isOwnMessage ? 'flex justify-end mr-3' : 'flex justify-start ml-3'}`}>
+                          {/* Message Reactions - positioned at bottom right corner of this message bubble */}
                           <MessageReactions
                             messageId={message.id}
                             chatPath={`p2pChats/${selectedChat.id}`}
                             currentUserRoll={userRoll}
                             isOwnMessage={isOwnMessage}
-                            className="max-w-[75%]"
                             showEmojiPanel={longPressState.activeMessagePanel === message.id}
                             onShowEmojiPanelChange={(isOpen) => handleEmojiPanelChange(message.id, isOpen)}
                           />
+                        </div>
+                        
                         </div>
                       </div>
                     );

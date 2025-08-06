@@ -422,6 +422,10 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
   const [polls, setPolls] = useState([]);
   const [showPollModal, setShowPollModal] = useState(false);
   const [showPollHistory, setShowPollHistory] = useState(false);
+  
+  // Reactions modal state
+  const [showReactionsModal, setShowReactionsModal] = useState(false);
+  const [reactionModalData, setReactionModalData] = useState(null);
 
   // Get user's group on component mount
   useEffect(() => {
@@ -1071,6 +1075,12 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
     
     // Close emoji panel
     setShowEmojiPanel(false);
+  };
+
+  // Handle opening reactions modal
+  const handleReactionModalOpen = (modalData) => {
+    setReactionModalData(modalData);
+    setShowReactionsModal(true);
   };
 
   // Send message
@@ -1770,8 +1780,37 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                   </div>
                 )}
 
+                {/* Message Container with Action Buttons */}
+                <div className={`flex items-start gap-2 ${isOwnMessage ? "flex-row-reverse" : "flex-row"}`}>
+                  
+                  {/* Action Buttons Column */}
+                  <div className={`flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 ${isOwnMessage ? "items-end" : "items-start"}`}>
+                    {/* Reply Button */}
+                    <button
+                      onClick={() => handleReplyToMessage(message)}
+                      className="p-1.5 rounded-full bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-600 dark:text-gray-300 hover:scale-110 transition-all duration-200"
+                      title="Reply"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8.354 1.646a.5.5 0 0 1 0 .708L5.707 5H14.5a.5.5 0 0 1 0 1H5.707l2.647 2.646a.5.5 0 0 1-.708.708l-3.5-3.5a.5.5 0 0 1 0-.708l3.5-3.5a.5.5 0 0 1 .708 0z"/>
+                      </svg>
+                    </button>
+
+                    {/* React Button */}
+                    <button
+                      onClick={() => handleEmojiPanelChange(message.id, !longPressState.activeMessagePanel)}
+                      className="p-1.5 rounded-full bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-600 dark:text-gray-300 hover:scale-110 transition-all duration-200"
+                      title="Add reaction"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Message Bubble */}
                 <div
-                  className={`max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[55%] px-3 py-2 rounded-2xl relative transition-transform duration-150 shadow-sm ${
+                  className={`max-w-[95%] sm:max-w-[90%] md:max-w-[85%] lg:max-w-[80%] px-3 py-2 rounded-2xl relative transition-transform duration-150 shadow-sm ${
                     isOwnMessage
                       ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
                       : isMentioned
@@ -1825,17 +1864,6 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                     </div>
                   )}
 
-                  {/* Reply button (desktop) */}
-                  <button
-                    onClick={() => handleReplyToMessage(message)}
-                    className={`absolute -top-2 ${isOwnMessage ? '-left-8' : '-right-8'} opacity-0 group-hover:opacity-100 transition-opacity bg-gray-600 hover:bg-gray-700 text-white rounded-full p-1 text-xs hidden sm:block`}
-                    title="Reply"
-                  >
-                    <svg className="w-3 h-3" viewBox="0 0 16 16" fill="currentColor">
-                      <path d="M8.354 1.646a.5.5 0 0 1 0 .708L5.707 5H14.5a.5.5 0 0 1 0 1H5.707l2.647 2.646a.5.5 0 0 1-.708.708l-3.5-3.5a.5.5 0 0 1 0-.708l3.5-3.5a.5.5 0 0 1 .708 0z"/>
-                    </svg>
-                  </button>
-
                   {/* Sender name for group chat - don't show "You" for own messages */}
                   {!isOwnMessage && (
                     <p className={`text-xs font-medium mb-0.5 ${
@@ -1869,11 +1897,17 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
 
                   {/* Message text with mentions */}
                   <div 
-                    className="text-sm sm:text-base break-words leading-relaxed"
+                    className="text-sm sm:text-base break-words leading-relaxed whitespace-pre-wrap"
                     dangerouslySetInnerHTML={{
                       __html: parseMentions(message.text)
                     }}
-                    style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
+                    style={{ 
+                      userSelect: 'text', 
+                      WebkitUserSelect: 'text',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
+                      hyphens: 'auto'
+                    }}
                   />
                   
                   {/* Link previews and embeds */}
@@ -1951,19 +1985,20 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                   >
                     {getRelativeTime(message.timestamp)}
                   </p>
-                </div>
 
-                {/* Message Reactions - positioned outside the message bubble with proper spacing */}
-                <div className={`${isOwnMessage ? 'flex justify-end mr-3' : 'flex justify-start ml-3'}`}>
+                  {/* Message Reactions - positioned at bottom right corner of this message bubble */}
                   <MessageReactions
                     messageId={message.id}
                     chatPath={`groupMessages/${userGroup.id}`}
                     currentUserRoll={userRoll}
                     isOwnMessage={isOwnMessage}
-                    className="max-w-[75%]"
                     showEmojiPanel={longPressState.activeMessagePanel === message.id}
                     onShowEmojiPanelChange={(isOpen) => handleEmojiPanelChange(message.id, isOpen)}
+                    useExternalModal={true}
+                    onReactionModalOpen={handleReactionModalOpen}
                   />
+                </div>
+                
                 </div>
               </div>
             );
@@ -1984,7 +2019,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
           {/* Typing indicator */}
           {getTypingUsers().length > 0 && (
             <div className="flex justify-start">
-              <div className="bg-gray-200 dark:bg-gray-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg max-w-[75%] sm:max-w-[65%]">
+              <div className="bg-gray-200 dark:bg-gray-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg max-w-[90%] sm:max-w-[80%]">
                 <div className="flex items-center gap-3">
                   <div className="flex gap-1">
                     <div className="w-2 h-2 bg-gray-500 dark:bg-gray-400 rounded-full animate-bounce"></div>
@@ -2168,6 +2203,97 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
         onCreatePoll={createPoll}
         groupId={userGroup?.id}
       />
+
+      {/* Reactions Modal - Rendered at root level */}
+      {showReactionsModal && reactionModalData && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div
+            className="bg-white dark:bg-gray-900 w-full max-w-md sm:max-w-lg md:max-w-xl max-h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">
+                Message reactions
+              </h3>
+              <button
+                onClick={() => setShowReactionsModal(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+              >
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Reaction Filter Tabs */}
+            <div className="flex items-center gap-2 p-4 sm:p-6 pb-3 overflow-x-auto scrollbar-hide flex-shrink-0">
+              {reactionModalData.reactionTabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  className="px-3 py-2 sm:px-4 sm:py-2.5 rounded-full text-sm font-medium transition-colors flex-shrink-0 flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                >
+                  {tab.key !== 'all' && <span className="text-base">{tab.key}</span>}
+                  <span className="text-sm">{tab.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Users List */}
+            <div className="flex-1 overflow-y-auto">
+              {(() => {
+                const allUsers = reactionModalData.getAllReactedUsers;
+                
+                if (allUsers.length === 0) {
+                  return (
+                    <div className="flex items-center justify-center h-32 p-8 text-center text-gray-500 dark:text-gray-400">
+                      <div>
+                        <span className="text-2xl mb-2 block">😊</span>
+                        <span className="text-sm">No reactions yet</span>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                    {allUsers.map((user, index) => (
+                      <div
+                        key={user.roll}
+                        className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer rounded-lg"
+                      >
+                        {/* User Avatar */}
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                          {user.name.charAt(0).toUpperCase()}
+                        </div>
+
+                        {/* User Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
+                              {user.name}
+                            </span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              Click to view profile
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Reaction Emoji */}
+                        {user.emoji && (
+                          <div className="flex items-center justify-center w-8 h-8 bg-transparent rounded-full flex-shrink-0">
+                            <span className="text-lg">{user.emoji}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

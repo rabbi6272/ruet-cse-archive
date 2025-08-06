@@ -31,6 +31,8 @@ const MessageReactions = ({
   className = "",
   showEmojiPanel = false, // Allow parent to control panel visibility
   onShowEmojiPanelChange, // Callback to notify parent of panel state changes
+  onReactionModalOpen, // Callback to open pre-made modal in group chat
+  useExternalModal = false, // Flag to use external modal instead of internal one
 }) => {
   const [internalShowEmojiPanel, setInternalShowEmojiPanel] = useState(false);
   const [reactions, setReactions] = useState({});
@@ -292,10 +294,46 @@ const MessageReactions = ({
     return Object.values(allUsers).sort((a, b) => b.timestamp - a.timestamp);
   };
 
+  // Format reaction data for external modal
+  const getModalData = () => {
+    return {
+      messageId,
+      reactions,
+      totalReactionsCount: getTotalReactionsCount(),
+      displayReactions: getDisplayReactions(),
+      getUsersForReaction,
+      getAllReactedUsers: getAllReactedUsers(),
+      getUserName,
+      currentUserRoll,
+      // Add formatted data for easier consumption
+      reactionTabs: [
+        {
+          key: 'all',
+          label: `All ${getTotalReactionsCount()}`,
+          users: getAllReactedUsers()
+        },
+        ...getDisplayReactions().map(({ emoji, count }) => ({
+          key: emoji,
+          label: `${emoji} ${count}`,
+          emoji,
+          count,
+          users: getUsersForReaction(emoji)
+        }))
+      ]
+    };
+  };
+
   // Handle clicking on reactions summary (WhatsApp-style)
   const handleReactionsSummaryClick = () => {
-    setShowReactionsModal(true);
-    setSelectedReactionFilter('all');
+    if (useExternalModal && onReactionModalOpen) {
+      // Use external modal from group chat
+      const modalData = getModalData();
+      onReactionModalOpen(modalData);
+    } else {
+      // Use internal modal
+      setShowReactionsModal(true);
+      setSelectedReactionFilter('all');
+    }
   };
 
   // Handle clicking on specific reaction emoji in modal
@@ -312,220 +350,204 @@ const MessageReactions = ({
   });
 
   return (
-    <div className={`${className}`}>
-      {/* Reaction Display - Positioned with proper spacing to avoid overlap */}
-      {hasValidReactions && (
-        <div className={`flex gap-1 mt-1 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
-          {(() => {
-            const displayReactions = getDisplayReactions();
-            const totalCount = getTotalReactionsCount();
-            const maxDisplay = 3; // Show max 3 reactions
-            
-            return displayReactions.slice(0, maxDisplay).map(({ emoji, users, count, hasUserReacted }) => (
-              <div
-                key={emoji}
-                className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs cursor-pointer transition-all duration-200 shadow-md hover:scale-105 hover:shadow-lg ${
-                  hasUserReacted
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-                } ${count === 1 ? 'min-w-[28px] justify-center' : ''}`}
-                onClick={() => {
-                  // Open modal with this reaction filter
-                  setSelectedReactionFilter(emoji);
-                  setShowReactionsModal(true);
-                }}
-                title={getReactionSummary(emoji, users)}
-                style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
-              >
-                <span className="text-sm" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>{emoji}</span>
-                {/* Only show count if more than 1 reaction */}
-                {count > 1 && (
-                  <span className={`font-semibold text-xs ${
-                    hasUserReacted 
-                      ? 'text-white' 
-                      : 'text-gray-600 dark:text-gray-400'
-                  }`} style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
-                    {count}
-                  </span>
-                )}
-              </div>
-            ));
-          })()}
-        </div>
-      )}
+    <>
+      <div className={`${className}`}>
+        {/* Reaction Display - Positioned at bottom right corner of message bubble */}
+        {hasValidReactions && (
+          <div className="absolute -bottom-2 -right-2 z-10">
+            {(() => {
+              const totalCount = getTotalReactionsCount();
+              
+              // Only show if there are reactions
+              if (totalCount === 0) return null;
+              
+              // Limit to maximum 3 reactions total as requested
+              const displayReactions = getDisplayReactions().slice(0, 3);
+              const actualTotal = Math.min(totalCount, displayReactions.length);
+              
+              return (
+                <div
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs cursor-pointer transition-all duration-200 shadow-md hover:scale-105 hover:shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 min-w-[40px] justify-center`}
+                  onClick={handleReactionsSummaryClick}
+                  title={`${totalCount} reaction${totalCount > 1 ? 's' : ''} - Click to view details`}
+                  style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
+                >
+                  {/* Display up to 3 different emojis */}
+                  {displayReactions.slice(0, 3).map((reaction, index) => (
+                    <span key={reaction.emoji} className="text-sm" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
+                      {reaction.emoji}
+                    </span>
+                  ))}
+                  
+                  {/* Show total count only if more than 1 reaction */}
+                  {totalCount > 1 && (
+                    <span className={`font-semibold text-xs text-gray-600 dark:text-gray-400`} style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
+                      {totalCount}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        )}
 
-      {/* Reaction Button */}
-      <div className="inline-block">
-        <button
-          onClick={() => setShowEmojiPanelState(!isEmojiPanelOpen)}
-          className={`absolute ${isOwnMessage ? '-left-8' : '-right-8'} -top-8 opacity-0 group-hover:opacity-100 transition-all duration-200 p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 hover:scale-110 ${
-            isOwnMessage ? 'text-indigo-200 hover:text-indigo-100' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-          }`}
-          title="Add reaction"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </button>
+        {/* Reaction Button - now handled externally */}
+        {/* Button removed - controlled by parent component */}
 
         {/* Emoji Panel */}
         {isEmojiPanelOpen && (
-          <div
-            ref={panelRef}
-            data-emoji-panel="true"
-            className={`absolute z-[70] ${
-              isOwnMessage ? 'right-0' : 'left-0'
-            } -top-20 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-600 p-2 sm:p-3 animate-in slide-in-from-top-2 duration-200`}
-            style={{ 
-              minWidth: '180px',
-              maxWidth: '95vw',
-              width: 'max-content'
-            }}
-            onTouchStart={(e) => {
-              e.stopPropagation();
-            }}
-            onTouchMove={(e) => {
-              e.stopPropagation();
-            }}
-            onTouchEnd={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            <div className="flex flex-wrap gap-1 sm:gap-2 justify-center max-w-full">
-              {EMOJI_REACTIONS.map((reaction) => {
-                const isUserReaction = userCurrentReaction === reaction.emoji;
-                const reactionCount = reactions[reaction.emoji] ? Object.keys(reactions[reaction.emoji]).length : 0;
-                
-                // Determine if this emoji should be disabled
-                const isDisabled = userCurrentReaction && !isUserReaction; // User has a reaction but not this one
-                
-                return (
-                  <div key={reaction.name} className="relative flex-shrink-0">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleReaction(reaction.emoji);
-                      }}
-                      onTouchEnd={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        // Handle touch end for Android devices
-                        handleReaction(reaction.emoji);
-                      }}
-                      onTouchStart={(e) => {
-                        e.stopPropagation();
-                      }}
-                      disabled={isDisabled}
-                      className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full transition-all duration-200 relative touch-manipulation ${
-                        isUserReaction
-                          ? 'bg-blue-100 dark:bg-blue-900/40 scale-110 ring-2 ring-blue-400 dark:ring-blue-500 shadow-lg hover:scale-110'
-                          : isDisabled
-                          ? 'bg-gray-100 dark:bg-gray-700 opacity-50 cursor-not-allowed scale-90'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-700 hover:shadow-md hover:scale-110 active:scale-95'
-                      }`}
-                      style={{ 
-                        userSelect: 'none', 
-                        WebkitUserSelect: 'none',
-                        WebkitTouchCallout: 'none',
-                        touchAction: 'manipulation',
-                        WebkitTapHighlightColor: 'transparent'
-                      }}
-                      title={
-                        isDisabled 
-                          ? `${reaction.name} - Disabled (you already reacted with ${userCurrentReaction})`
-                          : `${reaction.name}${isUserReaction ? ' (your current reaction - click to remove)' : ''}${reactionCount > 0 ? ` - ${reactionCount} reaction${reactionCount > 1 ? 's' : ''}` : ''}`
-                      }
-                    >
-                      <span className={`text-lg sm:text-xl ${isDisabled ? 'filter grayscale' : ''}`}
-                            style={{ 
-                              userSelect: 'none', 
-                              WebkitUserSelect: 'none',
-                              WebkitTouchCallout: 'none'
-                            }}>
-                        {reaction.emoji}
-                      </span>
-                      
-                      {/* Visual indicator for user's current reaction */}
-                      {isUserReaction && (
-                        <div className="absolute -top-1 -right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-blue-500 rounded-full flex items-center justify-center shadow-md">
-                          <svg className="w-1.5 h-1.5 sm:w-2 sm:h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                      )}
-                      
-                      {/* Disabled overlay for non-selected emojis when user has reacted */}
-                      {isDisabled && (
-                        <div className="absolute inset-0 bg-gray-400 dark:bg-gray-600 bg-opacity-20 rounded-full flex items-center justify-center">
-                          <svg className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </div>
-                      )}
-                      
-                      {/* Reaction count badge (only for non-disabled, non-user reactions) */}
-                      {reactionCount > 0 && !isUserReaction && !isDisabled && (
-                        <div className="absolute -top-1 -right-1 min-w-[0.875rem] h-3.5 sm:min-w-[1rem] sm:h-4 bg-gray-500 text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center px-1">
-                          {reactionCount}
-                        </div>
-                      )}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-            
-            {/* WhatsApp-style behavior hint with clear single selection messaging */}
-            <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 text-center mt-2 sm:mt-3 px-1 sm:px-2 leading-tight"
-                 style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
-              {userCurrentReaction 
-                ? `✅ Selected: ${userCurrentReaction} • Click it to remove, others are disabled` 
-                : "🎯 Choose ONE emoji • Others will be disabled after selection"
-              }
-            </div>
-            
-            {/* Arrow pointer */}
             <div
-              className={`absolute top-full ${
-                isOwnMessage ? 'right-3 sm:right-4' : 'left-3 sm:left-4'
-              } w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white dark:border-t-gray-800`}
-            ></div>
-          </div>
-        )}
+              ref={panelRef}
+              data-emoji-panel="true"
+              className={`absolute z-[70] -right-8 -top-16 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-600 p-2 sm:p-3 animate-in slide-in-from-top-2 duration-200`}
+              style={{ 
+                minWidth: '180px',
+                maxWidth: '95vw',
+                width: 'max-content'
+              }}
+              onTouchStart={(e) => {
+                e.stopPropagation();
+              }}
+              onTouchMove={(e) => {
+                e.stopPropagation();
+              }}
+              onTouchEnd={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              <div className="flex flex-wrap gap-1 sm:gap-2 justify-center max-w-full">
+                {EMOJI_REACTIONS.map((reaction) => {
+                  const isUserReaction = userCurrentReaction === reaction.emoji;
+                  const reactionCount = reactions[reaction.emoji] ? Object.keys(reactions[reaction.emoji]).length : 0;
+                  
+                  // Determine if this emoji should be disabled
+                  const isDisabled = userCurrentReaction && !isUserReaction; // User has a reaction but not this one
+                  
+                  return (
+                    <div key={reaction.name} className="relative flex-shrink-0">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleReaction(reaction.emoji);
+                        }}
+                        onTouchEnd={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          // Handle touch end for Android devices
+                          handleReaction(reaction.emoji);
+                        }}
+                        onTouchStart={(e) => {
+                          e.stopPropagation();
+                        }}
+                        disabled={isDisabled}
+                        className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full transition-all duration-200 relative touch-manipulation ${
+                          isUserReaction
+                            ? 'bg-blue-100 dark:bg-blue-900/40 scale-110 ring-2 ring-blue-400 dark:ring-blue-500 shadow-lg hover:scale-110'
+                            : isDisabled
+                            ? 'bg-gray-100 dark:bg-gray-700 opacity-50 cursor-not-allowed scale-90'
+                            : 'hover:bg-gray-100 dark:hover:bg-gray-700 hover:shadow-md hover:scale-110 active:scale-95'
+                        }`}
+                        style={{ 
+                          userSelect: 'none', 
+                          WebkitUserSelect: 'none',
+                          WebkitTouchCallout: 'none',
+                          touchAction: 'manipulation',
+                          WebkitTapHighlightColor: 'transparent'
+                        }}
+                        title={
+                          isDisabled 
+                            ? `${reaction.name} - Disabled (you already reacted with ${userCurrentReaction})`
+                            : `${reaction.name}${isUserReaction ? ' (your current reaction - click to remove)' : ''}${reactionCount > 0 ? ` - ${reactionCount} reaction${reactionCount > 1 ? 's' : ''}` : ''}`
+                        }
+                      >
+                        <span className={`text-lg sm:text-xl ${isDisabled ? 'filter grayscale' : ''}`}
+                              style={{ 
+                                userSelect: 'none', 
+                                WebkitUserSelect: 'none',
+                                WebkitTouchCallout: 'none'
+                              }}>
+                          {reaction.emoji}
+                        </span>
+                        
+                        {/* Visual indicator for user's current reaction */}
+                        {isUserReaction && (
+                          <div className="absolute -top-1 -right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-blue-500 rounded-full flex items-center justify-center shadow-md">
+                            <svg className="w-1.5 h-1.5 sm:w-2 sm:h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        )}
+                        
+                        {/* Disabled overlay for non-selected emojis when user has reacted */}
+                        {isDisabled && (
+                          <div className="absolute inset-0 bg-gray-400 dark:bg-gray-600 bg-opacity-20 rounded-full flex items-center justify-center">
+                            <svg className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </div>
+                        )}
+                        
+                        {/* Reaction count badge (only for non-disabled, non-user reactions) */}
+                        {reactionCount > 0 && !isUserReaction && !isDisabled && (
+                          <div className="absolute -top-1 -right-1 min-w-[0.875rem] h-3.5 sm:min-w-[1rem] sm:h-4 bg-gray-500 text-white text-[10px] sm:text-xs rounded-full flex items-center justify-center px-1">
+                            {reactionCount}
+                          </div>
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* WhatsApp-style behavior hint with clear single selection messaging */}
+              <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 text-center mt-2 sm:mt-3 px-1 sm:px-2 leading-tight"
+                   style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
+                {userCurrentReaction 
+                  ? `✅ Selected: ${userCurrentReaction} • Click it to remove, others are disabled` 
+                  : "🎯 Choose ONE emoji • Others will be disabled after selection"
+                }
+              </div>
+              
+              {/* Arrow pointer */}
+              <div
+                className={`absolute top-full right-3 sm:right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white dark:border-t-gray-800`}
+              ></div>
+            </div>
+          )}
       </div>
 
-      {/* WhatsApp-Style Reactions Modal */}
-      {showReactionsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
+      {/* WhatsApp-Style Reactions Modal - Rendered at root level */}
+      {!useExternalModal && showReactionsModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <div
             ref={modalRef}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden animate-in fade-in-0 zoom-in-95 duration-300"
+            className="bg-white dark:bg-gray-900 w-full max-w-md sm:max-w-lg md:max-w-xl max-h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">
                 Message reactions
               </h3>
               <button
                 onClick={() => setShowReactionsModal(false)}
-                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
               >
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
             {/* Reaction Filter Tabs */}
-            <div className="flex items-center gap-2 p-3 border-b border-gray-100 dark:border-gray-700 overflow-x-auto">
+            <div className="flex items-center gap-2 p-4 sm:p-6 pb-3 overflow-x-auto scrollbar-hide flex-shrink-0">
               {/* All reactions tab */}
               <button
                 onClick={() => handleReactionFilterClick('all')}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex-shrink-0 ${
+                className={`px-3 py-2 sm:px-4 sm:py-2.5 rounded-full text-sm font-medium transition-colors flex-shrink-0 ${
                   selectedReactionFilter === 'all'
-                    ? 'bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-150 dark:hover:bg-gray-650'
+                    ? 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-150 dark:hover:bg-gray-650'
                 }`}
               >
                 All {getTotalReactionsCount()}
@@ -536,20 +558,20 @@ const MessageReactions = ({
                 <button
                   key={emoji}
                   onClick={() => handleReactionFilterClick(emoji)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex-shrink-0 flex items-center gap-1.5 ${
+                  className={`px-3 py-2 sm:px-4 sm:py-2.5 rounded-full text-sm font-medium transition-colors flex-shrink-0 flex items-center gap-1.5 ${
                     selectedReactionFilter === emoji
-                      ? 'bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-150 dark:hover:bg-gray-650'
+                      ? 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-150 dark:hover:bg-gray-650'
                   }`}
                 >
-                  <span>{emoji}</span>
-                  <span>{count}</span>
+                  <span className="text-base">{emoji}</span>
+                  <span className="text-sm">{count}</span>
                 </button>
               ))}
             </div>
 
             {/* Users List */}
-            <div className="overflow-y-auto max-h-80">
+            <div className="flex-1 overflow-y-auto">
               {(() => {
                 const usersToShow = selectedReactionFilter === 'all' 
                   ? getAllReactedUsers() 
@@ -557,49 +579,55 @@ const MessageReactions = ({
                 
                 if (usersToShow.length === 0) {
                   return (
-                    <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                      <span className="text-2xl mb-2 block">😊</span>
-                      No reactions yet
+                    <div className="flex items-center justify-center h-32 p-8 text-center text-gray-500 dark:text-gray-400">
+                      <div>
+                        <span className="text-2xl mb-2 block">😊</span>
+                        <span className="text-sm">No reactions yet</span>
+                      </div>
                     </div>
                   );
                 }
 
-                return usersToShow.map((user, index) => (
-                  <div
-                    key={user.roll}
-                    className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    {/* User Avatar */}
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                      {user.name.charAt(0).toUpperCase()}
-                    </div>
+                return (
+                  <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                    {usersToShow.map((user, index) => (
+                      <div
+                        key={user.roll}
+                        className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer rounded-lg"
+                      >
+                        {/* User Avatar */}
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                          {user.name.charAt(0).toUpperCase()}
+                        </div>
 
-                    {/* User Info */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-800 dark:text-gray-200">
-                          {user.name}
-                        </span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          Click to view profile
-                        </span>
-                      </div>
-                    </div>
+                        {/* User Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
+                              {user.name}
+                            </span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              Click to view profile
+                            </span>
+                          </div>
+                        </div>
 
-                    {/* Reaction Emoji */}
-                    {selectedReactionFilter === 'all' && user.emoji && (
-                      <div className="flex items-center justify-center w-8 h-8 bg-gray-100 dark:bg-gray-600 rounded-full">
-                        <span className="text-lg">{user.emoji}</span>
+                        {/* Reaction Emoji */}
+                        {selectedReactionFilter === 'all' && user.emoji && (
+                          <div className="flex items-center justify-center w-8 h-8 bg-transparent rounded-full flex-shrink-0">
+                            <span className="text-lg">{user.emoji}</span>
+                          </div>
+                        )}
                       </div>
-                    )}
+                    ))}
                   </div>
-                ));
+                );
               })()}
             </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
