@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-
+//edited by bitto
 /**
  * Generate Firebase Custom Token
  * This endpoint creates secure custom tokens for Firebase authentication
