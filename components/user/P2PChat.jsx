@@ -968,7 +968,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
     return Math.min(Math.max(deltaX, 0), 100); // Limit between 0 and 100px
   };
 
-  // Send chat request
+  // Send chat request with enhanced duplicate prevention
   const sendChatRequest = async () => {
     if (!requestRoll.trim()) {
       toast.error("Please enter a roll number");
@@ -993,6 +993,27 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
         return;
       }
 
+      // Use enhanced unique chat thread logic to check for existing chats
+      const existingChat = await ensureUniqueChatThread(userRoll, requestRoll);
+      
+      if (existingChat && existingChat.status === "approved") {
+        // Switch to chats tab to show the existing chat
+        setActiveTab("chats");
+        
+        // Automatically open the existing chat
+        setSelectedChat(existingChat);
+        
+        // Set this chat as active for the current user
+        await set(ref(db, `activeChats/${userRoll}`), existingChat.id);
+        
+        // Clear the request input
+        setRequestRoll("");
+        
+        toast.success("Opening your existing chat with this user!");
+        setLoading(false);
+        return;
+      }
+
       // Check if request already exists (in both directions)
       const requestsRef = ref(db, "p2pChatRequests");
       const existingRequestQuery = query(requestsRef);
@@ -1004,7 +1025,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
         (req) =>
           ((req.fromRoll === userRoll && req.toRoll === requestRoll) ||
             (req.fromRoll === requestRoll && req.toRoll === userRoll)) &&
-          (req.status === "pending" || req.status === "accepted")
+          req.status === "pending"
       );
 
       if (duplicateRequest) {
@@ -1022,32 +1043,10 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
         return;
       }
 
-      // Check if chat already exists between these users
-      const chatsRef = ref(db, "p2pChats");
-      const existingChatQuery = query(chatsRef);
-      const chatSnapshot = await get(existingChatQuery);
-      const existingChats = chatSnapshot.val() || {};
-
-      const existingChatsList = Object.values(existingChats).filter(
-        (chat) =>
-          chat.participants?.includes(userRoll) &&
-          chat.participants?.includes(requestRoll) &&
-          chat.status === "approved"
-      );
-
-      if (existingChatsList.length > 0) {
-        if (existingChatsList.length > 1) {
-          // Multiple chats exist, merge them
-          await mergeDuplicateChats(userRoll, requestRoll);
-        }
-        toast.error("Chat already exists with this user");
-        setLoading(false);
-        return;
-      }
-
       // Get the target user's name from mino.js users array
       const targetUser = users.find((user) => user.roll === requestRoll);
 
+      // Create new chat request
       await push(requestsRef, {
         fromRoll: userRoll,
         fromName: userName,
@@ -1069,7 +1068,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
     }
   };
 
-  // Accept chat request
+  // Accept chat request with enhanced duplicate prevention
   const acceptChatRequest = async (request) => {
     if (!request || !request.id) {
       toast.error("Invalid request");
@@ -1077,35 +1076,15 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
     }
 
     try {
-      // First, check if multiple chats exist between these users and merge them
-      const chatsRef = ref(db, "p2pChats");
-      const existingChatQuery = query(chatsRef);
-      const chatSnapshot = await get(existingChatQuery);
-      const existingChats = chatSnapshot.val() || {};
+      // Use enhanced unique chat thread logic
+      const existingChat = await ensureUniqueChatThread(request.fromRoll, userRoll);
 
-      const existingChatsList = Object.values(existingChats).filter(
-        (chat) =>
-          chat.participants?.includes(request.fromRoll) &&
-          chat.participants?.includes(userRoll) &&
-          chat.status === "approved"
-      );
-
-      if (existingChatsList.length > 1) {
-        // Multiple chats exist, merge them first
-        await mergeDuplicateChats(request.fromRoll, userRoll);
-
-        // Update request status after merging
+      if (existingChat && existingChat.status === "approved") {
+        // Chat exists and is now unique - just update the request status
         const requestRef = ref(db, `p2pChatRequests/${request.id}`);
         await safeUpdate(requestRef, { status: "accepted" });
 
-        toast.success("Duplicate chats merged! You can start messaging now.");
-        return;
-      } else if (existingChatsList.length === 1) {
-        // Single chat exists
-        const requestRef = ref(db, `p2pChatRequests/${request.id}`);
-        await safeUpdate(requestRef, { status: "accepted" });
-
-        // Also mark any reverse requests as accepted to prevent confusion
+        // Mark any reverse requests as accepted to prevent confusion
         const requestsRef = ref(db, "p2pChatRequests");
         const allRequestsSnapshot = await get(requestsRef);
         const allRequests = allRequestsSnapshot.val() || {};
@@ -1122,11 +1101,20 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
           }
         });
 
-        toast.success("Chat already exists! You can start messaging now.");
+        toast.success("Chat request accepted! All duplicate chats have been merged.");
+        
+        // Switch to chats tab and automatically open the merged chat
+        setActiveTab("chats");
+        setSelectedChat(existingChat);
+        
+        // Set this chat as active for the current user
+        await set(ref(db, `activeChats/${userRoll}`), existingChat.id);
+        
         return;
       }
 
-      // Create approved chat
+      // No existing chat - create new one
+      const chatsRef = ref(db, "p2pChats");
       const newChatRef = push(chatsRef);
 
       await set(newChatRef, {
@@ -1139,7 +1127,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
         createdAt: serverTimestamp(),
         lastMessageTime: serverTimestamp(),
         lastMessage: "",
-        lastMessageSender: null, // No sender for initial empty message
+        lastMessageSender: null,
       });
 
       // Initialize unread counts for both users
@@ -1153,7 +1141,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
       const requestRef = ref(db, `p2pChatRequests/${request.id}`);
       await safeUpdate(requestRef, { status: "accepted" });
 
-      // Also mark any reverse requests as accepted
+      // Mark any reverse requests as accepted
       const requestsRef = ref(db, "p2pChatRequests");
       const allRequestsSnapshot = await get(requestsRef);
       const allRequests = allRequestsSnapshot.val() || {};
@@ -1170,7 +1158,30 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
         }
       });
 
-      toast.success("Chat request accepted!");
+      toast.success(`Chat request accepted! You can now message with ${request.fromName}`);
+      
+      // Switch to chats tab and automatically open the new chat
+      setActiveTab("chats");
+      
+      // Create a chat object to set as selected
+      const newChatObject = {
+        id: newChatRef.key,
+        participants: [request.fromRoll, userRoll],
+        participantNames: {
+          [request.fromRoll]: request.fromName || "Unknown",
+          [userRoll]: userName || "Unknown",
+        },
+        status: "approved",
+        createdAt: serverTimestamp(),
+        lastMessageTime: serverTimestamp(),
+        lastMessage: "",
+        lastMessageSender: null,
+      };
+      
+      setSelectedChat(newChatObject);
+      
+      // Set this chat as active for the current user
+      await set(ref(db, `activeChats/${userRoll}`), newChatRef.key);
     } catch (error) {
       console.error("Error accepting chat request:", error);
       toast.error("Failed to accept chat request");
@@ -1325,115 +1336,152 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
     return getRelativeTime(userData.lastSeen);
   };
 
-  // Merge duplicate chat threads
-  const mergeDuplicateChats = async (userRoll1, userRoll2) => {
+  // Enhanced function to ensure only one chat thread between two users
+  const ensureUniqueChatThread = async (userRoll1, userRoll2) => {
     try {
       const chatsRef = ref(db, "p2pChats");
       const snapshot = await get(chatsRef);
       const allChats = snapshot.val() || {};
 
-      // Find all chats between these two users
-      const duplicateChats = Object.entries(allChats)
+      // Find all chats between these two users (including different statuses)
+      const userChats = Object.entries(allChats)
         .map(([id, chat]) => ({ id, ...chat }))
-        .filter(
-          (chat) =>
-            chat.participants?.includes(userRoll1) &&
-            chat.participants?.includes(userRoll2) &&
-            chat.status === "approved"
-        );
+        .filter((chat) => {
+          const participants = chat.participants || [];
+          return participants.includes(userRoll1) && participants.includes(userRoll2);
+        })
+        .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0)); // Sort by creation time
 
-      if (duplicateChats.length <= 1) {
-        return duplicateChats[0] || null; // No duplicates or no chats
+      if (userChats.length === 0) {
+        return null; // No existing chat
       }
 
-      console.log(`Found ${duplicateChats.length} duplicate chats, merging...`);
+      if (userChats.length === 1) {
+        return userChats[0]; // Single chat exists
+      }
 
-      // Sort by creation time to keep the oldest as primary
-      duplicateChats.sort(
-        (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
-      );
-      const primaryChat = duplicateChats[0];
-      const duplicatesToMerge = duplicateChats.slice(1);
+      console.log(`Found ${userChats.length} chat threads between ${userRoll1} and ${userRoll2}, merging to ensure uniqueness...`);
 
-      // Collect all messages from duplicate chats
+      // Multiple chats exist - merge them into the oldest one
+      const primaryChat = userChats[0]; // Oldest chat becomes primary
+      const duplicatesToMerge = userChats.slice(1);
+
+      // Collect all messages from all chats
       let allMessages = [];
-
-      for (const chat of duplicateChats) {
+      const messagePromises = userChats.map(async (chat) => {
         const messagesRef = ref(db, `p2pMessages/${chat.id}`);
         const messagesSnapshot = await get(messagesRef);
         const messages = messagesSnapshot.val() || {};
 
-        Object.entries(messages).forEach(([msgId, message]) => {
-          allMessages.push({
-            ...message,
-            originalChatId: chat.id,
-            messageId: msgId,
-          });
-        });
-      }
+        return Object.entries(messages).map(([msgId, message]) => ({
+          ...message,
+          originalChatId: chat.id,
+          messageId: msgId,
+        }));
+      });
 
-      // Sort messages by timestamp
-      allMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      const messageResults = await Promise.all(messagePromises);
+      allMessages = messageResults.flat();
 
-      // Clear primary chat messages and re-add all sorted messages
+      // Sort messages by timestamp to maintain chronological order
+      allMessages.sort((a, b) => {
+        const timeA = new Date(a.timestamp || 0).getTime();
+        const timeB = new Date(b.timestamp || 0).getTime();
+        return timeA - timeB;
+      });
+
+      // Remove duplicate messages based on content and timestamp
+      const uniqueMessages = [];
+      const messageHashes = new Set();
+      
+      allMessages.forEach((message) => {
+        const messageHash = `${message.senderRoll}-${message.text}-${message.timestamp}`;
+        if (!messageHashes.has(messageHash)) {
+          messageHashes.add(messageHash);
+          uniqueMessages.push(message);
+        }
+      });
+
+      // Clear primary chat messages and add all unique messages
       const primaryMessagesRef = ref(db, `p2pMessages/${primaryChat.id}`);
       await set(primaryMessagesRef, {});
 
-      // Add all messages to primary chat
-      for (const message of allMessages) {
+      // Add all unique messages to primary chat
+      for (const message of uniqueMessages) {
         const { originalChatId, messageId, ...messageData } = message;
         await push(primaryMessagesRef, messageData);
       }
 
-      // Update primary chat with latest message info
-      if (allMessages.length > 0) {
-        const latestMessage = allMessages[allMessages.length - 1];
+      // Update primary chat with the most recent message info
+      if (uniqueMessages.length > 0) {
+        const latestMessage = uniqueMessages[uniqueMessages.length - 1];
+        
+        // Ensure primary chat has approved status
         const updateData = {
+          status: "approved", // Ensure the merged chat is approved
           lastMessage: latestMessage.text || "",
           lastMessageTime: latestMessage.timestamp || serverTimestamp(),
           lastMessageSender: latestMessage.senderRoll || null,
+          // Ensure participant names are preserved
+          participantNames: {
+            [userRoll1]: primaryChat.participantNames?.[userRoll1] || users.find(u => u.roll === userRoll1)?.name || "Unknown",
+            [userRoll2]: primaryChat.participantNames?.[userRoll2] || users.find(u => u.roll === userRoll2)?.name || "Unknown"
+          }
         };
 
-        // Validate update data before Firebase call
-        if (
-          updateData &&
-          typeof updateData === "object" &&
-          Object.keys(updateData).length > 0
-        ) {
-          await safeUpdate(ref(db, `p2pChats/${primaryChat.id}`), updateData);
-        }
+        await safeUpdate(ref(db, `p2pChats/${primaryChat.id}`), updateData);
       }
 
-      // Delete duplicate chats and their messages
+      // Clean up duplicate chats
       for (const chat of duplicatesToMerge) {
+        // Delete the duplicate chat
         await set(ref(db, `p2pChats/${chat.id}`), null);
         await set(ref(db, `p2pMessages/${chat.id}`), null);
 
-        // Clean up unread counts for duplicate chats
-        for (const participant of chat.participants) {
+        // Clean up related data for duplicate chats
+        for (const participant of chat.participants || []) {
           await set(ref(db, `unreadCounts/${participant}/${chat.id}`), null);
-          // Also clear active chat references if they were viewing this duplicate
-          const activeSnapshot = await get(
-            ref(db, `activeChats/${participant}`)
-          );
+          
+          // Update active chat references if they were viewing this duplicate
+          const activeSnapshot = await get(ref(db, `activeChats/${participant}`));
           if (activeSnapshot.val() === chat.id) {
             await set(ref(db, `activeChats/${participant}`), primaryChat.id);
           }
         }
 
-        // Clean up read status for duplicate chats
+        // Clean up read status and typing indicators for duplicate chats
         await set(ref(db, `messageReadStatus/${chat.id}`), null);
+        await set(ref(db, `typing/${chat.id}`), null);
       }
 
-      toast.success(
-        `Merged ${duplicateChats.length} duplicate chats into one conversation!`
-      );
+      // Clean up any orphaned pending requests between these users
+      const requestsRef = ref(db, "p2pChatRequests");
+      const requestsSnapshot = await get(requestsRef);
+      const allRequests = requestsSnapshot.val() || {};
+
+      Object.entries(allRequests).forEach(async ([reqId, req]) => {
+        if (
+          ((req.fromRoll === userRoll1 && req.toRoll === userRoll2) ||
+           (req.fromRoll === userRoll2 && req.toRoll === userRoll1)) &&
+          req.status === "pending"
+        ) {
+          await safeUpdate(ref(db, `p2pChatRequests/${reqId}`), {
+            status: "accepted",
+          });
+        }
+      });
+
+      toast.success(`Merged ${duplicatesToMerge.length + 1} chat threads into one!`);
       return primaryChat;
     } catch (error) {
-      console.error("Error merging duplicate chats:", error);
-      toast.error("Failed to merge duplicate chats");
-      return null;
+      console.error("Error ensuring unique chat thread:", error);
+      throw error;
     }
+  };
+
+  // Merge duplicate chat threads
+  const mergeDuplicateChats = async (userRoll1, userRoll2) => {
+    return await ensureUniqueChatThread(userRoll1, userRoll2);
   };
 
   // Load older messages
