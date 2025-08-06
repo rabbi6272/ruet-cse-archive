@@ -383,7 +383,7 @@ const LinkPreview = ({ link, isOwnMessage }) => {
   );
 };
 
-const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
+const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -401,6 +401,13 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
   const messageInputRef = useRef(null);
   const [swipeState, setSwipeState] = useState({ startX: 0, currentX: 0, messageId: null, swiping: false });
   const [showEmojiPanel, setShowEmojiPanel] = useState(false);
+  
+  // Mention system state
+  const [showMentionDropdown, setShowMentionDropdown] = useState(false);
+  const [mentionSearchText, setMentionSearchText] = useState("");
+  const [mentionCursorPosition, setMentionCursorPosition] = useState(0);
+  const [filteredMentions, setFilteredMentions] = useState([]);
+  const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
 
   // Poll-related state
   const [polls, setPolls] = useState([]);
@@ -428,6 +435,159 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
+  };
+
+  // Get mention suggestions
+  const getMentionSuggestions = (searchText = "") => {
+    if (!userGroup) return [];
+    
+    const suggestions = [
+      {
+        id: 'everyone',
+        name: 'everyone',
+        displayName: 'Everyone',
+        roll: 'everyone',
+        isEveryone: true
+      }
+    ];
+    
+    // Add all group members except current user
+    userGroup.participants.forEach(roll => {
+      if (roll !== userRoll) {
+        const name = userGroup.participantNames[roll] || roll;
+        suggestions.push({
+          id: roll,
+          name: name.toLowerCase(),
+          displayName: toProperCase(name),
+          roll: roll,
+          isEveryone: false
+        });
+      }
+    });
+    
+    // Filter based on search text
+    if (searchText.trim()) {
+      return suggestions.filter(suggestion => 
+        suggestion.name.includes(searchText.toLowerCase()) || 
+        suggestion.roll.toLowerCase().includes(searchText.toLowerCase())
+      );
+    }
+    
+    return suggestions;
+  };
+
+  // Handle mention input
+  const handleMentionInput = (inputValue, cursorPos) => {
+    const beforeCursor = inputValue.substring(0, cursorPos);
+    const afterCursor = inputValue.substring(cursorPos);
+    
+    // Find the last @ symbol before cursor
+    const lastAtIndex = beforeCursor.lastIndexOf('@');
+    
+    if (lastAtIndex !== -1) {
+      // Check if @ is at start or preceded by whitespace
+      const charBeforeAt = lastAtIndex > 0 ? beforeCursor[lastAtIndex - 1] : ' ';
+      const isAtValidPosition = charBeforeAt === ' ' || charBeforeAt === '\n' || lastAtIndex === 0;
+      
+      if (isAtValidPosition) {
+        // Extract search text after @
+        const searchText = beforeCursor.substring(lastAtIndex + 1);
+        
+        // Check if search text contains spaces (if so, it's not a valid mention)
+        if (!searchText.includes(' ') && !afterCursor.startsWith(' ')) {
+          const suggestions = getMentionSuggestions(searchText);
+          setFilteredMentions(suggestions);
+          setMentionSearchText(searchText);
+          setMentionCursorPosition(lastAtIndex);
+          setSelectedMentionIndex(0);
+          setShowMentionDropdown(suggestions.length > 0);
+          return;
+        }
+      }
+    }
+    
+    // Hide dropdown if no valid mention context
+    setShowMentionDropdown(false);
+    setMentionSearchText("");
+    setFilteredMentions([]);
+  };
+
+  // Insert mention
+  const insertMention = (mention) => {
+    const input = messageInputRef.current;
+    if (!input) return;
+    
+    const beforeMention = newMessage.substring(0, mentionCursorPosition);
+    const afterMention = newMessage.substring(mentionCursorPosition + 1 + mentionSearchText.length);
+    
+    const mentionText = mention.isEveryone ? '@everyone' : `@${mention.displayName}`;
+    const newText = beforeMention + mentionText + ' ' + afterMention;
+    
+    setNewMessage(newText);
+    setShowMentionDropdown(false);
+    setMentionSearchText("");
+    setFilteredMentions([]);
+    
+    // Focus input and set cursor after mention
+    setTimeout(() => {
+      const newCursorPos = beforeMention.length + mentionText.length + 1;
+      input.focus();
+      input.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  };
+
+  // Handle keyboard navigation in mention dropdown
+  const handleMentionKeyDown = (e) => {
+    if (!showMentionDropdown) return;
+    
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedMentionIndex(prev => 
+          prev < filteredMentions.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedMentionIndex(prev => 
+          prev > 0 ? prev - 1 : filteredMentions.length - 1
+        );
+        break;
+      case 'Enter':
+      case 'Tab':
+        e.preventDefault();
+        if (filteredMentions[selectedMentionIndex]) {
+          insertMention(filteredMentions[selectedMentionIndex]);
+        }
+        break;
+      case 'Escape':
+        setShowMentionDropdown(false);
+        setMentionSearchText("");
+        setFilteredMentions([]);
+        break;
+    }
+  };
+
+  // Parse mentions in message text for display
+  const parseMentions = (text) => {
+    if (!text || !userGroup) return text;
+    
+    // Replace @everyone mentions
+    let parsedText = text.replace(/@everyone/g, '<span class="mention everyone">@everyone</span>');
+    
+    // Replace user mentions
+    userGroup.participants.forEach(roll => {
+      if (roll !== userRoll) {
+        const name = userGroup.participantNames[roll];
+        if (name) {
+          const displayName = toProperCase(name);
+          const mentionRegex = new RegExp(`@${displayName}\\b`, 'gi');
+          parsedText = parsedText.replace(mentionRegex, `<span class="mention user" data-roll="${roll}">@${displayName}</span>`);
+        }
+      }
+    });
+    
+    return parsedText;
   };
 
   // Safe update wrapper
@@ -587,6 +747,11 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
     const unsubscribeUnread = onValue(unreadRef, (snapshot) => {
       const count = snapshot.val() || 0;
       setUnreadCount(count);
+      
+      // Notify parent component about unread count change
+      if (onUnreadCountChange) {
+        onUnreadCountChange(count);
+      }
     }, (error) => {
       console.error("Error listening to unread count:", error);
     });
@@ -616,9 +781,12 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
 
     const markAsRead = async () => {
       try {
+        console.log(`[GROUP_CHAT] Marking messages as read for user ${userRoll} in group ${userGroup.id}`);
+        
         // Clear unread count
         const unreadRef = ref(db, `groupUnreadCounts/${userGroup.id}/${userRoll}`);
         await set(unreadRef, 0);
+        console.log(`[GROUP_CHAT] Cleared unread count in Firebase`);
 
         // Mark recent messages as read
         const readStatusRef = ref(db, `groupMessageReadStatus/${userGroup.id}`);
@@ -637,6 +805,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
 
         if (Object.keys(readUpdates).length > 0) {
           await safeUpdate(readStatusRef, readUpdates);
+          console.log(`[GROUP_CHAT] Marked ${Object.keys(readUpdates).length} messages as read`);
         }
       } catch (error) {
         console.error("Error marking messages as read:", error);
@@ -795,9 +964,41 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
     const messageText = newMessage.trim();
     setNewMessage("");
     clearTyping();
+    setShowMentionDropdown(false);
+    setMentionSearchText("");
+    setFilteredMentions([]);
 
     try {
       const messagesRef = ref(db, `groupMessages/${userGroup.id}`);
+      
+      // Extract mentions from message
+      const mentionedUsers = [];
+      let isEveryoneMentioned = false;
+      
+      // Check for @everyone
+      if (messageText.includes('@everyone')) {
+        isEveryoneMentioned = true;
+        // Add all group members except sender
+        userGroup.participants.forEach(roll => {
+          if (roll !== userRoll) {
+            mentionedUsers.push(roll);
+          }
+        });
+      }
+      
+      // Check for individual user mentions
+      userGroup.participants.forEach(roll => {
+        if (roll !== userRoll) {
+          const name = userGroup.participantNames[roll];
+          if (name) {
+            const displayName = toProperCase(name);
+            const mentionRegex = new RegExp(`@${displayName}\\b`, 'gi');
+            if (mentionRegex.test(messageText) && !mentionedUsers.includes(roll)) {
+              mentionedUsers.push(roll);
+            }
+          }
+        }
+      });
       
       const messageData = {
         text: messageText,
@@ -805,6 +1006,14 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
         senderName: userName || "Unknown",
         timestamp: serverTimestamp(),
       };
+
+      // Add mention data if there are mentions
+      if (mentionedUsers.length > 0) {
+        messageData.mentions = {
+          users: mentionedUsers,
+          isEveryone: isEveryoneMentioned
+        };
+      }
 
       if (replyToMessage) {
         messageData.replyTo = {
@@ -818,13 +1027,19 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
       const newMessageRef = await push(messagesRef, messageData);
       setReplyToMessage(null);
 
-      // Update unread counts for all other group members
+      // Update unread counts for all other group members (higher count for mentioned users)
+      console.log(`[GROUP_CHAT] Updating unread counts for ${userGroup.participants.length - 1} other members`);
       for (const participantRoll of userGroup.participants) {
         if (participantRoll !== userRoll) {
           const unreadRef = ref(db, `groupUnreadCounts/${userGroup.id}/${participantRoll}`);
           const currentSnapshot = await get(unreadRef);
           const currentCount = currentSnapshot.val() || 0;
-          await set(unreadRef, currentCount + 1);
+          
+          // Give mentioned users extra notification weight
+          const increment = mentionedUsers.includes(participantRoll) ? 2 : 1;
+          const newCount = currentCount + increment;
+          await set(unreadRef, newCount);
+          console.log(`[GROUP_CHAT] Updated unread count for ${participantRoll}: ${currentCount} -> ${newCount} (mentioned: ${mentionedUsers.includes(participantRoll)})`);
         }
       }
 
@@ -1130,6 +1345,54 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
         .dark .group-scrollbar {
           scrollbar-color: rgb(75 85 99) rgb(31 41 55);
         }
+
+        /* Mention Styles */
+        .mention {
+          display: inline;
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-weight: 600;
+          text-decoration: none;
+          cursor: default;
+        }
+        
+        .mention.everyone {
+          background: rgba(147, 51, 234, 0.2);
+          color: rgb(147, 51, 234);
+          border: 1px solid rgba(147, 51, 234, 0.3);
+        }
+        
+        .mention.user {
+          background: rgba(59, 130, 246, 0.2);
+          color: rgb(59, 130, 246);
+          border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        /* Dark mode mention styles */
+        .dark .mention.everyone {
+          background: rgba(168, 85, 247, 0.3);
+          color: rgb(196, 181, 253);
+          border: 1px solid rgba(168, 85, 247, 0.4);
+        }
+        
+        .dark .mention.user {
+          background: rgba(96, 165, 250, 0.3);
+          color: rgb(147, 197, 253);
+          border: 1px solid rgba(96, 165, 250, 0.4);
+        }
+        
+        /* Mention styles inside own messages */
+        .bg-indigo-600 .mention.everyone {
+          background: rgba(168, 85, 247, 0.4);
+          color: rgb(221, 214, 254);
+          border: 1px solid rgba(168, 85, 247, 0.5);
+        }
+        
+        .bg-indigo-600 .mention.user {
+          background: rgba(147, 197, 253, 0.4);
+          color: rgb(219, 234, 254);
+          border: 1px solid rgba(147, 197, 253, 0.5);
+        }
       `}</style>
       
       <div className="w-full h-full flex flex-col shadow-2xl">
@@ -1347,6 +1610,12 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
             const swipeOffset = getSwipeOffset(message.id);
             const senderName = toProperCase(userGroup.participantNames[message.senderRoll]) || message.senderName;
             
+            // Check if current user is mentioned in this message
+            const isMentioned = message.mentions && (
+              message.mentions.users.includes(userRoll) || 
+              message.mentions.isEveryone
+            );
+            
             return (
               <div
                 key={message.id}
@@ -1370,7 +1639,9 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
                   className={`max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[55%] px-3 sm:px-4 py-2 sm:py-3 rounded-lg relative transition-transform duration-150 ${
                     isOwnMessage
                       ? "bg-indigo-600 text-white"
-                      : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      : isMentioned
+                        ? "bg-yellow-100 dark:bg-yellow-900/30 text-gray-900 dark:text-gray-100 border-2 border-yellow-300 dark:border-yellow-600"
+                        : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   }`}
                   style={{
                     transform: `translateX(${swipeOffset}px)`,
@@ -1380,6 +1651,13 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
                   onTouchMove={(e) => handleTouchMove(e, message)}
                   onTouchEnd={(e) => handleTouchEnd(e, message)}
                 >
+                  {/* Mention indicator */}
+                  {!isOwnMessage && isMentioned && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
+                      <span className="text-xs text-white font-bold">@</span>
+                    </div>
+                  )}
+
                   {/* Reply button (desktop) */}
                   <button
                     onClick={() => handleReplyToMessage(message)}
@@ -1395,7 +1673,9 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
                   <p className={`text-xs font-medium mb-1 ${
                     isOwnMessage 
                       ? "text-indigo-200" 
-                      : "text-indigo-600 dark:text-indigo-400"
+                      : isMentioned
+                        ? "text-yellow-700 dark:text-yellow-300"
+                        : "text-indigo-600 dark:text-indigo-400"
                   }`}>
                     {isOwnMessage ? "You" : senderName}
                   </p>
@@ -1420,8 +1700,13 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
                     </div>
                   )}
 
-                  {/* Message text */}
-                  <p className="text-sm sm:text-base break-words">{message.text}</p>
+                  {/* Message text with mentions */}
+                  <div 
+                    className="text-sm sm:text-base break-words"
+                    dangerouslySetInnerHTML={{
+                      __html: parseMentions(message.text)
+                    }}
+                  />
                   
                   {/* Link previews and embeds */}
                   {(() => {
@@ -1567,28 +1852,97 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose }) => {
           
           <div className="p-3 sm:p-4 md:p-5">
             <div className="relative">
+              {/* Mention Dropdown */}
+              {showMentionDropdown && filteredMentions.length > 0 && (
+                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50">
+                  <div className="p-2 border-b border-gray-200 dark:border-gray-600">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                      Mention someone...
+                    </p>
+                  </div>
+                  <div className="py-1">
+                    {filteredMentions.map((mention, index) => (
+                      <button
+                        key={mention.id}
+                        onClick={() => insertMention(mention)}
+                        onMouseEnter={() => setSelectedMentionIndex(index)}
+                        className={`w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors ${
+                          index === selectedMentionIndex ? 'bg-gray-100 dark:bg-gray-700' : ''
+                        }`}
+                      >
+                        {mention.isEveryone ? (
+                          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                            @
+                          </div>
+                        ) : (
+                          <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                            {mention.displayName.charAt(0)}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                            {mention.isEveryone ? 'Everyone' : mention.displayName}
+                          </p>
+                          {!mention.isEveryone && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                              Roll: {mention.roll}
+                            </p>
+                          )}
+                        </div>
+                        {mention.isEveryone && (
+                          <div className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+                            All members
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-2 sm:gap-3 md:gap-4">
                 <div className="flex-1 relative">
                   <input
                     ref={messageInputRef}
                     type="text"
-                    placeholder="Type a message..."
+                    placeholder="Type a message... (Use @ to mention users)"
                     value={newMessage}
                     onChange={(e) => {
-                      setNewMessage(e.target.value);
-                      if (e.target.value.trim()) {
+                      const newValue = e.target.value;
+                      const cursorPos = e.target.selectionStart;
+                      setNewMessage(newValue);
+                      
+                      // Handle mention detection
+                      handleMentionInput(newValue, cursorPos);
+                      
+                      if (newValue.trim()) {
                         handleTyping();
                       } else {
                         clearTyping();
                       }
                     }}
+                    onKeyDown={handleMentionKeyDown}
                     onKeyPress={(e) => {
-                      if (e.key === "Enter") {
+                      if (e.key === "Enter" && !showMentionDropdown) {
                         e.preventDefault();
                         sendMessage();
                       }
                     }}
-                    onBlur={clearTyping}
+                    onBlur={(e) => {
+                      // Delay hiding dropdown to allow for clicks
+                      setTimeout(() => {
+                        setShowMentionDropdown(false);
+                        clearTyping();
+                      }, 150);
+                    }}
+                    onFocus={() => {
+                      const cursorPos = messageInputRef.current?.selectionStart || 0;
+                      handleMentionInput(newMessage, cursorPos);
+                    }}
+                    onClick={(e) => {
+                      const cursorPos = e.target.selectionStart;
+                      handleMentionInput(newMessage, cursorPos);
+                    }}
                     className="w-full pr-10 px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
                   />
                   <button

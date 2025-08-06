@@ -13,6 +13,7 @@ import {
   remove,
 } from "firebase/database";
 import { getUserDisplayRole } from "@/lib/auth-utils";
+import { getUserGroup } from "@/lib/group-utils";
 import AuthUtils from "@/lib/auth-utils-secure";
 import toast, { Toaster } from "react-hot-toast";
 import NotificationCenter from "./NotificationCenter";
@@ -200,7 +201,7 @@ const Dashboard = () => {
           notificationSound.playNotificationSound().catch(console.error);
         }
 
-        setPrevPendingChatRequests(pendingChatRequests);
+        setPrevPendingChatRequests(pendingCount);  // Fix: Set previous count to current count
         setPendingChatRequests(pendingCount);
       });
     } catch (error) {
@@ -229,7 +230,7 @@ const Dashboard = () => {
           notificationSound.playNotificationSound().catch(console.error);
         }
 
-        setPrevUnreadMessagesCount(unreadMessagesCount);
+        setPrevUnreadMessagesCount(totalUnread);  // Fix: Set previous count to current count
         setUnreadMessagesCount(totalUnread);
       });
     } catch (error) {
@@ -241,27 +242,28 @@ const Dashboard = () => {
   // Load group unread count
   const loadGroupUnreadCount = (rollNumber) => {
     try {
-      // Import getUserGroup dynamically to avoid import issues
-      import("@/lib/group-utils").then(({ getUserGroup }) => {
-        const userGroup = getUserGroup(rollNumber);
-        if (!userGroup) return;
+      const userGroup = getUserGroup(rollNumber);
+      if (!userGroup) {
+        return;
+      }
 
-        const unreadRef = ref(
-          db,
-          `groupUnreadCounts/${userGroup.id}/${rollNumber}`
-        );
+      const unreadRef = ref(
+        db,
+        `groupUnreadCounts/${userGroup.id}/${rollNumber}`
+      );
 
-        onValue(unreadRef, (snapshot) => {
-          const count = snapshot.val() || 0;
+      onValue(unreadRef, (snapshot) => {
+        const count = snapshot.val() || 0;
+        console.log(`[DASHBOARD] Group unread count changed: ${prevGroupUnreadCount} -> ${count}`);
 
-          // Play sound notification if count increased (new group message received)
-          if (count > prevGroupUnreadCount && prevGroupUnreadCount !== 0) {
-            notificationSound.playNotificationSound().catch(console.error);
-          }
+        // Play sound notification if count increased (new group message received)
+        if (count > prevGroupUnreadCount && prevGroupUnreadCount !== 0) {
+          console.log(`[DASHBOARD] Playing notification sound for group message`);
+          notificationSound.playNotificationSound().catch(console.error);
+        }
 
-          setPrevGroupUnreadCount(groupUnreadCount);
-          setGroupUnreadCount(count);
-        });
+        setPrevGroupUnreadCount(count);  // Fix: Set previous count to current count
+        setGroupUnreadCount(count);
       });
     } catch (error) {
       console.error("Error loading group unread count:", error);
@@ -939,33 +941,56 @@ const Dashboard = () => {
       <div className="fixed bottom-6 right-6 z-[55] sm:bottom-8 sm:right-8 flex flex-col gap-4">
         {/* Group Chat Bubble */}
         <button
-          onClick={() => setIsGroupChatOpen(true)}
+          onClick={async () => {
+            console.log(`[DASHBOARD] Opening group chat, current unread count: ${groupUnreadCount}`);
+            setIsGroupChatOpen(true);
+            
+            // Clear unread count when opening group chat
+            if (user?.roll) {
+              try {
+                const userGroup = getUserGroup(user.roll);
+                if (userGroup && groupUnreadCount > 0) {
+                  console.log(`[DASHBOARD] Clearing unread count for group ${userGroup.id}`);
+                  const unreadRef = ref(db, `groupUnreadCounts/${userGroup.id}/${user.roll}`);
+                  await update(ref(db, `groupUnreadCounts/${userGroup.id}`), { [user.roll]: 0 });
+                  console.log(`[DASHBOARD] Unread count cleared successfully`);
+                }
+                setGroupUnreadCount(0);
+                setPrevGroupUnreadCount(0);
+              } catch (error) {
+                console.error("Error clearing group unread count:", error);
+              }
+            }
+          }}
           className="relative group w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-green-500 via-emerald-600 to-teal-700 hover:from-green-400 hover:via-emerald-500 hover:to-teal-600 text-white rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-110 border-2 border-white/20 backdrop-blur-sm flex items-center justify-center"
           title="Group Chat"
         >
           {/* Group chat icon */}
           <div className="relative">
             <i className="fas fa-users text-xl sm:text-2xl filter drop-shadow-sm"></i>
-            {/* Notification badge for group unread messages */}
+            
+            {/* Notification badge - only show when there are unread messages */}
             {groupUnreadCount > 0 && (
-              <span className="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center shadow-lg border-2 border-white animate-pulse">
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[1.25rem] h-5 px-1 flex items-center justify-center shadow-lg border-2 border-white animate-pulse">
                 {groupUnreadCount > 9 ? "9+" : groupUnreadCount}
               </span>
             )}
+            
             {/* Online indicator pulse */}
-            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
+            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse shadow-md">
+              <div className="absolute inset-0 bg-green-300 rounded-full animate-ping opacity-75"></div>
+            </div>
           </div>
 
           {/* Enhanced tooltip */}
-          <div className="hidden sm:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 px-4 py-2 bg-gray-900/95 backdrop-blur-sm text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap shadow-xl border border-gray-700">
+          <div className="hidden sm:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 px-4 py-3 bg-gray-900/95 backdrop-blur-sm text-white text-sm rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap shadow-2xl border border-gray-700/50">
             <div className="flex items-center gap-2">
               <i className="fas fa-users text-green-400"></i>
-              <span className="font-medium">Group Chat</span>
+              <span className="font-semibold">Group Chat</span>
             </div>
             {groupUnreadCount > 0 && (
-              <div className="text-xs text-yellow-300 mt-1 text-center">
-                💬 {groupUnreadCount} unread message
-                {groupUnreadCount > 1 ? "s" : ""}
+              <div className="text-xs text-yellow-300 mt-2 text-center font-medium">
+                � {groupUnreadCount} new message{groupUnreadCount > 1 ? "s" : ""}!
               </div>
             )}
             <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900/95"></div>
@@ -1042,6 +1067,10 @@ const Dashboard = () => {
         userName={user?.name}
         isOpen={isGroupChatOpen}
         onClose={() => setIsGroupChatOpen(false)}
+        onUnreadCountChange={(count) => {
+          setGroupUnreadCount(count);
+          setPrevGroupUnreadCount(count);
+        }}
       />
     </div>
   );
