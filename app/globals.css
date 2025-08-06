@@ -66,6 +66,14 @@ body {
   overflow-x: hidden;
 }
 
+/* Global user-select: none to prevent text selection */
+* {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
 .morphic-effect {
   /* background: rgba(255, 255, 255, 0.9); */
   /* background-color: #071a26; */

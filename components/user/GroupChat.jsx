@@ -19,6 +19,7 @@ import {
 import toast from "react-hot-toast";
 import { getUserGroup, isUserInGroup, getGroupName } from "@/lib/group-utils";
 import EmojiPanel from "@/components/ui/EmojiPanel";
+import MessageReactions from "@/components/ui/MessageReactions";
 import { PollCreationModal, PollEditModal, PollDisplay } from "./PollComponent";
 import AuthUtils from "@/lib/auth-utils-secure";
 
@@ -402,6 +403,14 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
   const [swipeState, setSwipeState] = useState({ startX: 0, currentX: 0, messageId: null, swiping: false });
   const [showEmojiPanel, setShowEmojiPanel] = useState(false);
   
+  // Long press and emoji panel state for mobile
+  const [longPressState, setLongPressState] = useState({ 
+    timer: null, 
+    messageId: null, 
+    isLongPressing: false,
+    activeMessagePanel: null // Track which message has active emoji panel
+  });
+  
   // Mention system state
   const [showMentionDropdown, setShowMentionDropdown] = useState(false);
   const [mentionSearchText, setMentionSearchText] = useState("");
@@ -619,11 +628,39 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Track the last message to only scroll on new messages, not reactions
+  const lastMessageRef = useRef(null);
+  const hasInitialScrolled = useRef(false);
+
   useEffect(() => {
-    if (userGroup) {
-      scrollToBottom();
+    if (userGroup && messages.length > 0) {
+      const latestMessage = messages[messages.length - 1];
+      
+      // Initial scroll when chat opens
+      if (!hasInitialScrolled.current) {
+        scrollToBottom();
+        lastMessageRef.current = latestMessage;
+        hasInitialScrolled.current = true;
+        return;
+      }
+      
+      // Only scroll if this is actually a new message (not just a reaction update)
+      if (!lastMessageRef.current || 
+          (latestMessage && latestMessage.id !== lastMessageRef.current.id)) {
+        // This is a new message, scroll to bottom
+        scrollToBottom();
+        lastMessageRef.current = latestMessage;
+      }
+      // If it's the same message ID but different data, it's likely a reaction update
+      // so we don't scroll
     }
   }, [messages, userGroup]);
+
+  // Reset scroll tracking when chat changes
+  useEffect(() => {
+    hasInitialScrolled.current = false;
+    lastMessageRef.current = null;
+  }, [userGroup]);
 
   // Track user presence
   useEffect(() => {
@@ -932,6 +969,85 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
     if (swipeState.messageId !== messageId || !swipeState.swiping) return 0;
     const deltaX = swipeState.currentX - swipeState.startX;
     return Math.min(Math.max(deltaX, 0), 100);
+  };
+
+  // Long press handlers for mobile emoji reactions
+  const handleLongPressStart = (e, message) => {
+    // Clear any existing timer
+    if (longPressState.timer) {
+      clearTimeout(longPressState.timer);
+    }
+
+    const timer = setTimeout(() => {
+      // Show emoji panel for this message
+      setLongPressState(prev => ({
+        ...prev,
+        isLongPressing: true,
+        activeMessagePanel: message.id
+      }));
+      
+      // Add haptic feedback if available
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }, 500); // 500ms long press duration
+
+    setLongPressState(prev => ({
+      ...prev,
+      timer,
+      messageId: message.id,
+      isLongPressing: false,
+      activeMessagePanel: null
+    }));
+  };
+
+  const handleLongPressEnd = (e, message) => {
+    // Clear the timer
+    if (longPressState.timer) {
+      clearTimeout(longPressState.timer);
+    }
+
+    // If we weren't long pressing, reset state
+    if (!longPressState.isLongPressing) {
+      setLongPressState(prev => ({
+        ...prev,
+        timer: null,
+        messageId: null,
+        isLongPressing: false,
+        activeMessagePanel: null
+      }));
+    }
+  };
+
+  const handleLongPressCancel = (e, message) => {
+    // Clear the timer and reset state
+    if (longPressState.timer) {
+      clearTimeout(longPressState.timer);
+    }
+
+    setLongPressState(prev => ({
+      ...prev,
+      timer: null,
+      messageId: null,
+      isLongPressing: false,
+      activeMessagePanel: null
+    }));
+  };
+
+  // Handle emoji panel state for specific message
+  const handleEmojiPanelChange = (messageId, isOpen) => {
+    if (isOpen) {
+      setLongPressState(prev => ({
+        ...prev,
+        activeMessagePanel: messageId
+      }));
+    } else {
+      setLongPressState(prev => ({
+        ...prev,
+        activeMessagePanel: null,
+        isLongPressing: false
+      }));
+    }
   };
 
   // Handle emoji selection
@@ -1647,9 +1763,41 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                     transform: `translateX(${swipeOffset}px)`,
                     touchAction: 'pan-y'
                   }}
-                  onTouchStart={(e) => handleTouchStart(e, message)}
-                  onTouchMove={(e) => handleTouchMove(e, message)}
-                  onTouchEnd={(e) => handleTouchEnd(e, message)}
+                  onTouchStart={(e) => {
+                    // Don't handle if touch is on emoji panel
+                    if (e.target.closest('[data-emoji-panel="true"]')) {
+                      return;
+                    }
+                    handleTouchStart(e, message);
+                    handleLongPressStart(e, message);
+                  }}
+                  onTouchMove={(e) => {
+                    // Don't handle if touch is on emoji panel
+                    if (e.target.closest('[data-emoji-panel="true"]')) {
+                      return;
+                    }
+                    handleTouchMove(e, message);
+                    // Cancel long press on move
+                    if (longPressState.timer) {
+                      clearTimeout(longPressState.timer);
+                      setLongPressState(prev => ({ ...prev, timer: null }));
+                    }
+                  }}
+                  onTouchEnd={(e) => {
+                    // Don't handle if touch is on emoji panel
+                    if (e.target.closest('[data-emoji-panel="true"]')) {
+                      return;
+                    }
+                    handleTouchEnd(e, message);
+                    handleLongPressEnd(e, message);
+                  }}
+                  onTouchCancel={(e) => {
+                    // Don't handle if touch is on emoji panel
+                    if (e.target.closest('[data-emoji-panel="true"]')) {
+                      return;
+                    }
+                    handleLongPressCancel(e, message);
+                  }}
                 >
                   {/* Mention indicator */}
                   {!isOwnMessage && isMentioned && (
@@ -1706,6 +1854,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                     dangerouslySetInnerHTML={{
                       __html: parseMentions(message.text)
                     }}
+                    style={{ userSelect: 'text', WebkitUserSelect: 'text' }}
                   />
                   
                   {/* Link previews and embeds */}
@@ -1783,6 +1932,17 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                   >
                     {getRelativeTime(message.timestamp)}
                   </p>
+
+                  {/* Message Reactions - Real-time updates */}
+                  <MessageReactions
+                    messageId={message.id}
+                    chatPath={`groupMessages/${userGroup.id}`}
+                    currentUserRoll={userRoll}
+                    isOwnMessage={isOwnMessage}
+                    className=""
+                    showEmojiPanel={longPressState.activeMessagePanel === message.id}
+                    onShowEmojiPanelChange={(isOpen) => handleEmojiPanelChange(message.id, isOpen)}
+                  />
                 </div>
               </div>
             );

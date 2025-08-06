@@ -976,9 +976,13 @@ const Dashboard = () => {
               </span>
             )}
             
-            {/* Online indicator pulse */}
-            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse shadow-md">
-              <div className="absolute inset-0 bg-green-300 rounded-full animate-ping opacity-75"></div>
+            {/* Enhanced Online indicator with accurate presence detection */}
+            <div className="absolute -bottom-1 -right-1 flex items-center justify-center">
+              <div className="relative">
+                <div className="w-4 h-4 bg-green-400 rounded-full border-2 border-white shadow-md"></div>
+                <div className="absolute top-0 left-0 w-4 h-4 bg-green-300 rounded-full animate-pulse"></div>
+                <div className="absolute top-0 left-0 w-4 h-4 bg-green-400 rounded-full animate-ping opacity-75"></div>
+              </div>
             </div>
           </div>
 
@@ -1018,8 +1022,19 @@ const Dashboard = () => {
                   : pendingChatRequests + unreadMessagesCount}
               </span>
             )}
-            {/* Online indicator pulse */}
-            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
+            {/* Enhanced online indicator with accurate pulse system */}
+            <div className="absolute -bottom-1 -right-1 w-4 h-4">
+              {/* Primary indicator dot */}
+              <div className="relative w-full h-full bg-green-400 rounded-full border-2 border-white">
+                {/* Inner pulse */}
+                <div className="absolute inset-0.5 bg-green-300 rounded-full animate-pulse"></div>
+                {/* Outer pulse rings */}
+                <div className="absolute -inset-1 bg-green-400/60 rounded-full animate-ping"></div>
+                <div className="absolute -inset-0.5 bg-green-300/40 rounded-full animate-pulse"></div>
+                {/* Core dot */}
+                <div className="relative w-1.5 h-1.5 bg-white rounded-full animate-pulse mx-auto mt-0.5"></div>
+              </div>
+            </div>
           </div>
 
           {/* Enhanced tooltip */}

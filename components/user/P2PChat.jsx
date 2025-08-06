@@ -19,6 +19,7 @@ import {
 import toast from "react-hot-toast";
 import { users } from "@/lib/mino";
 import EmojiPanel from "@/components/ui/EmojiPanel";
+import MessageReactions from "@/components/ui/MessageReactions";
 
 // Link detection and preview utilities
 const SUPPORTED_PLATFORMS = {
@@ -429,6 +430,14 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
   });
   const [showEmojiPanel, setShowEmojiPanel] = useState(false);
 
+  // Long press and emoji panel state for mobile
+  const [longPressState, setLongPressState] = useState({ 
+    timer: null, 
+    messageId: null, 
+    isLongPressing: false,
+    activeMessagePanel: null // Track which message has active emoji panel
+  });
+
   // Convert name to proper case (first letter of each word capitalized)
   const toProperCase = (name) => {
     if (!name || typeof name !== "string") return name;
@@ -475,11 +484,39 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Track the last message to only scroll on new messages, not reactions
+  const lastMessageRef = useRef(null);
+  const hasInitialScrolled = useRef(false);
+
   useEffect(() => {
-    if (selectedChat) {
-      scrollToBottom();
+    if (selectedChat && messages.length > 0) {
+      const latestMessage = messages[messages.length - 1];
+      
+      // Initial scroll when chat opens
+      if (!hasInitialScrolled.current) {
+        scrollToBottom();
+        lastMessageRef.current = latestMessage;
+        hasInitialScrolled.current = true;
+        return;
+      }
+      
+      // Only scroll if this is actually a new message (not just a reaction update)
+      if (!lastMessageRef.current || 
+          (latestMessage && latestMessage.id !== lastMessageRef.current.id)) {
+        // This is a new message, scroll to bottom
+        scrollToBottom();
+        lastMessageRef.current = latestMessage;
+      }
+      // If it's the same message ID but different data, it's likely a reaction update
+      // so we don't scroll
     }
   }, [messages, selectedChat]);
+
+  // Reset scroll tracking when chat changes
+  useEffect(() => {
+    hasInitialScrolled.current = false;
+    lastMessageRef.current = null;
+  }, [selectedChat]);
 
   // Track user presence
   useEffect(() => {
@@ -959,6 +996,85 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
 
     // Reset swipe state
     setSwipeState({ startX: 0, currentX: 0, messageId: null, swiping: false });
+  };
+
+  // Long press handlers for mobile emoji reactions
+  const handleLongPressStart = (e, message) => {
+    // Clear any existing timer
+    if (longPressState.timer) {
+      clearTimeout(longPressState.timer);
+    }
+
+    const timer = setTimeout(() => {
+      // Show emoji panel for this message
+      setLongPressState(prev => ({
+        ...prev,
+        isLongPressing: true,
+        activeMessagePanel: message.id
+      }));
+      
+      // Add haptic feedback if available
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }, 500); // 500ms long press duration
+
+    setLongPressState(prev => ({
+      ...prev,
+      timer,
+      messageId: message.id,
+      isLongPressing: false,
+      activeMessagePanel: null
+    }));
+  };
+
+  const handleLongPressEnd = (e, message) => {
+    // Clear the timer
+    if (longPressState.timer) {
+      clearTimeout(longPressState.timer);
+    }
+
+    // If we weren't long pressing, reset state
+    if (!longPressState.isLongPressing) {
+      setLongPressState(prev => ({
+        ...prev,
+        timer: null,
+        messageId: null,
+        isLongPressing: false,
+        activeMessagePanel: null
+      }));
+    }
+  };
+
+  const handleLongPressCancel = (e, message) => {
+    // Clear the timer and reset state
+    if (longPressState.timer) {
+      clearTimeout(longPressState.timer);
+    }
+
+    setLongPressState(prev => ({
+      ...prev,
+      timer: null,
+      messageId: null,
+      isLongPressing: false,
+      activeMessagePanel: null
+    }));
+  };
+
+  // Handle emoji panel state for specific message
+  const handleEmojiPanelChange = (messageId, isOpen) => {
+    if (isOpen) {
+      setLongPressState(prev => ({
+        ...prev,
+        activeMessagePanel: messageId
+      }));
+    } else {
+      setLongPressState(prev => ({
+        ...prev,
+        activeMessagePanel: null,
+        isLongPressing: false
+      }));
+    }
   };
 
   // Get swipe offset for visual feedback
@@ -1992,9 +2108,41 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                             transform: `translateX(${swipeOffset}px)`,
                             touchAction: "pan-y", // Allow vertical scrolling but capture horizontal swipes
                           }}
-                          onTouchStart={(e) => handleTouchStart(e, message)}
-                          onTouchMove={(e) => handleTouchMove(e, message)}
-                          onTouchEnd={(e) => handleTouchEnd(e, message)}
+                          onTouchStart={(e) => {
+                            // Don't handle if touch is on emoji panel
+                            if (e.target.closest('[data-emoji-panel="true"]')) {
+                              return;
+                            }
+                            handleTouchStart(e, message);
+                            handleLongPressStart(e, message);
+                          }}
+                          onTouchMove={(e) => {
+                            // Don't handle if touch is on emoji panel
+                            if (e.target.closest('[data-emoji-panel="true"]')) {
+                              return;
+                            }
+                            handleTouchMove(e, message);
+                            // Cancel long press on move
+                            if (longPressState.timer) {
+                              clearTimeout(longPressState.timer);
+                              setLongPressState(prev => ({ ...prev, timer: null }));
+                            }
+                          }}
+                          onTouchEnd={(e) => {
+                            // Don't handle if touch is on emoji panel
+                            if (e.target.closest('[data-emoji-panel="true"]')) {
+                              return;
+                            }
+                            handleTouchEnd(e, message);
+                            handleLongPressEnd(e, message);
+                          }}
+                          onTouchCancel={(e) => {
+                            // Don't handle if touch is on emoji panel
+                            if (e.target.closest('[data-emoji-panel="true"]')) {
+                              return;
+                            }
+                            handleLongPressCancel(e, message);
+                          }}
                         >
                           {/* Reply button (desktop hover) */}
                           <button
@@ -2046,7 +2194,8 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                           )}
 
                           {/* Message text */}
-                          <p className="text-sm sm:text-base break-words">
+                          <p className="text-sm sm:text-base break-words"
+                             style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>
                             {message.text}
                           </p>
 
@@ -2103,6 +2252,17 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                               </div>
                             )}
                           </div>
+
+                          {/* Message Reactions - Real-time updates */}
+                          <MessageReactions
+                            messageId={message.id}
+                            chatPath={`p2pChats/${selectedChat.id}`}
+                            currentUserRoll={userRoll}
+                            isOwnMessage={isOwnMessage}
+                            className=""
+                            showEmojiPanel={longPressState.activeMessagePanel === message.id}
+                            onShowEmojiPanelChange={(isOpen) => handleEmojiPanelChange(message.id, isOpen)}
+                          />
                         </div>
                       </div>
                     );
