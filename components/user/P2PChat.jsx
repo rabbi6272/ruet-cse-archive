@@ -431,11 +431,11 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
   const [showEmojiPanel, setShowEmojiPanel] = useState(false);
 
   // Long press and emoji panel state for mobile
-  const [longPressState, setLongPressState] = useState({ 
-    timer: null, 
-    messageId: null, 
+  const [longPressState, setLongPressState] = useState({
+    timer: null,
+    messageId: null,
     isLongPressing: false,
-    activeMessagePanel: null // Track which message has active emoji panel
+    activeMessagePanel: null, // Track which message has active emoji panel
   });
 
   // Convert name to proper case (first letter of each word capitalized)
@@ -491,7 +491,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
   useEffect(() => {
     if (selectedChat && messages.length > 0) {
       const latestMessage = messages[messages.length - 1];
-      
+
       // Initial scroll when chat opens - use instant scroll to avoid animation
       if (!hasInitialScrolled.current) {
         scrollToBottom("auto"); // Use "auto" for instant positioning
@@ -499,10 +499,12 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
         hasInitialScrolled.current = true;
         return;
       }
-      
+
       // Only scroll if this is actually a new message (not just a reaction update)
-      if (!lastMessageRef.current || 
-          (latestMessage && latestMessage.id !== lastMessageRef.current.id)) {
+      if (
+        !lastMessageRef.current ||
+        (latestMessage && latestMessage.id !== lastMessageRef.current.id)
+      ) {
         // This is a new message, scroll to bottom
         scrollToBottom();
         lastMessageRef.current = latestMessage;
@@ -1007,24 +1009,24 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
 
     const timer = setTimeout(() => {
       // Show emoji panel for this message
-      setLongPressState(prev => ({
+      setLongPressState((prev) => ({
         ...prev,
         isLongPressing: true,
-        activeMessagePanel: message.id
+        activeMessagePanel: message.id,
       }));
-      
+
       // Add haptic feedback if available
       if (navigator.vibrate) {
         navigator.vibrate(50);
       }
     }, 500); // 500ms long press duration
 
-    setLongPressState(prev => ({
+    setLongPressState((prev) => ({
       ...prev,
       timer,
       messageId: message.id,
       isLongPressing: false,
-      activeMessagePanel: null
+      activeMessagePanel: null,
     }));
   };
 
@@ -1036,12 +1038,12 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
 
     // If we weren't long pressing, reset state
     if (!longPressState.isLongPressing) {
-      setLongPressState(prev => ({
+      setLongPressState((prev) => ({
         ...prev,
         timer: null,
         messageId: null,
         isLongPressing: false,
-        activeMessagePanel: null
+        activeMessagePanel: null,
       }));
     }
   };
@@ -1052,27 +1054,27 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
       clearTimeout(longPressState.timer);
     }
 
-    setLongPressState(prev => ({
+    setLongPressState((prev) => ({
       ...prev,
       timer: null,
       messageId: null,
       isLongPressing: false,
-      activeMessagePanel: null
+      activeMessagePanel: null,
     }));
   };
 
   // Handle emoji panel state for specific message
   const handleEmojiPanelChange = (messageId, isOpen) => {
     if (isOpen) {
-      setLongPressState(prev => ({
+      setLongPressState((prev) => ({
         ...prev,
-        activeMessagePanel: messageId
+        activeMessagePanel: messageId,
       }));
     } else {
-      setLongPressState(prev => ({
+      setLongPressState((prev) => ({
         ...prev,
         activeMessagePanel: null,
-        isLongPressing: false
+        isLongPressing: false,
       }));
     }
   };
@@ -1111,20 +1113,20 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
 
       // Use enhanced unique chat thread logic to check for existing chats
       const existingChat = await ensureUniqueChatThread(userRoll, requestRoll);
-      
+
       if (existingChat && existingChat.status === "approved") {
         // Switch to chats tab to show the existing chat
         setActiveTab("chats");
-        
+
         // Automatically open the existing chat
         setSelectedChat(existingChat);
-        
+
         // Set this chat as active for the current user
         await set(ref(db, `activeChats/${userRoll}`), existingChat.id);
-        
+
         // Clear the request input
         setRequestRoll("");
-        
+
         toast.success("Opening your existing chat with this user!");
         setLoading(false);
         return;
@@ -1193,7 +1195,10 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
 
     try {
       // Use enhanced unique chat thread logic
-      const existingChat = await ensureUniqueChatThread(request.fromRoll, userRoll);
+      const existingChat = await ensureUniqueChatThread(
+        request.fromRoll,
+        userRoll
+      );
 
       if (existingChat && existingChat.status === "approved") {
         // Chat exists and is now unique - just update the request status
@@ -1217,15 +1222,17 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
           }
         });
 
-        toast.success("Chat request accepted! All duplicate chats have been merged.");
-        
+        toast.success(
+          "Chat request accepted! All duplicate chats have been merged."
+        );
+
         // Switch to chats tab and automatically open the merged chat
         setActiveTab("chats");
         setSelectedChat(existingChat);
-        
+
         // Set this chat as active for the current user
         await set(ref(db, `activeChats/${userRoll}`), existingChat.id);
-        
+
         return;
       }
 
@@ -1274,11 +1281,13 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
         }
       });
 
-      toast.success(`Chat request accepted! You can now message with ${request.fromName}`);
-      
+      toast.success(
+        `Chat request accepted! You can now message with ${request.fromName}`
+      );
+
       // Switch to chats tab and automatically open the new chat
       setActiveTab("chats");
-      
+
       // Create a chat object to set as selected
       const newChatObject = {
         id: newChatRef.key,
@@ -1293,9 +1302,9 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
         lastMessage: "",
         lastMessageSender: null,
       };
-      
+
       setSelectedChat(newChatObject);
-      
+
       // Set this chat as active for the current user
       await set(ref(db, `activeChats/${userRoll}`), newChatRef.key);
     } catch (error) {
@@ -1464,9 +1473,13 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
         .map(([id, chat]) => ({ id, ...chat }))
         .filter((chat) => {
           const participants = chat.participants || [];
-          return participants.includes(userRoll1) && participants.includes(userRoll2);
+          return (
+            participants.includes(userRoll1) && participants.includes(userRoll2)
+          );
         })
-        .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0)); // Sort by creation time
+        .sort(
+          (a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
+        ); // Sort by creation time
 
       if (userChats.length === 0) {
         return null; // No existing chat
@@ -1476,7 +1489,9 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
         return userChats[0]; // Single chat exists
       }
 
-      console.log(`Found ${userChats.length} chat threads between ${userRoll1} and ${userRoll2}, merging to ensure uniqueness...`);
+      console.log(
+        `Found ${userChats.length} chat threads between ${userRoll1} and ${userRoll2}, merging to ensure uniqueness...`
+      );
 
       // Multiple chats exist - merge them into the oldest one
       const primaryChat = userChats[0]; // Oldest chat becomes primary
@@ -1509,7 +1524,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
       // Remove duplicate messages based on content and timestamp
       const uniqueMessages = [];
       const messageHashes = new Set();
-      
+
       allMessages.forEach((message) => {
         const messageHash = `${message.senderRoll}-${message.text}-${message.timestamp}`;
         if (!messageHashes.has(messageHash)) {
@@ -1531,7 +1546,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
       // Update primary chat with the most recent message info
       if (uniqueMessages.length > 0) {
         const latestMessage = uniqueMessages[uniqueMessages.length - 1];
-        
+
         // Ensure primary chat has approved status
         const updateData = {
           status: "approved", // Ensure the merged chat is approved
@@ -1540,9 +1555,15 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
           lastMessageSender: latestMessage.senderRoll || null,
           // Ensure participant names are preserved
           participantNames: {
-            [userRoll1]: primaryChat.participantNames?.[userRoll1] || users.find(u => u.roll === userRoll1)?.name || "Unknown",
-            [userRoll2]: primaryChat.participantNames?.[userRoll2] || users.find(u => u.roll === userRoll2)?.name || "Unknown"
-          }
+            [userRoll1]:
+              primaryChat.participantNames?.[userRoll1] ||
+              users.find((u) => u.roll === userRoll1)?.name ||
+              "Unknown",
+            [userRoll2]:
+              primaryChat.participantNames?.[userRoll2] ||
+              users.find((u) => u.roll === userRoll2)?.name ||
+              "Unknown",
+          },
         };
 
         await safeUpdate(ref(db, `p2pChats/${primaryChat.id}`), updateData);
@@ -1557,9 +1578,11 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
         // Clean up related data for duplicate chats
         for (const participant of chat.participants || []) {
           await set(ref(db, `unreadCounts/${participant}/${chat.id}`), null);
-          
+
           // Update active chat references if they were viewing this duplicate
-          const activeSnapshot = await get(ref(db, `activeChats/${participant}`));
+          const activeSnapshot = await get(
+            ref(db, `activeChats/${participant}`)
+          );
           if (activeSnapshot.val() === chat.id) {
             await set(ref(db, `activeChats/${participant}`), primaryChat.id);
           }
@@ -1578,7 +1601,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
       Object.entries(allRequests).forEach(async ([reqId, req]) => {
         if (
           ((req.fromRoll === userRoll1 && req.toRoll === userRoll2) ||
-           (req.fromRoll === userRoll2 && req.toRoll === userRoll1)) &&
+            (req.fromRoll === userRoll2 && req.toRoll === userRoll1)) &&
           req.status === "pending"
         ) {
           await safeUpdate(ref(db, `p2pChatRequests/${reqId}`), {
@@ -1587,7 +1610,9 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
         }
       });
 
-      toast.success(`Merged ${duplicatesToMerge.length + 1} chat threads into one!`);
+      toast.success(
+        `Merged ${duplicatesToMerge.length + 1} chat threads into one!`
+      );
       return primaryChat;
     } catch (error) {
       console.error("Error ensuring unique chat thread:", error);
@@ -1663,9 +1688,13 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
   if (!shouldRender) return null;
 
   return (
-    <div className={`fixed inset-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm z-[60] flex flex-col transition-all duration-300 ease-in-out transform ${
-      isAnimating ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
-    }`}>
+    <div
+      className={`fixed inset-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm z-[60] flex flex-col transition-all duration-300 ease-in-out transform ${
+        isAnimating
+          ? "opacity-100 translate-y-0 scale-100"
+          : "opacity-0 translate-y-4 scale-95"
+      }`}
+    >
       <style jsx>{`
         /* Custom scrollbar styling for the entire P2P chat */
         .p2p-scrollbar::-webkit-scrollbar {
@@ -1713,7 +1742,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
       `}</style>
       <div className="w-full h-full flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-3 sm:p-4 md:p-5 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
+        <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
           <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
             <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-sm relative">
               <i className="fas fa-comments text-white"></i>
@@ -1819,8 +1848,8 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
               {activeTab === "chats" ? (
                 <div className="p-2 sm:p-3 space-y-1 sm:space-y-2">
                   {/* New Chat Request */}
-                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 sm:p-4">
-                    <h3 className="text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100 mb-3">
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2 sm:p-3">
+                    <h3 className="text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100 mb-1">
                       Start New Chat
                     </h3>
                     <div className="flex gap-2 sm:gap-3">
@@ -1998,7 +2027,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
             {selectedChat ? (
               <>
                 {/* Chat Header */}
-                <div className="p-3 sm:p-4 md:p-5 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
+                <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
                   <div className="flex items-center gap-3 sm:gap-4">
                     {/* Back button for mobile */}
                     <button
@@ -2007,6 +2036,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                     >
                       <i className="fas fa-arrow-left text-gray-600 dark:text-gray-400 text-base"></i>
                     </button>
+                    {/* profile icon */}
                     <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base md:text-lg flex-shrink-0">
                       {toProperCase(
                         getOtherParticipant(selectedChat).name
@@ -2014,7 +2044,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                         getOtherParticipant(selectedChat).roll?.charAt(0)}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2">
                         <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base md:text-lg truncate">
                           {toProperCase(
                             getOtherParticipant(selectedChat).name
@@ -2064,7 +2094,8 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-2 sm:p-3 space-y-1 sm:space-y-2 min-h-0 p2p-scrollbar">
+                <div className="flex-1 overflow-y-auto p-2 min-h-0 p2p-scrollbar">
+                  {/* Button for older message */}
                   {showOlderMessages && (
                     <div className="text-center">
                       <button
@@ -2082,6 +2113,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                     </div>
                   )}
 
+                  {/* chat container */}
                   {messages.map((message) => {
                     const isOwnMessage = message.senderRoll === userRoll;
                     const messageStatus = getMessageStatus(
@@ -2090,12 +2122,13 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                     );
                     const swipeOffset = getSwipeOffset(message.id);
 
+                    //  individual chat
                     return (
                       <div
                         key={message.id}
                         className={`flex ${
                           isOwnMessage ? "justify-end " : "justify-start "
-                        } group relative mb-0.5`}
+                        } group relative mb-0.5 `}
                       >
                         {/* Reply icon that appears during swipe (mobile only) */}
                         {swipeOffset > 10 && (
@@ -2118,183 +2151,229 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                         )}
 
                         {/* Message Container with Action Buttons */}
-                        <div className={`flex items-start gap-2 ${isOwnMessage ? "flex-row-reverse" : "flex-row"}`}>
-                          
+                        <div
+                          className={`flex items-start gap-2 ${
+                            isOwnMessage ? "flex-row" : "flex-row-reverse"
+                          }`}
+                        >
                           {/* Action Buttons Column */}
-                          <div className={`flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 ${isOwnMessage ? "items-end" : "items-start"}`}>
+                          <div
+                            className={`flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 ${
+                              isOwnMessage ? "items-end" : "items-start"
+                            }`}
+                          >
                             {/* Reply Button */}
                             <button
                               onClick={() => handleReplyToMessage(message)}
-                              className="p-1.5 rounded-full bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-600 dark:text-gray-300 hover:scale-110 transition-all duration-200"
+                              className="p-1 rounded-full grid place-items-center  bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-600 dark:text-gray-300 hover:scale-110 transition-all duration-200"
                               title="Reply"
                             >
-                              <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
-                                <path d="M8.354 1.646a.5.5 0 0 1 0 .708L5.707 5H14.5a.5.5 0 0 1 0 1H5.707l2.647 2.646a.5.5 0 0 1-.708.708l-3.5-3.5a.5.5 0 0 1 0-.708l3.5-3.5a.5.5 0 0 1 .708 0z"/>
+                              <svg
+                                className="w-4 h-4"
+                                viewBox="0 0 16 16"
+                                fill="currentColor"
+                              >
+                                <path d="M8.354 1.646a.5.5 0 0 1 0 .708L5.707 5H14.5a.5.5 0 0 1 0 1H5.707l2.647 2.646a.5.5 0 0 1-.708.708l-3.5-3.5a.5.5 0 0 1 0-.708l3.5-3.5a.5.5 0 0 1 .708 0z" />
                               </svg>
                             </button>
 
                             {/* React Button */}
                             <button
-                              onClick={() => handleEmojiPanelChange(message.id, !longPressState.activeMessagePanel)}
-                              className="p-1.5 rounded-full bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-600 dark:text-gray-300 hover:scale-110 transition-all duration-200"
+                              onClick={() =>
+                                handleEmojiPanelChange(
+                                  message.id,
+                                  !longPressState.activeMessagePanel
+                                )
+                              }
+                              className="p-1 grid place-items-center rounded-full bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-600 dark:text-gray-300 hover:scale-110 transition-all duration-200"
                               title="Add reaction"
                             >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
                               </svg>
                             </button>
                           </div>
 
                           {/* Message Bubble */}
-                        <div
-                          className={`max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[55%] px-3 py-2 rounded-2xl relative transition-transform duration-150 shadow-sm ${
-                            isOwnMessage
-                              ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white "
-                              : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 "
-                          }`}
-                          style={{
-                            transform: `translateX(${swipeOffset}px)`,
-                            touchAction: "pan-y", // Allow vertical scrolling but capture horizontal swipes
-                          }}
-                          onTouchStart={(e) => {
-                            // Don't handle if touch is on emoji panel
-                            if (e.target.closest('[data-emoji-panel="true"]')) {
-                              return;
-                            }
-                            handleTouchStart(e, message);
-                            handleLongPressStart(e, message);
-                          }}
-                          onTouchMove={(e) => {
-                            // Don't handle if touch is on emoji panel
-                            if (e.target.closest('[data-emoji-panel="true"]')) {
-                              return;
-                            }
-                            handleTouchMove(e, message);
-                            // Cancel long press on move
-                            if (longPressState.timer) {
-                              clearTimeout(longPressState.timer);
-                              setLongPressState(prev => ({ ...prev, timer: null }));
-                            }
-                          }}
-                          onTouchEnd={(e) => {
-                            // Don't handle if touch is on emoji panel
-                            if (e.target.closest('[data-emoji-panel="true"]')) {
-                              return;
-                            }
-                            handleTouchEnd(e, message);
-                            handleLongPressEnd(e, message);
-                          }}
-                          onTouchCancel={(e) => {
-                            // Don't handle if touch is on emoji panel
-                            if (e.target.closest('[data-emoji-panel="true"]')) {
-                              return;
-                            }
-                            handleLongPressCancel(e, message);
-                          }}
-                        >
-                          {/* Show replied message context */}
-                          {message.replyTo && (
-                            <div
-                              className={`mb-1.5 p-1.5 rounded border-l-4 ${
-                                isOwnMessage
-                                  ? "bg-indigo-700/50 border-indigo-300"
-                                  : "bg-gray-300 dark:bg-gray-600 border-gray-500"
-                              }`}
-                            >
-                              <p
-                                className={`text-xs font-medium ${
-                                  isOwnMessage
-                                    ? "text-indigo-200"
-                                    : "text-gray-600 dark:text-gray-300"
-                                }`}
-                              >
-                                {message.replyTo.senderRoll === userRoll
-                                  ? "You"
-                                  : toProperCase(message.replyTo.senderName)}
-                              </p>
-                              <p
-                                className={`text-xs mt-.5 truncate ${
-                                  isOwnMessage
-                                    ? "text-indigo-100"
-                                    : "text-gray-500 dark:text-gray-400"
-                                }`}
-                              >
-                                {message.replyTo.text}
-                              </p>
-                            </div>
-                          )}
-
-                          {/* Message text */}
-                          <p className="text-sm sm:text-base break-words leading-relaxed"
-                             style={{ userSelect: 'text', WebkitUserSelect: 'text' }}>
-                            {message.text}
-                          </p>
-
-                          {/* Link previews and embeds */}
-                          {(() => {
-                            const detectedLinks = detectLinks(message.text);
-                            if (detectedLinks.length === 0) return null;
-
-                            return detectedLinks.map((link, index) => {
-                              // Render YouTube embed
+                          <div
+                            className={`w-full p-1 rounded-lg relative transition-transform duration-150 shadow-sm ${
+                              isOwnMessage
+                                ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white "
+                                : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 "
+                            }`}
+                            style={{
+                              transform: `translateX(${swipeOffset}px)`,
+                              touchAction: "pan-y", // Allow vertical scrolling but capture horizontal swipes
+                            }}
+                            onTouchStart={(e) => {
+                              // Don't handle if touch is on emoji panel
                               if (
-                                link.platform === SUPPORTED_PLATFORMS.YOUTUBE &&
-                                link.videoId
+                                e.target.closest('[data-emoji-panel="true"]')
                               ) {
+                                return;
+                              }
+                              handleTouchStart(e, message);
+                              handleLongPressStart(e, message);
+                            }}
+                            onTouchMove={(e) => {
+                              // Don't handle if touch is on emoji panel
+                              if (
+                                e.target.closest('[data-emoji-panel="true"]')
+                              ) {
+                                return;
+                              }
+                              handleTouchMove(e, message);
+                              // Cancel long press on move
+                              if (longPressState.timer) {
+                                clearTimeout(longPressState.timer);
+                                setLongPressState((prev) => ({
+                                  ...prev,
+                                  timer: null,
+                                }));
+                              }
+                            }}
+                            onTouchEnd={(e) => {
+                              // Don't handle if touch is on emoji panel
+                              if (
+                                e.target.closest('[data-emoji-panel="true"]')
+                              ) {
+                                return;
+                              }
+                              handleTouchEnd(e, message);
+                              handleLongPressEnd(e, message);
+                            }}
+                            onTouchCancel={(e) => {
+                              // Don't handle if touch is on emoji panel
+                              if (
+                                e.target.closest('[data-emoji-panel="true"]')
+                              ) {
+                                return;
+                              }
+                              handleLongPressCancel(e, message);
+                            }}
+                          >
+                            {/* Show replied message context */}
+                            {message.replyTo && (
+                              <div
+                                className={`p-1 rounded-md border-l-4 ${
+                                  isOwnMessage
+                                    ? "bg-indigo-700/50 border-indigo-300"
+                                    : "bg-gray-300 dark:bg-gray-600 border-gray-500"
+                                }`}
+                              >
+                                <p
+                                  className={`text-xs font-medium ${
+                                    isOwnMessage
+                                      ? "text-indigo-200"
+                                      : "text-gray-600 dark:text-gray-300"
+                                  }`}
+                                >
+                                  {message.replyTo.senderRoll === userRoll
+                                    ? "You"
+                                    : toProperCase(message.replyTo.senderName)}
+                                </p>
+                                <p
+                                  className={`text-xs mt-.5 truncate ${
+                                    isOwnMessage
+                                      ? "text-indigo-100"
+                                      : "text-gray-500 dark:text-gray-400"
+                                  }`}
+                                >
+                                  {message.replyTo.text}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Message text */}
+                            <p
+                              className="text-sm sm:text-base px-1 break-words leading-relaxed"
+                              style={{
+                                userSelect: "text",
+                                WebkitUserSelect: "text",
+                              }}
+                            >
+                              {message.text}
+                            </p>
+
+                            {/* Link previews and embeds */}
+                            {(() => {
+                              const detectedLinks = detectLinks(message.text);
+                              if (detectedLinks.length === 0) return null;
+
+                              return detectedLinks.map((link, index) => {
+                                // Render YouTube embed
+                                if (
+                                  link.platform ===
+                                    SUPPORTED_PLATFORMS.YOUTUBE &&
+                                  link.videoId
+                                ) {
+                                  return (
+                                    <YouTubeEmbed
+                                      key={`youtube-${index}`}
+                                      videoId={link.videoId}
+                                      isOwnMessage={isOwnMessage}
+                                    />
+                                  );
+                                }
+
+                                // Render link preview for other supported platforms
                                 return (
-                                  <YouTubeEmbed
-                                    key={`youtube-${index}`}
-                                    videoId={link.videoId}
+                                  <LinkPreview
+                                    key={`link-${index}`}
+                                    link={link}
                                     isOwnMessage={isOwnMessage}
                                   />
                                 );
-                              }
+                              });
+                            })()}
 
-                              // Render link preview for other supported platforms
-                              return (
-                                <LinkPreview
-                                  key={`link-${index}`}
-                                  link={link}
-                                  isOwnMessage={isOwnMessage}
-                                />
-                              );
-                            });
-                          })()}
-
-                          <div className="flex items-center justify-between mt-.5">
-                            <p
-                              className={`text-xs ${
-                                isOwnMessage
-                                  ? "text-indigo-100"
-                                  : "text-gray-500 dark:text-gray-400"
-                              }`}
-                            >
-                              {getRelativeTime(message.timestamp)}
-                            </p>
-                            {isOwnMessage && (
-                              <div
-                                className={`${
+                            <div className="flex items-center justify-between">
+                              <p
+                                className={`text-xs pl-1 ${
                                   isOwnMessage
-                                    ? "text-indigo-100"
-                                    : "text-gray-500 dark:text-gray-400"
+                                    ? "text-indigo-100 "
+                                    : "text-gray-500 dark:text-gray-400 "
                                 }`}
                               >
-                                {renderMessageStatus(messageStatus)}
-                              </div>
-                            )}
-                          </div>
+                                {getRelativeTime(message.timestamp)}
+                              </p>
+                              {isOwnMessage && (
+                                <div
+                                  className={`${
+                                    isOwnMessage
+                                      ? "text-indigo-100"
+                                      : "text-gray-500 dark:text-gray-400"
+                                  }`}
+                                >
+                                  {renderMessageStatus(messageStatus)}
+                                </div>
+                              )}
+                            </div>
 
-                          {/* Message Reactions - positioned at bottom right corner of this message bubble */}
-                          <MessageReactions
-                            messageId={message.id}
-                            chatPath={`p2pChats/${selectedChat.id}`}
-                            currentUserRoll={userRoll}
-                            isOwnMessage={isOwnMessage}
-                            showEmojiPanel={longPressState.activeMessagePanel === message.id}
-                            onShowEmojiPanelChange={(isOpen) => handleEmojiPanelChange(message.id, isOpen)}
-                          />
-                        </div>
-                        
+                            {/* Message Reactions - positioned at bottom right corner of this message bubble */}
+                            <MessageReactions
+                              messageId={message.id}
+                              chatPath={`p2pChats/${selectedChat.id}`}
+                              currentUserRoll={userRoll}
+                              isOwnMessage={isOwnMessage}
+                              showEmojiPanel={
+                                longPressState.activeMessagePanel === message.id
+                              }
+                              onShowEmojiPanelChange={(isOpen) =>
+                                handleEmojiPanelChange(message.id, isOpen)
+                              }
+                            />
+                          </div>
                         </div>
                       </div>
                     );
