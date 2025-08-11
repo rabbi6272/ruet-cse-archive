@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { ref, update, get, onValue } from "firebase/database";
-import { users } from "@/lib/mino.js";
+import { users } from "@/db/students_info.js";
 
 // Popular emoji reactions like WhatsApp
 const EMOJI_REACTIONS = [

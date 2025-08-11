@@ -5,7 +5,7 @@ import hljs from "highlight.js";
 import "highlight.js/styles/monokai.css";
 import toast, { Toaster } from "react-hot-toast";
 import CommentSection from "./CommentSection";
-import { users } from "@/lib/mino";
+import { users } from "@/db/students_info";
 
 function getNameFromRoll(roll) {
   const user = users.find((u) => u.roll === roll);

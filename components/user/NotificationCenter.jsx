@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { ref, onValue, off, update, remove } from "firebase/database";
 import { formatDistanceToNow } from "date-fns";
-import { users } from "@/lib/mino";
+import { users } from "@/db/students_info";
 import Link from "next/link";
 
 function getNameFromRoll(roll) {

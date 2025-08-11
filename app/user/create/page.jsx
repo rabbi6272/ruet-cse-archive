@@ -1,11 +1,10 @@
-import { CodeSnippetForm } from "@/components/user/form";
+import { AddCodeSnippetForm } from "@/components/user/add-code-snippet-form";
 
 export default function Home() {
   return (
     <>
       <br />
-      <br />
-      <CodeSnippetForm />
+      <AddCodeSnippetForm />
       <br />
       <br />
     </>

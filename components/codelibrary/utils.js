@@ -1,4 +1,4 @@
-import { users } from "@/lib/mino";
+import { users } from "@/db/students_info";
 
 // Utility function to get name from roll number
 export function getNameFromRoll(roll) {

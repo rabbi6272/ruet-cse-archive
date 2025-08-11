@@ -11,7 +11,7 @@ import {
   query,
   orderByChild,
 } from "firebase/database";
-import { users } from "@/lib/mino";
+import { users } from "@/db/students_info";
 import { formatDistanceToNow } from "date-fns";
 import { addNutrinos } from "@/lib/nutrinos-system";
 import toast from "react-hot-toast";
@@ -67,7 +67,7 @@ const CommentSection = ({
         if (userData) {
           setUser({
             roll: userData.roll,
-            name: userData.name
+            name: userData.name,
           });
         }
       } else {

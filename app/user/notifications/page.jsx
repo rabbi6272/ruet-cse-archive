@@ -6,7 +6,7 @@ import { ref, onValue, off } from "firebase/database";
 import { formatDistanceToNow } from "date-fns";
 
 import { db } from "@/lib/firebase";
-import { users } from "@/lib/mino";
+import { users } from "@/db/students_info";
 
 import Loading from "../../loading";
 

@@ -17,7 +17,7 @@ import {
   serverTimestamp,
 } from "firebase/database";
 import toast from "react-hot-toast";
-import { users } from "@/lib/mino";
+import { users } from "@/db/students_info";
 import EmojiPanel from "@/components/ui/EmojiPanel";
 import MessageReactions from "@/components/ui/MessageReactions";
 

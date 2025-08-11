@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { users } from "@/lib/mino";
+import { users } from "@/db/students_info";
 import { secureStorage } from "@/lib/secure-storage";
 import AuthUtils from "@/lib/auth-utils-secure";
-
-import toast, { Toaster } from "react-hot-toast";
+import { toast } from "react-hot-toast";
 
 export function LoginForm() {
   const router = useRouter();
@@ -55,7 +54,7 @@ export function LoginForm() {
 
       // Set secure localStorage with 24-hour expiration
       const expiryTime = new Date().getTime() + 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-      
+
       const userData = {
         roll: user.roll,
         name: user.name,
@@ -64,14 +63,16 @@ export function LoginForm() {
 
       // Store data securely using encryption instead of plain text
       const success = secureStorage.setSecureUserData(userData);
-      
+
       if (!success) {
         toast.error("Failed to secure user data");
         setIsLoading(false);
         return;
       }
 
-      console.log("🔒 User data stored securely. Original format would have been:");
+      console.log(
+        "🔒 User data stored securely. Original format would have been:"
+      );
       console.log("Plain text (INSECURE):", userData);
       console.log("Now stored as encrypted hashes for security ✅");
 
@@ -92,7 +93,6 @@ export function LoginForm() {
 
   return (
     <div className="flex items-center justify-center ">
-      <Toaster />
       <div className="bg-white dark:bg-slate-700 text-gray-800 dark:text-gray-200 p-5 lg:p-8 rounded-lg shadow-lg w-[95%] lg:max-w-md">
         <h2 className="text-3xl font-bold text-center tracking-wide mb-3 lg:mb-5">
           Login

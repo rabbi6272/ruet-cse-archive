@@ -201,7 +201,7 @@ const Dashboard = () => {
           notificationSound.playNotificationSound().catch(console.error);
         }
 
-        setPrevPendingChatRequests(pendingCount);  // Fix: Set previous count to current count
+        setPrevPendingChatRequests(pendingCount); // Fix: Set previous count to current count
         setPendingChatRequests(pendingCount);
       });
     } catch (error) {
@@ -230,7 +230,7 @@ const Dashboard = () => {
           notificationSound.playNotificationSound().catch(console.error);
         }
 
-        setPrevUnreadMessagesCount(totalUnread);  // Fix: Set previous count to current count
+        setPrevUnreadMessagesCount(totalUnread); // Fix: Set previous count to current count
         setUnreadMessagesCount(totalUnread);
       });
     } catch (error) {
@@ -254,15 +254,19 @@ const Dashboard = () => {
 
       onValue(unreadRef, (snapshot) => {
         const count = snapshot.val() || 0;
-        console.log(`[DASHBOARD] Group unread count changed: ${prevGroupUnreadCount} -> ${count}`);
+        console.log(
+          `[DASHBOARD] Group unread count changed: ${prevGroupUnreadCount} -> ${count}`
+        );
 
         // Play sound notification if count increased (new group message received)
         if (count > prevGroupUnreadCount && prevGroupUnreadCount !== 0) {
-          console.log(`[DASHBOARD] Playing notification sound for group message`);
+          console.log(
+            `[DASHBOARD] Playing notification sound for group message`
+          );
           notificationSound.playNotificationSound().catch(console.error);
         }
 
-        setPrevGroupUnreadCount(count);  // Fix: Set previous count to current count
+        setPrevGroupUnreadCount(count); // Fix: Set previous count to current count
         setGroupUnreadCount(count);
       });
     } catch (error) {
@@ -424,16 +428,11 @@ const Dashboard = () => {
     );
   }
 
-  const handleNewSnippet = () => {
-    router.push("/user/create"); // Or your new snippet creation route
-  };
-
   return (
     <div className="min-h-screen py-4 px-4">
-      <Toaster />
       <div className="w-full lg:max-w-6xl mx-auto">
         {/* User Profile Section */}
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl p-4 lg:p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl p-2 lg:p-6 mb-6">
           {/* Main Profile Header */}
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-6">
             {/* Left Section - User Info */}
@@ -601,8 +600,8 @@ const Dashboard = () => {
               Quick Actions
             </h3>
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-              <button
-                onClick={handleNewSnippet}
+              <Link
+                href="/user/create"
                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg transform hover:scale-105"
               >
                 <i className="fas fa-plus text-sm"></i>
@@ -610,7 +609,7 @@ const Dashboard = () => {
                   Add Codesnippet
                 </span>
                 <span className="sm:hidden text-sm font-medium">Add</span>
-              </button>
+              </Link>
 
               <Link
                 href="/contact&help/help"
@@ -662,8 +661,8 @@ const Dashboard = () => {
               </Link>
 
               {/* Secure Logout Button */}
-              <LogoutButton 
-                variant="danger" 
+              <LogoutButton
+                variant="danger"
                 className="px-4 py-3 text-sm font-medium shadow-md hover:shadow-lg transform hover:scale-105"
               >
                 <span className="hidden sm:inline">Logout</span>
@@ -942,17 +941,26 @@ const Dashboard = () => {
         {/* Group Chat Bubble */}
         <button
           onClick={async () => {
-            console.log(`[DASHBOARD] Opening group chat, current unread count: ${groupUnreadCount}`);
+            console.log(
+              `[DASHBOARD] Opening group chat, current unread count: ${groupUnreadCount}`
+            );
             setIsGroupChatOpen(true);
-            
+
             // Clear unread count when opening group chat
             if (user?.roll) {
               try {
                 const userGroup = getUserGroup(user.roll);
                 if (userGroup && groupUnreadCount > 0) {
-                  console.log(`[DASHBOARD] Clearing unread count for group ${userGroup.id}`);
-                  const unreadRef = ref(db, `groupUnreadCounts/${userGroup.id}/${user.roll}`);
-                  await update(ref(db, `groupUnreadCounts/${userGroup.id}`), { [user.roll]: 0 });
+                  console.log(
+                    `[DASHBOARD] Clearing unread count for group ${userGroup.id}`
+                  );
+                  const unreadRef = ref(
+                    db,
+                    `groupUnreadCounts/${userGroup.id}/${user.roll}`
+                  );
+                  await update(ref(db, `groupUnreadCounts/${userGroup.id}`), {
+                    [user.roll]: 0,
+                  });
                   console.log(`[DASHBOARD] Unread count cleared successfully`);
                 }
                 setGroupUnreadCount(0);
@@ -968,14 +976,14 @@ const Dashboard = () => {
           {/* Group chat icon */}
           <div className="relative">
             <i className="fas fa-users text-xl sm:text-2xl filter drop-shadow-sm"></i>
-            
+
             {/* Notification badge - only show when there are unread messages */}
             {groupUnreadCount > 0 && (
               <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[1.25rem] h-5 px-1 flex items-center justify-center shadow-lg border-2 border-white animate-pulse">
                 {groupUnreadCount > 9 ? "9+" : groupUnreadCount}
               </span>
             )}
-            
+
             {/* Enhanced Online indicator with accurate presence detection */}
             <div className="absolute -bottom-1 -right-1 flex items-center justify-center">
               <div className="relative">
@@ -994,7 +1002,8 @@ const Dashboard = () => {
             </div>
             {groupUnreadCount > 0 && (
               <div className="text-xs text-yellow-300 mt-2 text-center font-medium">
-                � {groupUnreadCount} new message{groupUnreadCount > 1 ? "s" : ""}!
+                � {groupUnreadCount} new message
+                {groupUnreadCount > 1 ? "s" : ""}!
               </div>
             )}
             <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900/95"></div>
