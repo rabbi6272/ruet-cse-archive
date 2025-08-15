@@ -4,7 +4,7 @@ import { ResourceCardLinks } from "./resource-card-links";
 // Server component for static card structure
 export function ResourceCard({ id, title, description, image, links }) {
   return (
-    <div className="resource-card mx-auto lg:max-w-[350px] md:max-w-[300px] max-w-[290px] bg-white dark:bg-[#071a26] border border-gray-200 dark:border-gray-900 rounded-lg shadow-md">
+    <div className="resource-card mx-auto lg:max-w-[350px] md:max-w-[300px] max-w-full bg-white dark:bg-[#071a26] border border-gray-200 dark:border-gray-900 rounded-lg shadow-md">
       <Image
         className="rounded-t-lg w-full h-48 object-cover"
         src={image}

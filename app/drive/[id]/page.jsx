@@ -81,19 +81,16 @@ export default function DrivePage({ params }) {
       <br />
 
       <div className={lato.className + " px-4 lg:px-6"}>
-        <div className="bg-[#ffffff78] dark:bg-gray-900 px-4 lg:px-6 py-8 rounded-lg shadow-md">
+        <div className="bg-[#ffffff78] dark:bg-[#071a26] px-4 lg:px-6 py-8 rounded-lg shadow-md">
           <div className="mx-auto ">
             {/* Breadcrumb Navigation */}
             {breadcrumb.length > 0 && (
-              <nav
-                className="mb-6 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
-                aria-label="Breadcrumb"
-              >
+              <nav className="mb-6 p-1" aria-label="Breadcrumb">
                 <ol className="flex items-center flex-wrap space-x-1 text-sm text-gray-600 dark:text-gray-400">
                   <li>
                     <Link
                       href="/drive"
-                      className="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                      className="text-[12px] lg:text-[13px]  flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                       <i className="fas fa-home mr-1"></i>
                       Drive
@@ -103,14 +100,14 @@ export default function DrivePage({ params }) {
                     <li key={folder.id} className="flex items-center">
                       <i className="fas fa-chevron-right mx-1 text-gray-400 text-xs"></i>
                       {index === breadcrumb.length - 1 ? (
-                        <span className="font-medium text-gray-900 dark:text-gray-100 px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded">
+                        <span className="text-[12px] lg:text-[13px] font-medium text-gray-900 dark:text-gray-100 px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded">
                           <i className="fas fa-folder mr-1 text-blue-600 dark:text-blue-400"></i>
                           {folder.name}
                         </span>
                       ) : (
                         <Link
                           href={`/drive/${folder.id}`}
-                          className="flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className="text-[12px] lg:text-[13px] flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                         >
                           <i className="fas fa-folder mr-1"></i>
                           {folder.name}
@@ -162,13 +159,13 @@ export default function DrivePage({ params }) {
                         {file.mimeType.includes("pdf") && (
                           <i className="fas fa-file-pdf text-red-500  "></i>
                         )}
-                        {file.mimeType.includes("document") && (
+                        {file.mimeType.includes("documentml") && (
                           <i className="fas fa-file-word text-blue-500  "></i>
                         )}
-                        {file.mimeType.includes("spreadsheet") && (
+                        {file.mimeType.includes("spreadsheetml") && (
                           <i className="fas fa-file-excel text-green-500  "></i>
                         )}
-                        {file.mimeType.includes("presentation") && (
+                        {file.mimeType.includes("presentationml") && (
                           <i className="fas fa-file-powerpoint text-orange-500  "></i>
                         )}
                         {file.mimeType.includes("folder") && (
@@ -181,19 +178,17 @@ export default function DrivePage({ params }) {
                         )}
                       </div>
 
-                      <div className="">
-                        <h3 className="font-semibold text-gray-700 dark:text-gray-300 text-wrap truncate">
-                          {file.name}
-                        </h3>
-                      </div>
+                      <h3 className="font-semibold text-lg text-gray-700 dark:text-gray-300 text-wrap truncate">
+                        {file.name}
+                      </h3>
                     </div>
 
                     {file.webContentLink && (
-                      <div className="mt-2 w-full">
-                        <div className="flex items-center justify-between gap-4">
+                      <div className="mt-2 w-full px-6 lg:px-8">
+                        <div className="flex items-center justify-between gap-2 lg:gap-4">
                           <Link
                             href={file.webContentLink}
-                            className="flex-1 border-2 border-gray-500 hover:scale-95 active:scale-95 transition-transform duration-300 text-gray-700 dark:text-gray-200 px-1 py-1 rounded-md text-center cursor-pointer"
+                            className="flex-1 text-[12px] border-2 border-gray-500 active:scale-95 transition-transform duration-300 text-gray-700 dark:text-gray-200 px-1 py-1.5 rounded-full text-center cursor-pointer"
                           >
                             <i className="fas fa-download mr-1 text-xs font-medium"></i>
                             Download
@@ -204,9 +199,9 @@ export default function DrivePage({ params }) {
                                 previewID === file.id ? null : file.id
                               )
                             }
-                            className="flex-1 border-2 border-gray-500 hover:scale-95 active:scale-95 transition-transform duration-300 text-gray-700 dark:text-gray-200 px-1 py-1 rounded-md text-center cursor-pointer"
+                            className="flex-1 text-[12px] border-2 border-gray-500 active:scale-95 transition-transform duration-300 text-gray-700 dark:text-gray-200 px-1 py-1.5 rounded-full text-center cursor-pointer"
                           >
-                            <i className="fas fa-eye mr-1 text-xs font-medium"></i>
+                            <i className="fas fa-eye text-xs mr-1 font-medium"></i>
                             {file.mimeType.includes("mp4") ? "Play" : "Preview"}
                           </button>
                         </div>

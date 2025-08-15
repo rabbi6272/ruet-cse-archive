@@ -2,7 +2,7 @@
 export function ShelfHeader() {
   return (
     <div className="text-center mb-8">
-      <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold mb-4">
+      <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-4 text-nowrap">
         <span className="text-transparent bg-clip-text bg-gradient-to-r to-gray-700 from-gray-500 dark:to-neutral-400 dark:from-neutral-200">
           Digital Book Shelf
         </span>

@@ -10,7 +10,7 @@ export function ShelfCardLinks({ links }) {
         <Link
           key={index}
           href={link.url || "#"}
-          className={`w-full rounded px-4 py-2 text-center font-semibold transition-all duration-200 transform hover:scale-105 ${
+          className={`w-full rounded-full px-4 py-2 text-[14px] text-center font-medium transition-all duration-200 transform hover:scale-105 ${
             link.url !== ""
               ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg"
               : "bg-gray-600 hover:bg-gray-700 text-gray-200 cursor-not-allowed"
