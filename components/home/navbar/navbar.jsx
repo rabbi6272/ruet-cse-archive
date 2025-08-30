@@ -3,14 +3,15 @@ import Image from "next/image";
 
 import { inter } from "@/app/ui/fonts";
 
-import { LoginButton, MobileNavbarLinks } from "./mobile-navbar-links";
+import { MobileNavbarLinks } from "./mobile-navbar-links";
+import { LoginButton } from "./login-button";
 
 export function Navbar() {
   return (
     <nav
       className={`${inter.className} bg-[#ffffff]/75 dark:bg-[#071a26]/75 backdrop-blur-md shadow-lg border-b border-gray-200/20 dark:border-gray-700/20 font-normal text-md navbar  sticky top-0 w-full z-50`}
     >
-      <div className="w-full mx-auto px-3 lg:px-10 flex items-center justify-between h-[70px]">
+      <div className="w-full mx-auto px-3 md:px-5 lg:px-8 xl:px-10 flex items-center justify-between h-[70px]">
         {/* <!-- Logo  --> */}
         <div className="flex-shrink-0 flex items-center">
           <Link href="/" className="flex items-center">
@@ -39,7 +40,7 @@ function DesktopNavbarLinks() {
         <div className="nav-item relative">
           <Link
             href="/resources"
-            className="text-gray-700 dark:text-gray-200 hover:text-indigo-600 hover:bg-gray-200 dark:hover:bg-gray-800 px-3.5 py-2.5 rounded-md text-sm font-medium flex items-center transition-all duration-500"
+            className="text-gray-700 dark:text-gray-200 hover:text-blue-500  hover:bg-gray-300 dark:hover:bg-transparent px-3.5 py-2.5 rounded-full text-sm font-medium flex items-center transition-all duration-500"
           >
             Resources
           </Link>
@@ -49,7 +50,7 @@ function DesktopNavbarLinks() {
         <div className="nav-item relative">
           <Link
             href="/shelf"
-            className="text-gray-700 dark:text-gray-200 hover:text-indigo-600 hover:bg-gray-200 dark:hover:bg-gray-800 px-3.5 py-2.5 rounded-md text-sm font-medium flex items-center transition-all duration-500"
+            className="text-gray-700 dark:text-gray-200 hover:text-blue-500  hover:bg-gray-300 dark:hover:bg-transparent px-3.5 py-2.5 rounded-full text-sm font-medium flex items-center transition-all duration-500"
           >
             Book Shelf
           </Link>
@@ -59,7 +60,7 @@ function DesktopNavbarLinks() {
         <div className="nav-item relative">
           <Link
             href="/codelibrary"
-            className="text-gray-700 dark:text-gray-200 hover:text-indigo-600 hover:bg-gray-200 dark:hover:bg-gray-800 px-3.5 py-2.5 rounded-md text-sm font-medium flex items-center transition-all duration-500"
+            className="text-gray-700 dark:text-gray-200 hover:text-blue-500  hover:bg-gray-300 dark:hover:bg-transparent px-3.5 py-2.5 rounded-full text-sm font-medium flex items-center transition-all duration-500"
           >
             Code Library
           </Link>
@@ -69,7 +70,7 @@ function DesktopNavbarLinks() {
         <div className="nav-item relative">
           <Link
             href="/alumni"
-            className="text-gray-700 dark:text-gray-200 hover:text-indigo-600 hover:bg-gray-200 dark:hover:bg-gray-800 px-3.5 py-2.5 rounded-md text-sm font-medium flex items-center transition-all duration-500"
+            className="text-gray-700 dark:text-gray-200 hover:text-blue-500  hover:bg-gray-300 dark:hover:bg-transparent px-3.5 py-2.5 rounded-full text-sm font-medium flex items-center transition-all duration-500"
           >
             Global Ruet
           </Link>
@@ -77,45 +78,45 @@ function DesktopNavbarLinks() {
 
         {/* <!-- Nav Item 5 --> */}
         <div className="nav-item relative">
-          <button className="text-gray-700 dark:text-gray-200 hover:text-indigo-600 hover:bg-gray-200 dark:hover:bg-gray-800 px-3.5 py-2.5 rounded-md text-sm font-medium flex items-center transition-all duration-500">
+          <button className="text-gray-700 dark:text-gray-200 hover:text-blue-500  hover:bg-gray-300 dark:hover:bg-transparent px-3.5 py-2.5 rounded-full text-sm font-medium flex items-center transition-all duration-500">
             Contact & Help
             <i className="fas fa-chevron-down ml-1 text-xs"></i>
           </button>
-          <div className="dropdown morphic-effect absolute left-0 mt-3 w-44 rounded-md shadow-lg bg-white dark:bg-[#071a26] z-50">
+          <div className="dropdown bg-[#ffffff]/90 dark:bg-[#071a26]/90 backdrop-blur-lg shadow-lg absolute left-0 mt-4 py-1 w-44 rounded-lg z-50">
             <Link
               href="/contact&help/help"
-              className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-indigo-600"
+              className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-[#071a26]/90 hover:text-blue-600 dark:hover:text-blue-500 "
             >
               Get Help
             </Link>
             <Link
               href="/contact&help/doubts"
-              className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-indigo-600"
+              className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-[#071a26]/90 hover:text-blue-600 dark:hover:text-blue-500 "
             >
               Browse Doubts
             </Link>
             <Link
               href="/contact&help/statistics"
-              className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-indigo-600"
+              className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-[#071a26]/90 hover:text-blue-600 dark:hover:text-blue-500"
             >
               Statistics
             </Link>
             <Link
               href="https://www.ruet.ac.bd/"
               target="_blank"
-              className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-indigo-600"
+              className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-[#071a26]/90 hover:text-blue-600 dark:hover:text-blue-500"
             >
               Official Website
             </Link>
             <Link
               href=""
-              className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-indigo-600"
+              className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-[#071a26]/90 hover:text-blue-600 dark:hover:text-blue-500"
             >
               Facebook Page
             </Link>
             <Link
               href="/contact&help/developers"
-              className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-indigo-600"
+              className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-[#071a26]/90 hover:text-blue-600 dark:hover:text-blue-500"
             >
               Contributors
             </Link>
@@ -124,7 +125,7 @@ function DesktopNavbarLinks() {
 
         {/* <!-- Nav Item 6 --> */}
         <div className="nav-item relative">
-          <button className="text-gray-700 dark:text-gray-200 hover:text-indigo-600 hover:bg-gray-200 dark:hover:bg-gray-800 px-3.5 py-2.5 rounded-md text-sm font-medium flex items-center transition-all duration-500">
+          <button className="text-gray-700 dark:text-gray-200 hover:text-blue-500 hover:bg-gray-300 dark:hover:bg-transparent px-3.5 py-2.5 rounded-full text-sm font-medium flex items-center transition-all duration-500">
             Apps
           </button>
         </div>

@@ -77,8 +77,12 @@ export function FooterComponent() {
                 className={`flex flex-wrap text-sm text-gray-600 dark:text-gray-200 flex-col space-y-4 `}
               >
                 <li className={`me-4 last:mr-0 md:mr-6 `}>
-                  <Link href="#" className={`hover:underline `}>
-                    Github
+                  <Link
+                    href="https://www.facebook.com/RUETOfficial/"
+                    className={`hover:underline `}
+                    target="_blank"
+                  >
+                    Facebook
                   </Link>
                 </li>
                 <li className={`me-4 last:mr-0 md:mr-6 `}>
@@ -118,9 +122,7 @@ export function FooterComponent() {
           data-testid="footer-divider"
           className={`my-6 w-full border-gray-700 dark:border-gray-200 sm:mx-auto lg:my-8 `}
         ></hr>
-        <div
-          className={`w-full text-center sm:flex sm:items-center sm:justify-between `}
-        >
+        <div className={`w-full text-center`}>
           <div
             data-testid="flowbite-footer-copyright"
             className={`text-sm text-gray-600 dark:text-gray-200 sm:text-center `}
@@ -132,35 +134,6 @@ export function FooterComponent() {
             >
               Avengers (sec c)
             </Link>
-          </div>
-          <div className={`mt-4 flex  space-x-6 sm:mt-0 justify-center `}>
-            <a
-              target="_blank"
-              href=""
-              className="hover:scale-110 transition-transform duration-300"
-            >
-              <i
-                className={`fa-brands fa-facebook text-[#1877F2] text-2xl `}
-              ></i>
-            </a>
-            <a
-              target="_blank"
-              href=""
-              className="hover:scale-110 transition-transform duration-300"
-            >
-              <i
-                className={`fa-brands fa-instagram text-[#E4405F] text-2xl `}
-              ></i>
-            </a>
-            <a
-              target="_blank"
-              href=""
-              className="hover:scale-110 transition-transform duration-300"
-            >
-              <i
-                className={`fa-brands fa-twitter text-[#1DA1F2] text-2xl `}
-              ></i>
-            </a>
           </div>
         </div>
       </div>

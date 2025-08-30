@@ -6,12 +6,7 @@
   --morphic-dark: #071a26;
   --morphic-light: #ffffffe6;
 }
-.glass-card-container{
-  background-image: url("../public/images/bg.jpg");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
+
 
 .glass-card {
   background: rgba(0, 0, 0, 0.3);

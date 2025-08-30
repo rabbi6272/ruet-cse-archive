@@ -2,10 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+
 import { users } from "@/db/students_info";
 import { secureStorage } from "@/lib/secure-storage";
 import AuthUtils from "@/lib/auth-utils-secure";
 import { toast } from "react-hot-toast";
+
+import bg from "@/public/images/bg.jpg";
 
 export function LoginForm() {
   const router = useRouter();
@@ -92,9 +96,12 @@ export function LoginForm() {
   };
 
   return (
-    <div className="glass-card-container flex items-center justify-center min-h-screen min-w-screen w-screen h-screen">
+    <div className="glass-card-container flex items-center justify-center w-full h-dvh overflow-hidden ">
+      <div className="fixed top-0 w-full h-full">
+        <Image src={bg} layout="fill" objectFit="cover" />
+      </div>
       <div className="glass-card backdrop-blur-lg  p-5 lg:p-8 rounded-xl w-[95%] lg:max-w-md">
-        <h2 className="text-3xl font-bold text-center text-gray-300 tracking-wide mb-3 lg:mb-5">
+        <h2 className="text-3xl font-bold text-center text-gray-300 tracking-wide mb-3 lg:mb-4">
           Login
         </h2>
         <form onSubmit={handleSubmit}>
@@ -102,7 +109,7 @@ export function LoginForm() {
           <div className="mb-4">
             <label
               htmlFor="rollNumber"
-              className="block text-sm font-medium text-gray-200"
+              className="pl-2 block text-sm font-medium text-gray-200"
             >
               Roll Number
             </label>
@@ -112,7 +119,7 @@ export function LoginForm() {
               placeholder="2403XXX"
               value={rollNumber}
               onChange={(e) => setRollNumber(e.target.value)}
-              className="mt-1 w-full px-3 py-2 border border-gray-300 text-gray-200 rounded-md shadow-sm focus:outline-none focus:border-blue-500 transition-colors duration-300"
+              className="mt-1 w-full px-3 py-2 border-2 border-gray-400 text-gray-200 rounded-full shadow-sm focus:outline-none focus:border-blue-500 transition-colors duration-300"
               required
             />
           </div>
@@ -121,7 +128,7 @@ export function LoginForm() {
           <div className="mb-4">
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-gray-200"
+              className="pl-2 block text-sm font-medium text-gray-200"
             >
               Password
             </label>
@@ -131,7 +138,7 @@ export function LoginForm() {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 w-full px-3 py-2 border border-gray-300 text-gray-200 rounded-md shadow-sm focus:outline-none focus:border-blue-500 transition-colors duration-300"
+                className="mt-1 w-full px-3 py-2 border-2 border-gray-400 text-gray-200 rounded-full shadow-sm focus:outline-none focus:border-blue-500 transition-colors duration-300"
                 required
               />
 
@@ -139,7 +146,7 @@ export function LoginForm() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5  "
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-sm leading-5"
               >
                 {showPassword ? (
                   <svg
@@ -184,7 +191,7 @@ export function LoginForm() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-300 transition-colors duration-300"
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-full hover:bg-blue-700 focus:outline-none active:scale-95 disabled:bg-blue-300 transition-colors duration-300"
           >
             {isLoading ? "Logging in..." : "Login"}
           </button>
