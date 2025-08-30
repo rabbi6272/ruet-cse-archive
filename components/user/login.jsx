@@ -92,9 +92,9 @@ export function LoginForm() {
   };
 
   return (
-    <div className="flex items-center justify-center ">
-      <div className="bg-white dark:bg-slate-700 text-gray-800 dark:text-gray-200 p-5 lg:p-8 rounded-lg shadow-lg w-[95%] lg:max-w-md">
-        <h2 className="text-3xl font-bold text-center tracking-wide mb-3 lg:mb-5">
+    <div className="glass-card-container flex items-center justify-center min-h-screen min-w-screen w-screen h-screen">
+      <div className="glass-card backdrop-blur-lg  p-5 lg:p-8 rounded-xl w-[95%] lg:max-w-md">
+        <h2 className="text-3xl font-bold text-center text-gray-300 tracking-wide mb-3 lg:mb-5">
           Login
         </h2>
         <form onSubmit={handleSubmit}>
@@ -102,7 +102,7 @@ export function LoginForm() {
           <div className="mb-4">
             <label
               htmlFor="rollNumber"
-              className="block text-sm font-medium  text-gray-800 dark:text-gray-200"
+              className="block text-sm font-medium text-gray-200"
             >
               Roll Number
             </label>
@@ -112,7 +112,7 @@ export function LoginForm() {
               placeholder="2403XXX"
               value={rollNumber}
               onChange={(e) => setRollNumber(e.target.value)}
-              className="mt-1 w-full px-3 py-2 border border-gray-300  text-gray-800 dark:text-gray-200 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 w-full px-3 py-2 border border-gray-300 text-gray-200 rounded-md shadow-sm focus:outline-none focus:border-blue-500 transition-colors duration-300"
               required
             />
           </div>
@@ -121,7 +121,7 @@ export function LoginForm() {
           <div className="mb-4">
             <label
               htmlFor="password"
-              className="block text-sm font-medium  text-gray-800 dark:text-gray-200"
+              className="block text-sm font-medium text-gray-200"
             >
               Password
             </label>
@@ -131,7 +131,7 @@ export function LoginForm() {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 w-full px-3 py-2 border border-gray-300  text-gray-800 dark:text-gray-200 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 w-full px-3 py-2 border border-gray-300 text-gray-200 rounded-md shadow-sm focus:outline-none focus:border-blue-500 transition-colors duration-300"
                 required
               />
 
@@ -143,7 +143,7 @@ export function LoginForm() {
               >
                 {showPassword ? (
                   <svg
-                    className="h-5 w-5  text-gray-800 dark:text-gray-200"
+                    className="h-5 w-5 text-gray-200"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -157,7 +157,7 @@ export function LoginForm() {
                   </svg>
                 ) : (
                   <svg
-                    className="h-5 w-5  text-gray-800 dark:text-gray-200"
+                    className="h-5 w-5 text-gray-200"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"

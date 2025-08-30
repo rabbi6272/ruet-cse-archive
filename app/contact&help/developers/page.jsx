@@ -201,57 +201,57 @@ const groupedDevelopers = {
 
 export default function Developers() {
   return (
-    <div className="p-4 md:p-6">
-      <div className="p-3 md:p-6 w-full bg-[#ffffffa4] dark:bg-slate-700 rounded-lg">
-        <h3
+    <div className="p-4 md:p-8">
+      {/* <div className="p-3 md:p-6 w-full bg-[#ffffffa4] dark:bg-slate-700 rounded-lg"> */}
+      <h3
+        className={
+          avegance.className +
+          " pt-1 tracking-wide text-center text-4xl lg:text-6xl font-normal text-gray-800 dark:text-gray-200"
+        }
+      >
+        The Avengers
+      </h3>
+      <br />
+
+      {/* Frontend & Backend Developers Section */}
+      <div className="mb-12 ">
+        <h4
           className={
-            avegance.className +
-            " pt-1 tracking-wide text-center text-4xl lg:text-6xl font-normal text-gray-800 dark:text-gray-200"
+            " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
           }
         >
-          The Avengers
-        </h3>
-        <br />
-
-        {/* Frontend & Backend Developers Section */}
-        <div className="mb-12 ">
-          <h4
-            className={
-              " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-200 dark:bg-slate-600 text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
-            }
-          >
-            Developers
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {groupedDevelopers["Frontend & Backend Developers"].map(
-              (developer) => (
-                <ProfileCard key={developer.name} {...developer} />
-              )
-            )}
-          </div>
-        </div>
-
-        {/* Security Section */}
-        <div className="mb-12 ">
-          <h4
-            className={
-              " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-200 dark:bg-slate-600 text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
-            }
-          >
-            Security
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {groupedDevelopers["Security"].map((developer) => (
+          Developers
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {groupedDevelopers["Frontend & Backend Developers"].map(
+            (developer) => (
               <ProfileCard key={developer.name} {...developer} />
-            ))}
-          </div>
+            )
+          )}
         </div>
+      </div>
 
-        {/* Media Team Section */}
-        {/* <div className="mb-12 ">
+      {/* Security Section */}
+      <div className="mb-12 ">
+        <h4
+          className={
+            " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
+          }
+        >
+          Security
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {groupedDevelopers["Security"].map((developer) => (
+            <ProfileCard key={developer.name} {...developer} />
+          ))}
+        </div>
+      </div>
+
+      {/* Media Team Section */}
+      {/* <div className="mb-12 ">
           <h4
             className={
-              " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-200 dark:bg-slate-600 text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
+              " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
             }
           >
             Media Team
@@ -263,27 +263,27 @@ export default function Developers() {
           </div>
         </div> */}
 
-        {/* Code Reviewers & Testers Section */}
-        <div className="mb-12 ">
-          <h4
-            className={
-              " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-200 dark:bg-slate-600 text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
-            }
-          >
-            Code Reviewers & Testers
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {groupedDevelopers["Code Reviewers & Testers"].map((developer) => (
-              <ProfileCard key={developer.name} {...developer} />
-            ))}
-          </div>
+      {/* Code Reviewers & Testers Section */}
+      <div className="mb-12 ">
+        <h4
+          className={
+            " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
+          }
+        >
+          Code Reviewers & Testers
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {groupedDevelopers["Code Reviewers & Testers"].map((developer) => (
+            <ProfileCard key={developer.name} {...developer} />
+          ))}
         </div>
+      </div>
 
-        {/* Suggestions & Resources Management Section */}
-        {/* <div className="mb-12 ">
+      {/* Suggestions & Resources Management Section */}
+      {/* <div className="mb-12 ">
           <p
             className={
-              " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-200 dark:bg-slate-600 text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
+              " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
             }
           >
             Suggestions & Resources Management
@@ -296,7 +296,7 @@ export default function Developers() {
             )}
           </div>
         </div> */}
-      </div>
     </div>
+    // </div>
   );
 }

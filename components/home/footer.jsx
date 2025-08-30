@@ -13,7 +13,9 @@ export function FooterComponent() {
         <div
           className={`grid w-full justify-between sm:flex sm:justify-between md:flex md:grid-cols-1 `}
         >
-          <div className={`flex items-center justify-center sm:justify-start pb-6 lg:pb-0`}>
+          <div
+            className={`flex items-center justify-center sm:justify-start pb-6 lg:pb-0`}
+          >
             <Image
               src={"/images/lg/ruet.png"}
               alt="ruet logo"
@@ -125,24 +127,36 @@ export function FooterComponent() {
           >
             ©2025
             <Link
-              href="/contact/developers"
+              href="/contact&help/developers"
               className={`ml-1 hover:underline `}
             >
               Avengers (sec c)
             </Link>
           </div>
           <div className={`mt-4 flex  space-x-6 sm:mt-0 justify-center `}>
-            <a target="_blank" href="" className="hover:scale-110 transition-transform duration-300">
+            <a
+              target="_blank"
+              href=""
+              className="hover:scale-110 transition-transform duration-300"
+            >
               <i
                 className={`fa-brands fa-facebook text-[#1877F2] text-2xl `}
               ></i>
             </a>
-            <a target="_blank" href="" className="hover:scale-110 transition-transform duration-300">
+            <a
+              target="_blank"
+              href=""
+              className="hover:scale-110 transition-transform duration-300"
+            >
               <i
                 className={`fa-brands fa-instagram text-[#E4405F] text-2xl `}
               ></i>
             </a>
-            <a target="_blank" href="" className="hover:scale-110 transition-transform duration-300">
+            <a
+              target="_blank"
+              href=""
+              className="hover:scale-110 transition-transform duration-300"
+            >
               <i
                 className={`fa-brands fa-twitter text-[#1DA1F2] text-2xl `}
               ></i>

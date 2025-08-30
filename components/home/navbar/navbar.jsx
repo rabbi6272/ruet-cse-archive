@@ -4,7 +4,6 @@ import Image from "next/image";
 import { inter } from "@/app/ui/fonts";
 
 import { LoginButton, MobileNavbarLinks } from "./mobile-navbar-links";
-// import { ScrollNavbar } from "./scroll-navbar";
 
 export function Navbar() {
   return (

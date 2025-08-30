@@ -158,9 +158,6 @@ export default function RootLayout({ children }) {
           }}
         />
       </head>
-      {/*Dark Mode bg Color  #00284B */}
-      {/*Dark Mode text Color  #CDEAFC */}
-      {/*Dark Mode bg Color  #071a26f1 */}
       <body
         className={`${lato.className} antialiased bg-gray-200 dark:bg-[#071a26f1]`}
         suppressHydrationWarning={true}
