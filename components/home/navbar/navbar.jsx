@@ -9,7 +9,7 @@ import { LoginButton } from "./login-button";
 export function Navbar() {
   return (
     <nav
-      className={`${inter.className} bg-[#ffffff]/75 dark:bg-[#071a26]/75 backdrop-blur-md shadow-lg border-b border-gray-200/20 dark:border-gray-700/20 font-normal text-md navbar  sticky top-0 w-full z-50`}
+      className={`${inter.className} bg-[#ffffff]/80 dark:bg-[#071a26]/80 backdrop-blur-md shadow-lg border-b border-gray-200/20 dark:border-gray-700/20 font-normal text-md navbar  sticky top-0 w-full z-50`}
     >
       <div className="w-full mx-auto px-3 md:px-5 lg:px-8 xl:px-10 flex items-center justify-between h-[70px]">
         {/* <!-- Logo  --> */}

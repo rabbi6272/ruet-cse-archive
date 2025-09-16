@@ -8,6 +8,7 @@ import LibraryHeader from "./LibraryHeader";
 import SearchAndFilters from "./SearchAndFilters";
 import SnippetCard from "./SnippetCard";
 import Pagination from "./Pagination";
+import Loading from "@/app/loading";
 
 const CodeLibraryClient = ({ initialSnippets = [] }) => {
   // Use the custom hook with initial data
@@ -66,8 +67,8 @@ const CodeLibraryClient = ({ initialSnippets = [] }) => {
               />
             ))
           ) : (
-            <div className="text-center py-10 dark:text-gray-400 text-gray-600">
-              No snippets found matching your criteria
+            <div>
+              <Loading />
             </div>
           )}
         </div>
