@@ -6,10 +6,11 @@ import { inter } from "@/app/ui/fonts";
 import { MobileNavbarLinks } from "./mobile-navbar-links";
 import { LoginButton } from "./login-button";
 
+//bg-[#ffffff]/80 dark:bg-[#071a26]/80
 export function Navbar() {
   return (
     <nav
-      className={`${inter.className} bg-[#ffffff]/80 dark:bg-[#071a26]/80 backdrop-blur-md shadow-lg border-b border-gray-200/20 dark:border-gray-700/20 font-normal text-md navbar  sticky top-0 w-full z-50`}
+      className={`${inter.className} bg-gray-200/80 dark:bg-[#071a26f1]/80 backdrop-blur-md shadow-lg border-b border-gray-200/20 dark:border-gray-700/20 font-normal text-md navbar sticky top-0 w-full z-50`}
     >
       <div className="w-full mx-auto px-3 md:px-5 lg:px-8 xl:px-10 flex items-center justify-between h-[70px]">
         {/* <!-- Logo  --> */}
@@ -109,7 +110,8 @@ function DesktopNavbarLinks() {
               Official Website
             </Link>
             <Link
-              href=""
+              href="https://www.facebook.com/people/RUET-CSE-24/61574730479807/"
+              target="_blank"
               className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-[#071a26]/90 hover:text-blue-600 dark:hover:text-blue-500"
             >
               Facebook Page

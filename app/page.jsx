@@ -55,22 +55,22 @@ export const metadata = {
 export default function Home() {
   return (
     <div className="w-full">
-      <br />
       {/* Hero Section */}
       <HeroSection />
+
+      {/* Image Section */}
+      <div className="pt-12 xl:pt-30 rounded-2xl">
+        <Image
+          src={image0}
+          alt={`Slide`}
+          priority
+          className="w-full md:w-[80%] lg:w-[70%] xl:w-[60%] px-4 object-cover mx-auto rounded-2xl"
+        />
+      </div>
       <br />
 
       {/*Features List*/}
       <FeaturesList />
-      <br />
-
-      {/* Image Section */}
-      <Image
-        src={image0}
-        alt={`Slide`}
-        priority
-        className="w-full md:w-[70%] lg:w-[50%] px-4 object-cover mx-auto"
-      />
       <br />
 
       {/* FAQ Section */}

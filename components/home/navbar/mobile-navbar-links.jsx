@@ -24,7 +24,11 @@ const mobileNavItems = [
         href: "https://www.ruet.ac.bd/",
         target: "_blank",
       },
-      { name: "Facebook Page", href: "/contact&help/#" },
+      {
+        name: "Facebook Page",
+        href: "https://www.facebook.com/people/RUET-CSE-24/61574730479807/",
+        target: "_blank",
+      },
       { name: "Contributors", href: "/contact&help/developers" },
     ],
   },

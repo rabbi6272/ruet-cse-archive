@@ -3,7 +3,7 @@ import { AnimatedCounter } from "./animated-counter";
 // Server component for static content
 export function FeaturesList() {
   return (
-    <div className="w-full mx-auto flex flex-col items-center">
+    <div className="w-full mx-auto my-8 flex flex-col items-center">
       <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold mb-2">
         <span className="text-transparent bg-clip-text bg-gradient-to-r to-gray-700 from-gray-500 dark:to-neutral-400 dark:from-neutral-200">
           Key Features
