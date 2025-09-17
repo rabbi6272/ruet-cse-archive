@@ -7,7 +7,7 @@ export function ShelfHeader() {
           Digital Book Shelf
         </span>
       </h1>
-      <p className="text-lg font-normal text-gray-500 lg:text-xl dark:text-gray-400 max-w-3xl mx-auto">
+      <p className="text-md font-normal text-gray-500 lg:text-xl dark:text-gray-400 max-w-3xl mx-auto">
         Browse our comprehensive collection of academic textbooks, reference
         materials, and study resources for Computer Science & Engineering
         students at RUET.

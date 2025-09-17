@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import { ref, push } from "firebase/database";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { addNutrinos } from "@/lib/nutrinos-system";
@@ -105,16 +103,11 @@ export function AddCodeSnippetForm() {
     setSubmitting(true);
 
     try {
-      // const snippetsRef = ref(db, "codeSnippets");
-      // await push(snippetsRef, {
-      //   ...formData,
-      //   createdAt: new Date().toISOString(),
-      // });
       let cs = new CodeSnippet({
         ...formData,
         createdAt: new Date().toISOString(),
       });
-      await cs.push();
+      await cs.push(formData.rollNumber);
 
       // Award Nutrinos points for code snippet submission
       try {

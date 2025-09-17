@@ -3,6 +3,8 @@ import { useState, useEffect, useRef } from "react";
 import { ref, onValue, update } from "firebase/database";
 import hljs from "highlight.js";
 import AuthUtils from "@/lib/auth-utils-secure";
+import { codelibraryDb } from "@/lib/codelibraryDB";
+
 import ProtectedFirebaseDB from "@/lib/protected-firebase-db"; // Only used for authenticated operations (likes)
 
 export const useCodeLibrary = (initialSnippets = []) => {
@@ -24,97 +26,49 @@ export const useCodeLibrary = (initialSnippets = []) => {
   const snippetsPerPage = 5;
   const needsHighlightRef = useRef(false);
 
-  // Fetch snippets from Firebase
+  // Fetch snippets from new codes/ structure
   useEffect(() => {
-    let unsubscribe = null;
-
-    const fetchData = async () => {
-      try {
-        console.log("📚 Loading code snippets from Firebase...");
-
-        // Check if we're on client side
-        if (typeof window === "undefined") {
-          console.log("Server-side rendering, skipping Firebase");
-          return;
+    const codesRef = ref(codelibraryDb, "codes/");
+    const unsubscribe = onValue(
+      codesRef,
+      (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          // Flatten: [{...snippet, rollNumber, id}, ...]
+          const allSnippets = [];
+          Object.entries(data).forEach(([rollNumber, codes]) => {
+            Object.entries(codes).forEach(([codeId, snippet]) => {
+              allSnippets.push({
+                ...snippet,
+                rollNumber,
+                id: codeId,
+                isLiked: localStorage.getItem(`liked_${codeId}`) === "true",
+                likesCount: snippet.likesCount || 0,
+                copiesCount: snippet.copiesCount || 0,
+                language:
+                  snippet.language?.toLowerCase() === "js"
+                    ? "javascript"
+                    : snippet.language?.toLowerCase(),
+              });
+            });
+          });
+          // Sort by date (newest first)
+          allSnippets.sort((a, b) => new Date(b.date) - new Date(a.date));
+          setSnippets(allSnippets);
+          console.log(
+            `✅ Loaded ${allSnippets.length} code snippets from codes/`
+          );
+        } else {
+          setSnippets([]);
+          console.log("No snippets found in codes/");
         }
-
-        // For public access, use regular Firebase database first
-        let database;
-        try {
-          console.log("🌐 Using public database access for code library");
-          const { db } = await import("@/lib/firebase");
-          database = db;
-
-          if (!database) {
-            console.error("Firebase database not available");
-            return;
-          }
-        } catch (error) {
-          console.error("Failed to access public Firebase database:", error);
-          return;
-        }
-
-        const snippetsRef = ref(database, "codeSnippets");
-
-        unsubscribe = onValue(
-          snippetsRef,
-          (snapshot) => {
-            try {
-              const data = snapshot.val();
-              if (data) {
-                const snippetsArray = Object.keys(data)
-                  .map((key) => ({
-                    id: key,
-                    ...data[key],
-                    isLiked: localStorage.getItem(`liked_${key}`) === "true",
-                    likesCount: data[key].likesCount || 0,
-                    copiesCount: data[key].copiesCount || 0,
-                    language:
-                      data[key].language?.toLowerCase() === "js"
-                        ? "javascript"
-                        : data[key].language?.toLowerCase(),
-                  }))
-                  .sort((a, b) => new Date(b.date) - new Date(a.date));
-                setSnippets(snippetsArray);
-                console.log(`✅ Loaded ${snippetsArray.length} code snippets`);
-              } else {
-                setSnippets([]);
-                console.log("No snippets found in database");
-              }
-            } catch (error) {
-              console.error("Error processing snippets:", error);
-              setSnippets([]);
-            }
-          },
-          (error) => {
-            console.error("Firebase error:", error);
-            console.error("Error code:", error.code);
-            console.error("Error message:", error.message);
-
-            // If this is a permission error and we're not using protected access,
-            // the issue might be with Firebase rules or configuration
-            if (error.code === "PERMISSION_DENIED") {
-              console.error(
-                "🔒 Permission denied - check Firebase database rules"
-              );
-            }
-
-            setSnippets([]);
-          }
-        );
-      } catch (error) {
-        console.error("Failed to initialize Firebase listener:", error);
+      },
+      (error) => {
+        console.error("Firebase error:", error);
         setSnippets([]);
       }
-    };
-
-    fetchData();
-
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
+    );
+    return () => unsubscribe();
   }, []);
 
   // Filter snippets

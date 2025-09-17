@@ -6,10 +6,14 @@
     "codeSnippets": {
       ".indexOn": ["rollNumber", "language", "date", "difficulty"],
       "$snippetId": {
-        ".read": true,
-        ".write": true,
-        ".validate": "newData.hasChildren(['title', 'codeSnippet', 'language', 'rollNumber'])"
-      }
+    ".read": true,
+    "likes": {
+      ".write": "auth != null"
+    },
+    "comments": {
+      ".write": "auth != null"
+    }
+  }
     },
 
     "codeSnippetComments": {

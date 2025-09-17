@@ -84,7 +84,7 @@ export function LoginForm() {
   //bg-[url(/images/login-bg.jpg)] bg-center bg-cover
 
   return (
-    <div className="glass-card-container flex items-center justify-center w-full h-dvh overflow-hidden ">
+    <div className="glass-card-container bg-[url(/images/login-bg.jpg)] bg-center bg-cover flex items-center justify-center w-full h-dvh overflow-hidden ">
       <div className="glass-card backdrop-blur-lg p-5 lg:p-8 rounded-xl w-[95%] lg:max-w-md">
         <h2 className="text-3xl font-bold text-center text-gray-300 tracking-wide mb-3 lg:mb-4">
           Login
