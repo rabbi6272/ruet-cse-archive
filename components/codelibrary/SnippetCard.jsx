@@ -70,11 +70,7 @@ const SnippetCard = ({
         </div>
 
         {/* Comment Section */}
-        <CommentSection
-          snippetId={snippet.id}
-          snippetAuthor={snippet.rollNumber}
-          snippetTitle={snippet.title}
-        />
+        <CommentSection snippet={snippet} />
       </div>
     </div>
   );

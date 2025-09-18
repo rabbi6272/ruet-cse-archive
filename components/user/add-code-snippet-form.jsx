@@ -105,6 +105,7 @@ export function AddCodeSnippetForm() {
     try {
       let cs = new CodeSnippet({
         ...formData,
+        comments: [],
         createdAt: new Date().toISOString(),
       });
       await cs.push(formData.rollNumber);

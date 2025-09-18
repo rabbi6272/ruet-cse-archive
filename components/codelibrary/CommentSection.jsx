@@ -16,6 +16,7 @@ import { formatDistanceToNow } from "date-fns";
 import { addNutrinos } from "@/lib/nutrinos-system";
 import toast from "react-hot-toast";
 import AuthUtils from "@/lib/auth-utils-secure";
+import { CommentsManager } from "@/lib/helper/ultimate";
 
 function getNameFromRoll(roll) {
   const user = users.find((u) => u.roll === roll);
@@ -27,11 +28,7 @@ function getNameFromRoll(roll) {
     .join(" ");
 }
 
-const CommentSection = ({
-  snippetId,
-  snippetAuthor,
-  snippetTitle = "Untitled Code",
-}) => {
+const CommentSection = ({ snippet }) => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [replyingTo, setReplyingTo] = useState(null);
@@ -85,29 +82,14 @@ const CommentSection = ({
 
   // Fetch comments for this snippet
   useEffect(() => {
-    const commentsRef = ref(db, `comments/${snippetId}`);
-    const fetchComments = onValue(commentsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const commentsArray = Object.keys(data)
-          .map((key) => ({
-            id: key,
-            ...data[key],
-            replies: data[key].replies
-              ? Object.keys(data[key].replies).map((replyKey) => ({
-                  id: replyKey,
-                  ...data[key].replies[replyKey],
-                }))
-              : [],
-          }))
-          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        setComments(commentsArray);
-      } else {
-        setComments([]);
-      }
-    });
-    return () => off(commentsRef, "value", fetchComments);
-  }, [snippetId]);
+    const fetchComments = async () => {
+      const cm = new CommentsManager();
+      const data = await cm.read(user?.roll, snippet.snippetId);
+      console.log(data);
+      // setComments(data ? Object.values(data) : []);
+    };
+    fetchComments();
+  }, [snippet.snippetId]);
 
   // Keyboard navigation for mention suggestions
   useEffect(() => {
@@ -216,103 +198,22 @@ const CommentSection = ({
   };
 
   const addComment = async () => {
-    if (!user || !newComment.trim()) return;
-
     setLoading(true);
-    try {
-      const commentsRef = ref(db, `comments/${snippetId}`);
-      await push(commentsRef, {
-        text: newComment.trim(),
-        authorRoll: user.roll,
-        authorName: user.name,
-        createdAt: new Date().toISOString(),
-        likes: 0,
-        likedBy: {},
-      });
-
-      // Create notification for snippet author if comment is not from author
-      if (user.roll !== snippetAuthor) {
-        await createNotification(
-          snippetAuthor,
-          `${getNameFromRoll(user.roll)} commented on your code`,
-          "comment",
-          snippetId,
-          newComment.trim()
-        );
-      }
-
-      // Award Nutrinos points for comments
-      try {
-        // Commenter gets 2.5 points
-        await addNutrinos(user.roll, "comment_made", "Made Comment", {
-          snippetId,
-          commentText: newComment.trim(),
-          snippetAuthor,
-        });
-
-        // Snippet author gets 1.5 points (only if commenter is different)
-        if (user.roll !== snippetAuthor) {
-          await addNutrinos(
-            snippetAuthor,
-            "comment_received",
-            "Received Comment",
-            {
-              snippetId,
-              commentText: newComment.trim(),
-              commenter: user.roll,
-            }
-          );
-        }
-      } catch (nutritosError) {
-        console.error(
-          "Failed to award Nutrinos points for comment:",
-          nutritosError
-        );
-        // Don't break the flow, just log the error
-      }
-
-      // Check for mentions and create notifications
-      const mentionRegex = /@([^(]+)\((\d+)\)/g;
-      let match;
-      while ((match = mentionRegex.exec(newComment)) !== null) {
-        const [, , mentionedRoll] = match;
-        if (mentionedRoll !== user.roll) {
-          await createNotification(
-            mentionedRoll,
-            `${getNameFromRoll(user.roll)} mentioned you in ${getNameFromRoll(
-              snippetAuthor
-            )}'s code`,
-            "mention",
-            snippetId,
-            newComment.trim()
-          );
-
-          // Award Nutrinos points for mention
-          try {
-            await addNutrinos(
-              mentionedRoll,
-              "mention_received",
-              "Got Mentioned",
-              {
-                snippetId,
-                commentText: newComment.trim(),
-                mentioner: user.roll,
-              }
-            );
-          } catch (nutritosError) {
-            console.error(
-              "Failed to award Nutrinos points for mention:",
-              nutritosError
-            );
-          }
-        }
-      }
-
-      setNewComment("");
-    } catch (error) {
-      console.error("Error adding comment:", error);
-    }
+    const commentObj = {
+      authorRoll: user.roll,
+      text: newComment,
+      createdAt: new Date().toISOString(),
+      replies: [],
+      likes: 0,
+      likedBy: {},
+      isEdited: false,
+    };
+    const cm = new CommentsManager(commentObj);
+    await cm.push(snippetId + "/" + user.roll);
+    setNewComment("");
     setLoading(false);
+    toast.success("Comment added successfully!");
+    // Optionally refetch comments
   };
 
   const addReply = async (commentId) => {
@@ -1116,7 +1017,7 @@ const CommentSection = ({
             {user && (
               <button
                 onClick={() => setShowAddComment(true)}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors duration-200 font-medium"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-full transition-colors duration-200 font-medium"
               >
                 <i className="fas fa-plus mr-2"></i>Add Comment
               </button>
@@ -1217,7 +1118,7 @@ const CommentSection = ({
                 <button
                   onClick={addComment}
                   disabled={!newComment.trim() || loading}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium text-sm"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium text-sm"
                 >
                   {loading ? "Posting..." : "Post Comment"}
                 </button>
@@ -1251,7 +1152,7 @@ const CommentSection = ({
                 {/* Comment header */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                    <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
                       {getNameFromRoll(comment.authorRoll).charAt(0)}
                     </div>
                     <div>
@@ -1387,7 +1288,7 @@ const CommentSection = ({
                     <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all duration-200">
                       <div className="flex space-x-3 p-3">
                         <div className="flex-shrink-0">
-                          <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                          <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
                             {getNameFromRoll(user.roll).charAt(0)}
                           </div>
                         </div>
@@ -1512,7 +1413,7 @@ const CommentSection = ({
                           >
                             <div className="flex items-start space-x-3">
                               <div className="flex-shrink-0">
-                                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                                <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
                                   {getNameFromRoll(reply.authorRoll).charAt(0)}
                                 </div>
                               </div>
@@ -1672,12 +1573,12 @@ const CommentSection = ({
           <div className="text-2xl mb-2">
             <i className="fas fa-lock text-blue-600 dark:text-blue-400"></i>
           </div>
-          <p className="text-gray-600 dark:text-gray-400 mb-3">
+          {/* <p className="text-gray-600 dark:text-gray-400 mb-3">
             Login to join the conversation
-          </p>
+          </p> */}
           <a
             href="/user/login"
-            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 font-medium text-sm"
+            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-all duration-200 font-medium text-sm"
           >
             <i className="fas fa-rocket mr-2"></i>
             Login to Comment
