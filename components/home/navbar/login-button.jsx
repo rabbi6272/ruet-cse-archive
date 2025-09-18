@@ -45,9 +45,9 @@ export function LoginButton() {
     return (
       <Link
         href="/user/dashboard"
-        className="relative text-center text-gray-200 bg-blue-600 hover:bg-blue-700 px-5 py-2 rounded-full text-sm font-medium transition-all duration-300"
+        className="relative text-center bg-blue-600 hover:bg-blue-700 px-5 py-2 rounded-full text-sm font-bold transition-all duration-300"
       >
-        Dashboard
+        <ShinyText text="Dashboard" speed={2.5} className="text-gray-300" />
         {!isLoading && !error && <NotificationBadge count={unreadCount} />}
       </Link>
     );
@@ -55,10 +55,25 @@ export function LoginButton() {
     return (
       <Link
         href="/user/login"
-        className="text-center text-gray-200 bg-blue-600 hover:bg-blue-700 px-5 py-2 rounded-full text-sm font-medium transition-all duration-300"
+        className="text-center bg-blue-600 hover:bg-blue-700 px-5 py-2 rounded-full text-sm font-bold transition-all duration-300"
       >
-        Login
+        <ShinyText text="Login" speed={2.5} className="text-gray-300" />
       </Link>
     );
   }
 }
+
+const ShinyText = ({ text, disabled = false, speed = 5, className = "" }) => {
+  const animationDuration = `${speed}s`;
+
+  return (
+    <div
+      className={`shiny-text ${disabled ? "disabled" : ""} ${className}`}
+      style={{ animationDuration }}
+    >
+      {text}
+    </div>
+  );
+};
+
+export default ShinyText;

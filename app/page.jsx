@@ -1,9 +1,7 @@
 import { FAQSection } from "@/components/home/faq-section";
 import { FeaturesList } from "@/components/home/features-list";
+import { HeroImage } from "@/components/home/hero-image";
 import { HeroSection } from "@/components/home/hero-section";
-
-import Image from "next/image";
-import image0 from "@/public/images/slideshow/image0.jpg";
 
 export const metadata = {
   title: "RUET CSE Archive - Complete Resource Hub for CSE Students",
@@ -59,14 +57,7 @@ export default function Home() {
       <HeroSection />
 
       {/* Image Section */}
-      <div className="pt-12 xl:pt-30 rounded-2xl">
-        <Image
-          src={image0}
-          alt={`Slide`}
-          priority
-          className="w-full md:w-[80%] lg:w-[70%] xl:w-[60%] px-4 object-cover mx-auto rounded-2xl"
-        />
-      </div>
+      <HeroImage />
       <br />
 
       {/*Features List*/}
