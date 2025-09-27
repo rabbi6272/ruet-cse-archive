@@ -17,6 +17,7 @@ export function ProfileCard({
   linkedin,
   facebook,
   roll,
+  isDynamic = false
 }) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [pointsData, setPointsData] = useState(null);
@@ -35,6 +36,15 @@ export function ProfileCard({
     setIsFlipped(!isFlipped);
   };
 
+  // Handle image source - if it's a string path, import the default image
+  const getImageSrc = () => {
+    if (typeof image === 'string' && image.includes('/public/images/developers/default.jpg')) {
+      // For dynamic developers with default image path
+      return require('@/public/images/developers/default.jpg');
+    }
+    return image;
+  };
+
   return (
     <div
       className="group mx-auto relative h-[420px] w-[300px] rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl cursor-pointer"
@@ -47,7 +57,14 @@ export function ProfileCard({
         }`}
       >
         <div className="relative h-[180px] w-[180px] rounded-full overflow-hidden border-4 border-white shadow-md">
-          <Image src={image} alt={name} fill className="object-cover" />
+          <Image src={getImageSrc()} alt={name} fill className="object-cover" />
+          {isDynamic && (
+            <div className="absolute top-2 right-2">
+              <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+                New
+              </span>
+            </div>
+          )}
         </div>
         <h3
           className={`${nunito.className} mt-4 text-xl font-semibold text-gray-800`}
@@ -95,6 +112,13 @@ export function ProfileCard({
         )} */}
 
         <p className="mt-2 text-xs text-blue-500">Tap/Hover for social links</p>
+        {isDynamic && (
+          <div className="mt-2 bg-green-50 rounded-lg p-2 border border-green-200">
+            <div className="text-center text-xs text-green-800">
+              <span className="font-medium">Recently Added</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Back Side - Social Links */}
