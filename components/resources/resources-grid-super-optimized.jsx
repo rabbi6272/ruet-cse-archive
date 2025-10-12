@@ -1,8 +1,11 @@
-'use client';
+"use client";
 
 import { useState, useEffect } from "react";
 import { ResourceCard } from "./resource-card-optimized";
-import { getResourcesData, resourcesData } from "@/components/resources/resources-data";
+import {
+  getResourcesData,
+  resourcesData,
+} from "@/components/resources/resources-data";
 
 // Dynamic resources grid that fetches from Firebase
 export function ResourcesGridOptimized() {
@@ -15,7 +18,7 @@ export function ResourcesGridOptimized() {
         const dynamicResources = await getResourcesData();
         setResources(dynamicResources);
       } catch (error) {
-        console.error('Failed to fetch resources:', error);
+        console.error("Failed to fetch resources:", error);
         // Keep static data as fallback
       } finally {
         setLoading(false);
@@ -32,16 +35,16 @@ export function ResourcesGridOptimized() {
           {Array.from({ length: 5 }).map((_, index) => (
             <div
               key={index}
-              className="bg-white rounded-2xl shadow-sm border animate-pulse"
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border animate-pulse"
             >
-              <div className="h-48 bg-gray-200 rounded-t-2xl"></div>
+              <div className="h-48 bg-gray-200 dark:bg-gray-500 rounded-t-2xl"></div>
               <div className="p-6">
-                <div className="h-6 bg-gray-200 rounded mb-3"></div>
-                <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded mb-4"></div>
+                <div className="h-6 bg-gray-200 dark:bg-gray-500 rounded mb-3"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-500 rounded mb-2"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-500 rounded mb-4"></div>
                 <div className="space-y-2">
-                  <div className="h-8 bg-gray-200 rounded"></div>
-                  <div className="h-8 bg-gray-200 rounded"></div>
+                  <div className="h-8 bg-gray-200 dark:bg-gray-500 rounded"></div>
+                  <div className="h-8 bg-gray-200 dark:bg-gray-500 rounded"></div>
                 </div>
               </div>
             </div>

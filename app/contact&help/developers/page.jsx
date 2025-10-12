@@ -3,7 +3,11 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ProfileCard } from "@/components/contact&help/developers/profileCard";
-import { listenToDeveloperUpdates, mergeDeveloperData, groupDevelopersByRole } from "@/lib/developer-utils";
+import {
+  listenToDeveloperUpdates,
+  mergeDeveloperData,
+  groupDevelopersByRole,
+} from "@/lib/developer-utils";
 
 import { avengero, lato, avegance } from "@/app/ui/fonts";
 
@@ -146,7 +150,7 @@ const staticDevelopers = [
   },
   // {
   //   name: "A Q M Mahadi Haque",
-  //   role: "Suggestions & Resource Management",
+  //   role: "Resource Management",
   //   image: aqm,
   //   location: "Dhaka, Bangladesh",
   //   github: "#",
@@ -155,7 +159,7 @@ const staticDevelopers = [
   // },
   {
     name: "Arefin Noused Ratul",
-    role: "Suggestions & Resource Management",
+    role: "Resource Management",
     image: ratul,
     roll: "2403149",
     location: "Dhaka, Bangladesh",
@@ -165,7 +169,7 @@ const staticDevelopers = [
   },
   // {
   //   name: "Shahriar Seam",
-  //   role: "Suggestions & Resource Management",
+  //   role: "Resource Management",
   //   image: seam,
   //   location: "Dhaka, Bangladesh",
   //   github: "https://github.com/salterynn",
@@ -174,7 +178,7 @@ const staticDevelopers = [
   // },
   // {
   //   name: "Shariar Mustaq",
-  //   role: "Suggestions & Resource Management",
+  //   role: "Resource Management",
   //   image: mustaq,
   //   location: "Rajshahi, Bangladesh",
   //   github: "#",
@@ -182,9 +186,6 @@ const staticDevelopers = [
   //   facebook: "https://www.facebook.com/shahriarmustaqq",
   // },
 ];
-
-// Group developers by role category - moved to after component starts
-// This will be replaced by dynamic grouping
 
 export default function Developers() {
   const [allDevelopers, setAllDevelopers] = useState(staticDevelopers);
@@ -195,22 +196,25 @@ export default function Developers() {
   // Set up real-time listener for developer data
   useEffect(() => {
     setLoading(true);
-    
+
     // Listen to dynamic developer updates
     const unsubscribe = listenToDeveloperUpdates((dynamicDevelopers) => {
       try {
         // Merge static and dynamic data
-        const mergedData = mergeDeveloperData(staticDevelopers, dynamicDevelopers);
+        const mergedData = mergeDeveloperData(
+          staticDevelopers,
+          dynamicDevelopers
+        );
         setAllDevelopers(mergedData);
-        
+
         // Group the merged data
         const grouped = groupDevelopersByRole(mergedData);
         setGroupedDevelopers(grouped);
-        
+
         setError(null);
       } catch (err) {
-        console.error('Error processing developer data:', err);
-        setError('Failed to load dynamic developer data');
+        console.error("Error processing developer data:", err);
+        setError("Failed to load dynamic developer data");
         // Fall back to static data only
         setAllDevelopers(staticDevelopers);
         setGroupedDevelopers(groupDevelopersByRole(staticDevelopers));
@@ -242,27 +246,13 @@ export default function Developers() {
         <div className="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded">
           <div className="flex items-center">
             <span className="text-yellow-500 mr-2">⚠️</span>
-            <span>Some developer data may not be up to date. Showing available information.</span>
+            <span>
+              Some developer data may not be up to date. Showing available
+              information.
+            </span>
           </div>
         </div>
       )}
-
-      {/* Stats Bar */}
-      <div className="mb-6 bg-blue-50 border-b border-blue-200 px-4 py-3 rounded-lg">
-        <div className="flex justify-between items-center text-sm text-blue-800">
-          <span>
-            Showing {allDevelopers.length} team members
-            {!error && allDevelopers.some(d => d.isDynamic) && (
-              <span className="ml-2 text-green-700">
-                (Including {allDevelopers.filter(d => d.isDynamic).length} recently added)
-              </span>
-            )}
-          </span>
-          <span className="text-xs">
-            👨‍💻 The Avengers Development Team
-          </span>
-        </div>
-      </div>
 
       {/* <div className="p-3 md:p-6 w-full bg-[#ffffffa4] dark:bg-slate-700 rounded-lg"> */}
       <h3
@@ -276,80 +266,111 @@ export default function Developers() {
       <br />
 
       {/* Frontend & Backend Developers Section */}
-      {groupedDevelopers["Frontend & Backend Developers"] && groupedDevelopers["Frontend & Backend Developers"].length > 0 && (
-        <div className="mb-12 ">
-          <h4
-            className={
-              " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
-            }
-          >
-            Developers
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {groupedDevelopers["Frontend & Backend Developers"].map(
-              (developer) => (
-                <ProfileCard key={developer.name + (developer.roll || '')} {...developer} />
-              )
-            )}
+      {groupedDevelopers["Frontend & Backend Developers"] &&
+        groupedDevelopers["Frontend & Backend Developers"].length > 0 && (
+          <div className="mb-12 ">
+            <h4
+              className={
+                " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
+              }
+            >
+              Developers
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {groupedDevelopers["Frontend & Backend Developers"].map(
+                (developer) => (
+                  <ProfileCard
+                    key={developer.name + (developer.roll || "")}
+                    {...developer}
+                  />
+                )
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Security Section */}
-      {groupedDevelopers["Security"] && groupedDevelopers["Security"].length > 0 && (
-        <div className="mb-12 ">
-          <h4
-            className={
-              " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
-            }
-          >
-            Security
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {groupedDevelopers["Security"].map((developer) => (
-              <ProfileCard key={developer.name + (developer.roll || '')} {...developer} />
-            ))}
+      {groupedDevelopers["Security"] &&
+        groupedDevelopers["Security"].length > 0 && (
+          <div className="mb-12 ">
+            <h4
+              className={
+                " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
+              }
+            >
+              Security
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {groupedDevelopers["Security"].map((developer) => (
+                <ProfileCard
+                  key={developer.name + (developer.roll || "")}
+                  {...developer}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Code Reviewers & Testers Section */}
-      {groupedDevelopers["Code Reviewers & Testers"] && groupedDevelopers["Code Reviewers & Testers"].length > 0 && (
-        <div className="mb-12 ">
-          <h4
-            className={
-              " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
-            }
-          >
-            Code Reviewers & Testers
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {groupedDevelopers["Code Reviewers & Testers"].map((developer) => (
-              <ProfileCard key={developer.name + (developer.roll || '')} {...developer} />
-            ))}
+      {groupedDevelopers["Code Reviewers & Testers"] &&
+        groupedDevelopers["Code Reviewers & Testers"].length > 0 && (
+          <div className="mb-12 ">
+            <h4
+              className={
+                " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
+              }
+            >
+              Code Reviewers & Testers
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {groupedDevelopers["Code Reviewers & Testers"].map(
+                (developer) => (
+                  <ProfileCard
+                    key={developer.name + (developer.roll || "")}
+                    {...developer}
+                  />
+                )
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Suggestions & Resources Management Section */}
-      {groupedDevelopers["Idea & Resource Management"] && groupedDevelopers["Idea & Resource Management"].length > 0 && (
-        <div className="mb-12 ">
-          <h4
-            className={
-              " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
-            }
-          >
-            Suggestions & Resources Management
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {groupedDevelopers["Idea & Resource Management"].map(
-              (developer) => (
-                <ProfileCard key={developer.name + (developer.roll || '')} {...developer} />
-              )
-            )}
+      {groupedDevelopers["Resource Management"] &&
+        groupedDevelopers["Resource Management"].length > 0 && (
+          <div className="mb-12 ">
+            <h4
+              className={
+                " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
+              }
+            >
+              Resources Management
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {groupedDevelopers["Resource Management"].map((developer) => (
+                <ProfileCard
+                  key={developer.name + (developer.roll || "")}
+                  {...developer}
+                />
+              ))}
+            </div>
           </div>
+        )}
+      {/* Stats Bar */}
+      <div className="mb-6 bg-blue-50 border-b border-blue-200 px-4 py-3 rounded-lg">
+        <div className="flex justify-between items-center text-sm text-blue-800">
+          <span>
+            Showing {allDevelopers.length} team members
+            {!error && allDevelopers.some((d) => d.isDynamic) && (
+              <span className="ml-2 text-green-700">
+                (Including {allDevelopers.filter((d) => d.isDynamic).length}{" "}
+                recently added)
+              </span>
+            )}
+          </span>
+          <span className="text-xs">👨‍💻 The Avengers Development Team</span>
         </div>
-      )}
+      </div>
     </div>
     // </div>
   );

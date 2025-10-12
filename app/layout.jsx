@@ -1,6 +1,5 @@
 import "./globals.css";
 
-import { Navbar } from "@/components/home/navbar/navbar";
 import { FooterComponent } from "@/components/home/footer";
 import { PageTitleProvider } from "@/components/providers/PageTitleProvider";
 import { P2PChatProvider } from "@/components/providers/P2PChatProvider";
@@ -14,6 +13,7 @@ import { Toaster } from "react-hot-toast";
 
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { MainPage } from "./mainPage";
 
 export const metadata = {
   metadataBase: new URL("https://csearchive.vercel.app"),
@@ -171,10 +171,7 @@ export default function RootLayout({ children }) {
               <FirebaseObfuscationInit />
             </NoSSR>
             <GlobalPresenceTracker />
-            <Navbar />
-
-            {children}
-
+            <MainPage>{children}</MainPage>
             <FooterComponent />
             <NoSSR fallback={null}>
               <AIAssistant />
