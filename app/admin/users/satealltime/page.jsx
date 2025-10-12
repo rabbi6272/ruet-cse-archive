@@ -1,54 +1,53 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { formatTimeAgo } from '@/lib/presence-tracker';
 import { ref, onValue } from 'firebase/database';
 import { db } from '@/lib/firebase';
 
-// Authorized admin users
-const AUTHORIZED_ADMINS = ['2403142', '2403172', '2403129'];
+// Password for accessing this page
+const ADMIN_PASSWORD = 'bittoismad';
 
 export default function UserActivityTracker() {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [authError, setAuthError] = useState('');
   const [loading, setLoading] = useState(true);
   const [allUserSessions, setAllUserSessions] = useState([]);
-  const router = useRouter();
 
-  // Check authentication and authorization
+  // Check if already authenticated on page load
   useEffect(() => {
-    const checkAuth = () => {
-      try {
-        const userData = localStorage.getItem('user');
-        if (!userData) {
-          router.push('/user/login');
-          return;
-        }
+    const savedAuth = localStorage.getItem('admin_authenticated');
+    if (savedAuth === 'true') {
+      setIsAuthenticated(true);
+    }
+    setLoading(false);
+  }, []);
 
-        const user = JSON.parse(userData);
-        setCurrentUser(user);
+  // Handle password authentication
+  const handlePasswordSubmit = (e) => {
+    e.preventDefault();
+    setAuthError('');
 
-        // Check if user is authorized admin
-        if (AUTHORIZED_ADMINS.includes(user.roll)) {
-          setIsAuthorized(true);
-        } else {
-          setIsAuthorized(false);
-        }
-      } catch (error) {
-        console.error('Auth check error:', error);
-        router.push('/user/login');
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (passwordInput === ADMIN_PASSWORD) {
+      setIsAuthenticated(true);
+      localStorage.setItem('admin_authenticated', 'true');
+      setPasswordInput('');
+    } else {
+      setAuthError('Incorrect password. Please try again.');
+      setPasswordInput('');
+    }
+  };
 
-    checkAuth();
-  }, [router]);
+  // Handle logout
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('admin_authenticated');
+  };
 
   // Get all user sessions and presence history
   useEffect(() => {
-    if (!isAuthorized) return;
+    if (!isAuthenticated) return;
 
     const sessionsRef = ref(db, 'activeSessions');
     const presenceRef = ref(db, 'presence');
@@ -67,7 +66,7 @@ export default function UserActivityTracker() {
     return () => {
       unsubscribeSessions();
     };
-  }, [isAuthorized]);
+  }, [isAuthenticated]);
 
   const formatSessionDuration = (startTime, endTime) => {
     if (!startTime) return 'Unknown';
@@ -101,27 +100,53 @@ export default function UserActivityTracker() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Checking authorization...</p>
+          <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
     );
   }
 
-  if (!isAuthorized) {
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 text-center">
-          <div className="text-red-500 text-6xl mb-4">🚫</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-          <p className="text-gray-600 mb-6">
-            You are not authorized to view this page. Only specific administrators can access user activity tracking.
-          </p>
-          <button
-            onClick={() => router.push('/user/dashboard')}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Return to Dashboard
-          </button>
+        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+          <div className="text-center mb-8">
+            <div className="text-blue-500 text-6xl mb-4">�</div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Admin Access Required</h1>
+            <p className="text-gray-600">
+              Please enter the admin password to access user activity tracking.
+            </p>
+          </div>
+          
+          <form onSubmit={handlePasswordSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <input
+                type="password"
+                id="password"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                placeholder="Enter admin password"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                required
+              />
+            </div>
+            
+            {authError && (
+              <div className="text-red-600 text-sm text-center">
+                {authError}
+              </div>
+            )}
+            
+            <button
+              type="submit"
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            >
+              Access Admin Panel
+            </button>
+          </form>
         </div>
       </div>
     );
@@ -138,8 +163,12 @@ export default function UserActivityTracker() {
               <p className="text-sm text-gray-600">Complete history of user sessions and activity</p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-gray-600">Admin: {currentUser?.name}</p>
-              <p className="text-xs text-gray-500">Roll: {currentUser?.roll}</p>
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors text-sm"
+              >
+                Logout
+              </button>
             </div>
           </div>
         </div>
