@@ -4,9 +4,9 @@ import { HeroImage } from "@/components/home/hero-image";
 import { HeroSection } from "@/components/home/hero-section";
 
 export const metadata = {
-  title: "RUET CSE Archive - Complete Resource Hub for CSE Students",
+  title: "RUET CSE Archive - A Complete Resource Hub for RUET CSE Students",
   description:
-    "The ultimate archive of Computer Science & Engineering resources for RUET students. Access comprehensive notes, code libraries, academic materials, alumni network, and study resources all in one place.",
+    "The ultimate archive of Computer Science & Engineering resources for RUET students. Access comprehensive notes, code libraries, academic materials, alumni network and study materials all in one place.",
   keywords: [
     "RUET CSE",
     "Computer Science Engineering",
@@ -25,9 +25,9 @@ export const metadata = {
     "Educational Resources",
   ],
   openGraph: {
-    title: "RUET CSE Archive - Complete Resource Hub for CSE Students",
+    title: "RUET CSE Archive - A Complete Resource Hub for RUET CSE Students",
     description:
-      "The ultimate archive of Computer Science & Engineering resources for RUET students. Access comprehensive notes, code libraries, academic materials, alumni network, and study resources all in one place.",
+      "The ultimate archive of Computer Science & Engineering resources for RUET students. Access comprehensive notes, code libraries, academic materials, alumni network and study materials all in one place.",
     url: "https://csearchive.vercel.app/",
     images: [
       {
@@ -40,9 +40,9 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "RUET CSE Archive - Complete Resource Hub for CSE Students",
+    title: "RUET CSE Archive - A Complete Resource Hub for RUET CSE Students",
     description:
-      "The ultimate archive of Computer Science & Engineering resources for RUET students. Access comprehensive notes, code libraries, academic materials, alumni network, and study resources all in one place.",
+      "The ultimate archive of Computer Science & Engineering resources for RUET students. Access comprehensive notes, code libraries, academic materials, alumni network and study materials all in one place.",
     images: ["/images/home-twitter-image.png"],
   },
   alternates: {

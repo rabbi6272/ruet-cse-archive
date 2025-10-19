@@ -1,51 +1,51 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { ref, push, set, onValue } from 'firebase/database';
-import { db } from '@/lib/firebase';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { ref, push, set, onValue } from "firebase/database";
+import { db } from "@/lib/firebase";
 
 // Admin password for developer access
-const ADMIN_PASSWORD = 'bittoismad';
+const ADMIN_PASSWORD = "bittoismad";
 
 export default function AddDeveloper() {
   const [currentUser, setCurrentUser] = useState(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const [message, setMessage] = useState({ type: "", text: "" });
   const [existingDevelopers, setExistingDevelopers] = useState([]);
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
-  const [passwordInput, setPasswordInput] = useState('');
-  
+  const [passwordInput, setPasswordInput] = useState("");
+
   const [formData, setFormData] = useState({
-    name: '',
-    role: 'Code Reviewer & Tester',
-    location: '',
-    roll: '',
-    github: '',
-    linkedin: '',
-    facebook: '',
-    image: '/public/images/developers/default.jpg' // Default image
+    name: "",
+    role: "Code Reviewer & Tester",
+    location: "",
+    roll: "",
+    github: "",
+    linkedin: "",
+    facebook: "",
+    image: "/public/images/developers/default.jpg", // Default image
   });
 
   const router = useRouter();
 
   // Role options for developers
   const roleOptions = [
-    'Frontend & Backend Developer',
-    'Security & Tester', 
-    'Code Reviewer & Tester',
-    'Media Team',
-    'Suggestions & Resource Management'
+    "Frontend & Backend Developer",
+    "Security & Tester",
+    "Code Reviewer & Tester",
+    "Media Team",
+    "Suggestions & Resource Management",
   ];
 
   // Check authentication and authorization
   useEffect(() => {
     const checkAuth = () => {
       try {
-        const userData = localStorage.getItem('user');
-        
+        const userData = localStorage.getItem("user");
+
         // If no user data, still allow access to password prompt
         if (!userData) {
           setCurrentUser(null);
@@ -60,7 +60,7 @@ export default function AddDeveloper() {
         // Always show password prompt for developer access
         setShowPasswordPrompt(true);
       } catch (error) {
-        console.error('Auth check error:', error);
+        console.error("Auth check error:", error);
         // On error, still show password prompt instead of redirecting
         setCurrentUser(null);
         setShowPasswordPrompt(true);
@@ -77,11 +77,17 @@ export default function AddDeveloper() {
     if (passwordInput === ADMIN_PASSWORD) {
       setIsAuthorized(true);
       setShowPasswordPrompt(false);
-      setPasswordInput('');
-      setMessage({ type: 'success', text: 'Access granted! You can now add developers.' });
+      setPasswordInput("");
+      setMessage({
+        type: "success",
+        text: "Access granted! You can now add developers.",
+      });
     } else {
-      setMessage({ type: 'error', text: 'Incorrect password. Please try again.' });
-      setPasswordInput('');
+      setMessage({
+        type: "error",
+        text: "Incorrect password. Please try again.",
+      });
+      setPasswordInput("");
     }
   };
 
@@ -89,13 +95,15 @@ export default function AddDeveloper() {
   useEffect(() => {
     if (!isAuthorized) return;
 
-    const developersRef = ref(db, 'developers');
+    const developersRef = ref(db, "developers");
     const unsubscribe = onValue(developersRef, (snapshot) => {
       const developersData = snapshot.val() || {};
-      const developersList = Object.entries(developersData).map(([id, developer]) => ({
-        id,
-        ...developer
-      }));
+      const developersList = Object.entries(developersData).map(
+        ([id, developer]) => ({
+          id,
+          ...developer,
+        })
+      );
       setExistingDevelopers(developersList);
     });
 
@@ -104,35 +112,43 @@ export default function AddDeveloper() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const validateForm = () => {
     if (!formData.name.trim()) {
-      setMessage({ type: 'error', text: 'Name is required' });
+      setMessage({ type: "error", text: "Name is required" });
       return false;
     }
     if (!formData.location.trim()) {
-      setMessage({ type: 'error', text: 'Location is required' });
+      setMessage({ type: "error", text: "Location is required" });
       return false;
     }
-    if (!formData.github.trim() && !formData.linkedin.trim() && !formData.facebook.trim()) {
-      setMessage({ type: 'error', text: 'At least one social media link is required' });
+    if (
+      !formData.github.trim() &&
+      !formData.linkedin.trim() &&
+      !formData.facebook.trim()
+    ) {
+      setMessage({
+        type: "error",
+        text: "At least one social media link is required",
+      });
       return false;
     }
 
     // Check if developer already exists
     const existingDeveloper = existingDevelopers.find(
-      developer => developer.name.toLowerCase() === formData.name.toLowerCase() ||
-                   (formData.roll && developer.roll === formData.roll)
+      (developer) =>
+        developer.name.toLowerCase() === formData.name.toLowerCase() ||
+        (formData.roll && developer.roll === formData.roll)
     );
     if (existingDeveloper) {
-      setMessage({ 
-        type: 'error', 
-        text: 'A developer with this name or roll number already exists' 
+      setMessage({
+        type: "error",
+        text: "A developer with this name or roll number already exists",
       });
       return false;
     }
@@ -142,22 +158,22 @@ export default function AddDeveloper() {
 
   const generateUniqueId = () => {
     // Generate a unique ID for the developer
-    const existingIds = existingDevelopers.map(d => d.id);
+    const existingIds = existingDevelopers.map((d) => d.id);
     let newId;
     let attempts = 0;
-    
+
     do {
-      const randomNum = Math.floor(Math.random() * 0xFFFF) + 0x300;
+      const randomNum = Math.floor(Math.random() * 0xffff) + 0x300;
       newId = `dev_${randomNum.toString(16)}`;
       attempts++;
     } while (existingIds.includes(newId) && attempts < 100);
-    
+
     return newId;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage({ type: '', text: '' });
+    setMessage({ type: "", text: "" });
 
     if (!validateForm()) {
       return;
@@ -166,48 +182,47 @@ export default function AddDeveloper() {
     setSubmitting(true);
 
     try {
-      const developersRef = ref(db, 'developers');
+      const developersRef = ref(db, "developers");
       const newDeveloperRef = push(developersRef);
-      
+
       const developerData = {
         ...formData,
         id: generateUniqueId(),
         // Set default values for empty social links
-        github: formData.github || '#',
-        linkedin: formData.linkedin || '#',
-        facebook: formData.facebook || '#',
+        github: formData.github || "#",
+        linkedin: formData.linkedin || "#",
+        facebook: formData.facebook || "#",
         // Use default image path
-        image: '/public/images/developers/default.jpg',
-        addedBy: currentUser?.roll || 'guest',
-        addedByName: currentUser?.name || 'Guest User',
+        image: "/public/images/developers/default.jpg",
+        addedBy: currentUser?.roll || "guest",
+        addedByName: currentUser?.name || "Guest User",
         dateAdded: new Date().toISOString(),
-        isDynamic: true
+        isDynamic: true,
       };
 
       await set(newDeveloperRef, developerData);
 
-      setMessage({ 
-        type: 'success', 
-        text: `Successfully added ${formData.name} to the development team!` 
+      setMessage({
+        type: "success",
+        text: `Successfully added ${formData.name} to the development team!`,
       });
 
       // Reset form
       setFormData({
-        name: '',
-        role: 'Code Reviewer & Tester',
-        location: '',
-        roll: '',
-        github: '',
-        linkedin: '',
-        facebook: '',
-        image: '/public/images/developers/default.jpg'
+        name: "",
+        role: "Code Reviewer & Tester",
+        location: "",
+        roll: "",
+        github: "",
+        linkedin: "",
+        facebook: "",
+        image: "/public/images/developers/default.jpg",
       });
-
     } catch (error) {
-      console.error('Error adding developer:', error);
-      setMessage({ 
-        type: 'error', 
-        text: 'Failed to add developer. Please try again.' 
+      console.error("Error adding developer:", error);
+      setMessage({
+        type: "error",
+        text: "Failed to add developer. Please try again.",
       });
     } finally {
       setSubmitting(false);
@@ -216,7 +231,7 @@ export default function AddDeveloper() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Checking authorization...</p>
@@ -229,27 +244,34 @@ export default function AddDeveloper() {
     // Show password prompt
     if (showPasswordPrompt) {
       return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center">
           <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
             <div className="text-blue-500 text-6xl mb-4 text-center">👨‍💻</div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-4 text-center">Developer Access Required</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-4 text-center">
+              Developer Access Required
+            </h1>
             <p className="text-gray-600 mb-6 text-center">
               Please enter the admin password to add developers to the team.
             </p>
-            
+
             {message.text && (
-              <div className={`mb-4 p-3 rounded-lg text-sm ${
-                message.type === 'success' 
-                  ? 'bg-green-50 text-green-800 border border-green-200' 
-                  : 'bg-red-50 text-red-800 border border-red-200'
-              }`}>
+              <div
+                className={`mb-4 p-3 rounded-lg text-sm ${
+                  message.type === "success"
+                    ? "bg-green-50 text-green-800 border border-green-200"
+                    : "bg-red-50 text-red-800 border border-red-200"
+                }`}
+              >
                 {message.text}
               </div>
             )}
 
             <div className="space-y-4">
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Admin Password
                 </label>
                 <input
@@ -257,16 +279,18 @@ export default function AddDeveloper() {
                   id="password"
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+                  onKeyPress={(e) =>
+                    e.key === "Enter" && handlePasswordSubmit()
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter admin password"
                   autoFocus
                 />
               </div>
-              
+
               <div className="flex space-x-3">
                 <button
-                  onClick={() => router.push('/')}
+                  onClick={() => router.push("/")}
                   className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
                 >
                   Cancel
@@ -281,7 +305,10 @@ export default function AddDeveloper() {
             </div>
 
             <div className="mt-6 text-xs text-gray-500 text-center">
-              <p>Enter the admin password to access the developer management system.</p>
+              <p>
+                Enter the admin password to access the developer management
+                system.
+              </p>
             </div>
           </div>
         </div>
@@ -293,12 +320,14 @@ export default function AddDeveloper() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 text-center">
           <div className="text-red-500 text-6xl mb-4">🚫</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Access Denied
+          </h1>
           <p className="text-gray-600 mb-6">
             You are not authorized to add developers.
           </p>
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push("/")}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
             Return to Home
@@ -309,18 +338,26 @@ export default function AddDeveloper() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen ">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Add New Developer</h1>
-              <p className="text-sm text-gray-600">Add a new developer to The Avengers team</p>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-200">
+                Add New Developer
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Add a new developer to The Avengers team
+              </p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-gray-600">Admin: {currentUser?.name || 'Guest User'}</p>
-              <p className="text-xs text-gray-500">Roll: {currentUser?.roll || 'N/A'}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Admin: {currentUser?.name || "Guest User"}
+              </p>
+              <p className="text-xs text-gray-500">
+                Roll: {currentUser?.roll || "N/A"}
+              </p>
             </div>
           </div>
         </div>
@@ -329,18 +366,21 @@ export default function AddDeveloper() {
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          
           {/* Add Developer Form */}
           <div className="lg:col-span-3">
             <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-6">Developer Information</h2>
-              
+              <h2 className="text-lg font-semibold text-gray-900 mb-6">
+                Developer Information
+              </h2>
+
               {message.text && (
-                <div className={`mb-6 p-4 rounded-lg ${
-                  message.type === 'success' 
-                    ? 'bg-green-50 text-green-800 border border-green-200' 
-                    : 'bg-red-50 text-red-800 border border-red-200'
-                }`}>
+                <div
+                  className={`mb-6 p-4 rounded-lg ${
+                    message.type === "success"
+                      ? "bg-green-50 text-green-800 border border-green-200"
+                      : "bg-red-50 text-red-800 border border-red-200"
+                  }`}
+                >
                   {message.text}
                 </div>
               )}
@@ -349,7 +389,10 @@ export default function AddDeveloper() {
                 {/* Basic Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="name"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Full Name *
                     </label>
                     <input
@@ -365,7 +408,10 @@ export default function AddDeveloper() {
                   </div>
 
                   <div>
-                    <label htmlFor="roll" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="roll"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Roll Number (Optional)
                     </label>
                     <input
@@ -382,7 +428,10 @@ export default function AddDeveloper() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="role"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Role *
                     </label>
                     <select
@@ -393,14 +442,19 @@ export default function AddDeveloper() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       required
                     >
-                      {roleOptions.map(role => (
-                        <option key={role} value={role}>{role}</option>
+                      {roleOptions.map((role) => (
+                        <option key={role} value={role}>
+                          {role}
+                        </option>
                       ))}
                     </select>
                   </div>
 
                   <div>
-                    <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="location"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Location *
                     </label>
                     <input
@@ -418,12 +472,20 @@ export default function AddDeveloper() {
 
                 {/* Social Media Links */}
                 <div>
-                  <h3 className="text-md font-medium text-gray-900 mb-4">Social Media Links</h3>
-                  <p className="text-sm text-gray-600 mb-4">At least one social media link is required. Use '#' for unavailable links.</p>
-                  
+                  <h3 className="text-md font-medium text-gray-900 mb-4">
+                    Social Media Links
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    At least one social media link is required. Use '#' for
+                    unavailable links.
+                  </p>
+
                   <div className="grid grid-cols-1 gap-4">
                     <div>
-                      <label htmlFor="github" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label
+                        htmlFor="github"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
                         GitHub Profile
                       </label>
                       <input
@@ -438,7 +500,10 @@ export default function AddDeveloper() {
                     </div>
 
                     <div>
-                      <label htmlFor="linkedin" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label
+                        htmlFor="linkedin"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
                         LinkedIn Profile
                       </label>
                       <input
@@ -453,7 +518,10 @@ export default function AddDeveloper() {
                     </div>
 
                     <div>
-                      <label htmlFor="facebook" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label
+                        htmlFor="facebook"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
                         Facebook Profile
                       </label>
                       <input
@@ -471,12 +539,18 @@ export default function AddDeveloper() {
 
                 {/* Image Information */}
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <h3 className="text-md font-medium text-gray-900 mb-2">Profile Image</h3>
+                  <h3 className="text-md font-medium text-gray-900 mb-2">
+                    Profile Image
+                  </h3>
                   <p className="text-sm text-gray-600">
-                    📸 Default image will be used: <code className="bg-blue-100 px-2 py-1 rounded text-xs">/public/images/developers/default.jpg</code>
+                    📸 Default image will be used:{" "}
+                    <code className="bg-blue-100 px-2 py-1 rounded text-xs">
+                      /public/images/developers/default.jpg
+                    </code>
                   </p>
                   <p className="text-xs text-gray-500 mt-2">
-                    To use a custom image, the admin needs to upload it to the developers folder and update the database manually.
+                    To use a custom image, the admin needs to upload it to the
+                    developers folder and update the database manually.
                   </p>
                 </div>
 
@@ -484,7 +558,7 @@ export default function AddDeveloper() {
                 <div className="flex justify-end space-x-4">
                   <button
                     type="button"
-                    onClick={() => router.push('/')}
+                    onClick={() => router.push("/")}
                     className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     Cancel
@@ -494,7 +568,7 @@ export default function AddDeveloper() {
                     disabled={submitting}
                     className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    {submitting ? 'Adding...' : 'Add Developer'}
+                    {submitting ? "Adding..." : "Add Developer"}
                   </button>
                 </div>
               </form>
@@ -507,19 +581,32 @@ export default function AddDeveloper() {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Database Developers ({existingDevelopers.length})
               </h3>
-              
+
               {existingDevelopers.length === 0 ? (
-                <p className="text-gray-500 text-sm">No developers in database yet</p>
+                <p className="text-gray-500 text-sm">
+                  No developers in database yet
+                </p>
               ) : (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {existingDevelopers.map((developer) => (
-                    <div key={developer.id} className="border border-gray-200 rounded-lg p-3">
+                    <div
+                      key={developer.id}
+                      className="border border-gray-200 rounded-lg p-3"
+                    >
                       <div>
-                        <h4 className="font-medium text-gray-900 text-sm">{developer.name}</h4>
-                        <p className="text-xs text-gray-500">{developer.role}</p>
-                        <p className="text-xs text-gray-500">{developer.location}</p>
+                        <h4 className="font-medium text-gray-900 text-sm">
+                          {developer.name}
+                        </h4>
+                        <p className="text-xs text-gray-500">
+                          {developer.role}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {developer.location}
+                        </p>
                         {developer.roll && (
-                          <p className="text-xs text-blue-600">Roll: {developer.roll}</p>
+                          <p className="text-xs text-blue-600">
+                            Roll: {developer.roll}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -529,10 +616,12 @@ export default function AddDeveloper() {
             </div>
 
             <div className="mt-6 bg-blue-50 rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-blue-900 mb-2">Static Developers</h4>
+              <h4 className="text-sm font-semibold text-blue-900 mb-2">
+                Static Developers
+              </h4>
               <p className="text-xs text-blue-700">
-                There are also static developers in the code. 
-                New developers added here will appear alongside them on the developers page.
+                There are also static developers in the code. New developers
+                added here will appear alongside them on the developers page.
               </p>
             </div>
           </div>
