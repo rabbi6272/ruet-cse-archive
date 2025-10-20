@@ -80,8 +80,13 @@ export default function DrivePage({ params }) {
       <br />
       <br />
 
-      <div className={lato.className + " px-4 lg:px-6"}>
-        <div className="bg-[#ffffff78] dark:bg-[#071a26] px-4 lg:px-6 py-8 rounded-lg shadow-md">
+      <div
+        className={
+          lato.className +
+          " px-4 md:px-0 md:max-w-[90%] lg:max-w-[80%] xl:max-w-[70%] mx-auto"
+        }
+      >
+        <div className="bg-[#ffffff78] dark:bg-[#071a26] px-3 lg:px-6 xl:px-8 py-8 rounded-lg shadow-md">
           <div className="mx-auto ">
             {/* Breadcrumb Navigation */}
             {breadcrumb.length > 0 && (
@@ -128,7 +133,7 @@ export default function DrivePage({ params }) {
                 No files found in this folder.
               </p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="flex flex-col ">
                 {files.map((file, index) => (
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -136,18 +141,18 @@ export default function DrivePage({ params }) {
                     transition={{ duration: 0.5, delay: index * 0.1 }}
                     viewport={{ once: true }}
                     key={file.id}
-                    className="p-4 rounded-lg"
-
-                    // className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-md transition-shadow duration-300"
+                    className="px-2 py-4 lg:p-4 border-b border-gray-200 dark:border-gray-700 flex"
                   >
-                    <div className="flex flex-col items-center gap-1">
+                    <div className="flex-1 flex items-center gap-1">
+                      {/* File number */}
+                      <span className="text-gray-600 dark:text-gray-300 mr-1.5 lg:mr-2 xl:mr-3 text-lg">
+                        {index + 1}.
+                      </span>
+
                       {/* File type icon */}
                       <div
-                        className="cursor-pointer text-6xl"
-                        onClick={() => {
-                          file.mimeType.includes("folder") &&
-                            router.push(`/drive/${file.id}`);
-                        }}
+                        className="
+                      text-xl lg:text-2xl mr-0.5"
                       >
                         {(file.mimeType.includes("image/png") ||
                           file.mimeType.includes("image/jpeg")) && (
@@ -172,39 +177,45 @@ export default function DrivePage({ params }) {
                           <Image
                             src="/images/folder.svg"
                             alt="File Icon"
-                            width={80}
-                            height={80}
+                            width={25}
+                            height={25}
                           />
                         )}
                       </div>
 
-                      <h3 className="font-semibold text-lg text-gray-700 dark:text-gray-300 text-wrap truncate">
+                      {/* File name */}
+                      <h3
+                        onClick={() => {
+                          file.mimeType.includes("folder") &&
+                            router.push(`/drive/${file.id}`);
+                        }}
+                        className={`${
+                          file.mimeType.includes("folder")
+                            ? "cursor-pointer"
+                            : ""
+                        } text-lg text-gray-700 dark:text-gray-300 text-wrap truncate`}
+                      >
                         {file.name}
                       </h3>
                     </div>
 
+                    {/* File actions */}
                     {file.webContentLink && (
-                      <div className="mt-2 w-full px-6 lg:px-8">
-                        <div className="flex items-center justify-between gap-2 lg:gap-4">
-                          <Link
-                            href={file.webContentLink}
-                            className="flex-1 text-[12px] border-2 border-gray-500 active:scale-95 transition-transform duration-300 text-gray-700 dark:text-gray-200 px-1 py-1.5 rounded-full text-center cursor-pointer"
-                          >
-                            <i className="fas fa-download mr-1 text-xs font-medium"></i>
-                            Download
-                          </Link>
-                          <button
-                            onClick={() =>
-                              setPreviewId(
-                                previewID === file.id ? null : file.id
-                              )
-                            }
-                            className="flex-1 text-[12px] border-2 border-gray-500 active:scale-95 transition-transform duration-300 text-gray-700 dark:text-gray-200 px-1 py-1.5 rounded-full text-center cursor-pointer"
-                          >
-                            <i className="fas fa-eye text-xs mr-1 font-medium"></i>
-                            {file.mimeType.includes("mp4") ? "Play" : "Preview"}
-                          </button>
-                        </div>
+                      <div className="flex items-center justify-between gap-2 lg:gap-4">
+                        <Link
+                          href={file.webContentLink}
+                          className="flex-1 border-2 border-blue-600 hover:bg-blue-600 transition-colors grid place-items-center text-gray-700 dark:text-gray-200 w-10 h-10 rounded-full cursor-pointer"
+                        >
+                          <i className="fas fa-download  text-[13px]"></i>
+                        </Link>
+                        <button
+                          onClick={() =>
+                            setPreviewId(previewID === file.id ? null : file.id)
+                          }
+                          className="flex-1 border-2 border-blue-600 hover:bg-blue-600 transition-colors grid place-items-center text-gray-700 dark:text-gray-200 w-10 h-10 rounded-full cursor-pointer"
+                        >
+                          <i className="fas fa-eye text-[13px]"></i>
+                        </button>
                       </div>
                     )}
                   </motion.div>

@@ -13,13 +13,15 @@ export function ResourceCard({ id, title, description, image, links }) {
         placeholder="blur"
         priority={id <= 2} // Prioritize loading for first 2 cards
       />
-      <div className="p-5 relative">
-        <h5 className="mb-2 text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-200">
-          {title}
-        </h5>
-        <p className="mb-4 max-h-[150px] text-justify font-normal text-gray-700 dark:text-gray-400 leading-relaxed">
-          {description}
-        </p>
+      <div className="p-5 max-h-[290px] relative flex flex-col justify-between">
+        <div className="flex-1">
+          <h5 className="mb-2 text-2xl font-semibold tracking-tight text-gray-900 dark:text-gray-200">
+            {title}
+          </h5>
+          <p className="mb-4  text-justify font-normal text-gray-700 dark:text-gray-400 leading-relaxed">
+            {description}
+          </p>
+        </div>
         <ResourceCardLinks links={links} />
       </div>
     </div>
