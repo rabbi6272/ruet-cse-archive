@@ -68,76 +68,81 @@ const fallbackResourcesData = [
 // Function to fetch resources data from Firebase
 export async function getResourcesData() {
   try {
-    const resourcesRef = ref(db, 'resources');
+    const resourcesRef = ref(db, "resources");
     const snapshot = await get(resourcesRef);
-    
+
     if (snapshot.exists()) {
       const firebaseData = snapshot.val();
-      
+
       // Convert Firebase structure (resources/1-1/A) to resources data
       const resourcesWithLinks = [
         {
           id: 1,
           title: "1st Year Resources",
-          description: "Just entered the matrix? Here's your starter pack: C programming, logic gates, and enough math to question your existence. Escape infinite loops early!",
+          description:
+            "Just entered the matrix? Here's your starter pack: C programming, logic gates, and enough math to question your existence. Escape infinite loops early!",
           image: image0,
-          links: []
+          links: [],
         },
         {
           id: 2,
-          title: "2nd Year Resources", 
-          description: "You've compiled your basics — now get ready for bugs that don't show errors! Dive into 'why won't this code run?!' energy.",
+          title: "2nd Year Resources",
+          description:
+            "You've compiled your basics — now get ready for bugs that don't show errors! Dive into 'why won't this code run?!' energy.",
           image: image1,
-          links: []
+          links: [],
         },
         {
           id: 3,
           title: "3rd Year Resources",
-          description: "Code is life now. OS deadlocks, Git merge conflicts, and your first real project where 'it works on my machine' is a valid excuse. Enjoy the chaos!",
+          description:
+            "Code is life now. OS deadlocks, Git merge conflicts, and your first real project where 'it works on my machine' is a valid excuse. Enjoy the chaos!",
           image: image2,
-          links: []
+          links: [],
         },
         {
           id: 4,
           title: "4th Year Resources",
-          description: "You're almost out! But wait — there's ML models, thesis panic, final year projects, and last-minute internship hunts. Now's the time to pretend you know everything.",
+          description:
+            "You're almost out! But wait — there's ML models, thesis panic, final year projects, and last-minute internship hunts. Now's the time to pretend you know everything.",
           image: image3,
-          links: []
+          links: [],
         },
         {
           id: 5,
           title: "Higher Studies & Internship Details",
-          description: "Want to escape the 9-to-5 matrix? Whether it's GRE stress or internship ghosting — we got the hacks. Also, don't forget to update your LinkedIn.",
+          description:
+            "Want to escape the 9-to-5 matrix? Whether it's GRE stress or internship ghosting — we got the hacks. Also, don't forget to update your LinkedIn.",
           image: image4,
-          links: []
-        }
+          links: [],
+        },
       ];
 
       // Map Firebase data to resources structure
       // 1st Year: 1-1, 1-2
-      const firstYearSemesters = ['1-1', '1-2'];
-      firstYearSemesters.forEach(semester => {
+      const firstYearSemesters = ["1-1", "1-2"];
+      firstYearSemesters.forEach((semester) => {
         if (firebaseData[semester]) {
-          ['A', 'B', 'C'].forEach(variant => {
+          ["A", "B", "C"].forEach((variant) => {
             if (firebaseData[semester][variant]) {
               resourcesWithLinks[0].links.push({
                 label: `${semester} - ${variant}`,
-                url: `/drive/${firebaseData[semester][variant]}` // Convert to internal drive URL
+                url: `/drive/${firebaseData[semester][variant]}`, // Convert to internal drive URL
               });
             }
           });
         }
       });
 
-      // 2nd Year: 2-1, 2-2  
-      const secondYearSemesters = ['2-1', '2-2'];
-      secondYearSemesters.forEach(semester => {
+      // 2nd Year: 2-1, 2-2
+      const secondYearSemesters = ["2-1", "2-2"];
+      secondYearSemesters.forEach((semester) => {
         if (firebaseData[semester]) {
-          ['A', 'B', 'C'].forEach(variant => {
+          ["A", "B", "C"].forEach((variant) => {
             if (firebaseData[semester][variant]) {
               resourcesWithLinks[1].links.push({
                 label: `${semester} - ${variant}`,
-                url: `/drive/${firebaseData[semester][variant]}` // Convert to internal drive URL
+                url: `/drive/${firebaseData[semester][variant]}`, // Convert to internal drive URL
               });
             }
           });
@@ -145,14 +150,14 @@ export async function getResourcesData() {
       });
 
       // 3rd Year: 3-1, 3-2
-      const thirdYearSemesters = ['3-1', '3-2'];
-      thirdYearSemesters.forEach(semester => {
+      const thirdYearSemesters = ["3-1", "3-2"];
+      thirdYearSemesters.forEach((semester) => {
         if (firebaseData[semester]) {
-          ['A', 'B', 'C'].forEach(variant => {
+          ["A", "B", "C"].forEach((variant) => {
             if (firebaseData[semester][variant]) {
               resourcesWithLinks[2].links.push({
                 label: `${semester} - ${variant}`,
-                url: `/drive/${firebaseData[semester][variant]}` // Convert to internal drive URL
+                url: `/drive/${firebaseData[semester][variant]}`, // Convert to internal drive URL
               });
             }
           });
@@ -160,14 +165,14 @@ export async function getResourcesData() {
       });
 
       // 4th Year: 4-1, 4-2
-      const fourthYearSemesters = ['4-1', '4-2'];
-      fourthYearSemesters.forEach(semester => {
+      const fourthYearSemesters = ["4-1", "4-2"];
+      fourthYearSemesters.forEach((semester) => {
         if (firebaseData[semester]) {
-          ['A', 'B', 'C'].forEach(variant => {
+          ["A", "B", "C"].forEach((variant) => {
             if (firebaseData[semester][variant]) {
               resourcesWithLinks[3].links.push({
                 label: `${semester} - ${variant}`,
-                url: `/drive/${firebaseData[semester][variant]}` // Convert to internal drive URL
+                url: `/drive/${firebaseData[semester][variant]}`, // Convert to internal drive URL
               });
             }
           });
@@ -175,12 +180,17 @@ export async function getResourcesData() {
       });
 
       // Higher Studies
-      if (firebaseData['higher-studies']) {
-        ['A', 'B', 'C'].forEach(variant => {
-          if (firebaseData['higher-studies'][variant]) {
+      if (firebaseData["higher-studies"]) {
+        ["A", "B", "C"].forEach((variant) => {
+          if (firebaseData["higher-studies"][variant]) {
             resourcesWithLinks[4].links.push({
-              label: variant === 'A' ? 'Higher Studies' : variant === 'B' ? 'Internships' : 'Career Guide',
-              url: `/drive/${firebaseData['higher-studies'][variant]}` // Convert to internal drive URL
+              label:
+                variant === "A"
+                  ? "Higher Studies"
+                  : variant === "B"
+                  ? "Internships"
+                  : "Career Guide",
+              url: `/drive/${firebaseData["higher-studies"][variant]}`, // Convert to internal drive URL
             });
           }
         });
@@ -193,21 +203,21 @@ export async function getResourcesData() {
             const year = index + 1;
             resource.links = [
               { label: `${year} - 1`, url: "" },
-              { label: `${year} - 2`, url: "" }
+              { label: `${year} - 2`, url: "" },
             ];
           } else {
             resource.links = [{ label: "Read more", url: "" }];
           }
         }
       });
-      
+
       return resourcesWithLinks;
     } else {
-      console.warn('No resources data found in Firebase, using fallback data');
+      console.warn("No resources data found in Firebase, using fallback data");
       return fallbackResourcesData;
     }
   } catch (error) {
-    console.error('Error fetching resources from Firebase:', error);
+    console.error("Error fetching resources from Firebase:", error);
     return fallbackResourcesData;
   }
 }
@@ -216,16 +226,4 @@ export async function getResourcesData() {
 export const resourcesData = fallbackResourcesData;
 
 // SEO-friendly metadata
-export const resourcesMetadata = {
-  title: "Academic Resources || RUET CSE Archive",
-  description:
-    "Access comprehensive study materials, course resources, and academic guides for all years of your CSE journey at RUET.",
-  keywords: [
-    "RUET",
-    "CSE",
-    "academic resources",
-    "study materials",
-    "computer science",
-    "engineering",
-  ],
-};
+export const resourcesMetadata = {};

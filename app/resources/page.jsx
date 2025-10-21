@@ -1,41 +1,35 @@
-"use client";
-
-import { useEffect } from "react";
 import { ResourcesHeader } from "@/components/resources/resources-header";
 import { ResourcesGridOptimized } from "@/components/resources/resources-grid-super-optimized";
-import { resourcesMetadata } from "@/components/resources/resources-data";
+
+// Page metadata for SEO
+export const metadata = {
+  title: "Academic Resources || RUET CSE Archive",
+  description:
+    "Access comprehensive study materials, course resources, and academic guides for all years of your CSE journey at RUET.",
+  keywords: [
+    "RUET",
+    "CSE",
+    "academic resources",
+    "study materials",
+    "computer science",
+    "engineering",
+  ],
+  openGraph: {
+    title: "Academic Resources || RUET CSE Archive",
+    description:
+      "Access comprehensive study materials, course resources, and academic guides for all years of your CSE journey at RUET.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Academic Resources || RUET CSE Archive",
+    description:
+      "Access comprehensive study materials, course resources, and academic guides for all years of your CSE journey at RUET.",
+  },
+};
 
 // Client component to support dynamic data fetching
 export default function Resources() {
-  // Set page title and meta description for client-side routing
-  useEffect(() => {
-    document.title = resourcesMetadata.title;
-
-    // Update meta description
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute("content", resourcesMetadata.description);
-    } else {
-      const meta = document.createElement("meta");
-      meta.name = "description";
-      meta.content = resourcesMetadata.description;
-      document.head.appendChild(meta);
-    }
-
-    // Update meta keywords
-    const metaKeywords = document.querySelector('meta[name="keywords"]');
-    if (metaKeywords) {
-      metaKeywords.setAttribute(
-        "content",
-        resourcesMetadata.keywords.join(", ")
-      );
-    } else {
-      const meta = document.createElement("meta");
-      meta.name = "keywords";
-      meta.content = resourcesMetadata.keywords.join(", ");
-      document.head.appendChild(meta);
-    }
-  }, []);
   return (
     <div className="min-h-screen">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">

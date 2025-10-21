@@ -27,7 +27,6 @@ export const metadata = {
   },
 };
 
-// Server component - no client-side JavaScript needed for the page structure
 export default function Shelf() {
   return (
     <div className="min-h-screen">
