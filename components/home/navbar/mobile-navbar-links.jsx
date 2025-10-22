@@ -18,7 +18,6 @@ const mobileNavItems = [
     subItems: [
       { name: "Get Help", href: "/contact&help/help" },
       { name: "Browse Doubts", href: "/contact&help/doubts" },
-      { name: "Statistics", href: "/contact&help/statistics" },
       {
         name: "Official Website",
         href: "https://www.ruet.ac.bd/",

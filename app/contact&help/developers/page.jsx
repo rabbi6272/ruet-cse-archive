@@ -356,21 +356,7 @@ export default function Developers() {
             </div>
           </div>
         )}
-      {/* Stats Bar */}
-      <div className="mb-6 bg-blue-50 border-b border-blue-200 px-4 py-3 rounded-lg">
-        <div className="flex justify-between items-center text-sm text-blue-800">
-          <span>
-            Showing {allDevelopers.length} team members
-            {!error && allDevelopers.some((d) => d.isDynamic) && (
-              <span className="ml-2 text-green-700">
-                (Including {allDevelopers.filter((d) => d.isDynamic).length}{" "}
-                recently added)
-              </span>
-            )}
-          </span>
-          <span className="text-xs">👨‍💻 The Avengers Development Team</span>
-        </div>
-      </div>
+     
     </div>
     // </div>
   );

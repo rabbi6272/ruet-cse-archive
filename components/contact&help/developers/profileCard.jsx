@@ -112,13 +112,7 @@ export function ProfileCard({
         )} */}
 
         <p className="mt-2 text-xs text-blue-500">Tap/Hover for social links</p>
-        {isDynamic && (
-          <div className="mt-2 bg-green-50 rounded-lg p-2 border border-green-200">
-            <div className="text-center text-xs text-green-800">
-              <span className="font-medium">Recently Added</span>
-            </div>
-          </div>
-        )}
+        
       </div>
 
       {/* Back Side - Social Links */}

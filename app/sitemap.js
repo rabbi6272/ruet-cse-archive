@@ -60,12 +60,6 @@ export default function sitemap() {
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/contact%26help/statistics`,
-      lastModified: currentDate,
-      changeFrequency: 'daily',
-      priority: 0.6,
-    },
-    {
       url: `${baseUrl}/user/login`,
       lastModified: currentDate,
       changeFrequency: 'monthly',
