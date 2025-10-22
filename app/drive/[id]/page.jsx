@@ -19,7 +19,7 @@ import Loading from "@/app/loading";
 
 // Simple client-side cache to prevent re-fetching on back navigation
 const clientCache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 function getCachedData(folderId) {
   const cached = clientCache.get(folderId);
@@ -122,7 +122,7 @@ const FileItem = memo(({ file, index, onFolderClick, onPreview }) => {
           onClick={handleClick}
           className={`${
             isFolder
-              ? "cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+              ? "cursor-pointer hover:text-blue-600 dark:hover:text-blue-500"
               : ""
           } text-lg text-gray-700 dark:text-gray-300 text-wrap truncate transition-colors`}
         >
@@ -134,14 +134,14 @@ const FileItem = memo(({ file, index, onFolderClick, onPreview }) => {
         <div className="flex items-center justify-between gap-2 lg:gap-4">
           <Link
             href={file.webContentLink}
-            className="flex-1 border-2 border-blue-600 hover:bg-blue-600 transition-colors grid place-items-center text-gray-700 dark:text-gray-200 w-10 h-10 rounded-full"
+            className="flex-1 border-2 border-blue-600 hover:bg-blue-600 transition-colors duration-300 grid place-items-center text-gray-700 dark:text-gray-200 w-10 h-10 rounded-full"
             aria-label={`Download ${file.name}`}
           >
             <i className="fas fa-download text-[13px]"></i>
           </Link>
           <button
             onClick={handlePreview}
-            className="flex-1 border-2 border-blue-600 hover:bg-blue-600 transition-colors grid place-items-center text-gray-700 dark:text-gray-200 w-10 h-10 rounded-full"
+            className="flex-1 border-2 border-blue-600 hover:bg-blue-600 transition-colors duration-300 grid place-items-center text-gray-700 dark:text-gray-200 w-10 h-10 rounded-full"
             aria-label={`Preview ${file.name}`}
           >
             <i className="fas fa-eye text-[13px]"></i>
@@ -153,6 +153,31 @@ const FileItem = memo(({ file, index, onFolderClick, onPreview }) => {
 });
 
 FileItem.displayName = "FileItem";
+
+// Memoized breadcrumb item component
+const BreadcrumbItem = memo(({ folder, isLast, index }) => {
+  if (isLast) {
+    return (
+      <span className="text-[12px] lg:text-[13px] font-medium text-gray-900 dark:text-gray-100 px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded">
+        <i className="fas fa-folder mr-1 text-blue-600 dark:text-blue-400"></i>
+        {folder.name}
+      </span>
+    );
+  }
+
+  return (
+    <Link
+      href={`/drive/${folder.id}`}
+      className="text-[12px] lg:text-[13px] flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+      prefetch={true}
+    >
+      <i className="fas fa-folder mr-1"></i>
+      {folder.name}
+    </Link>
+  );
+});
+
+BreadcrumbItem.displayName = "BreadcrumbItem";
 
 export default function DrivePage({ params }) {
   const router = useRouter();
@@ -169,9 +194,9 @@ export default function DrivePage({ params }) {
   const fetchInProgressRef = useRef(false);
   const abortControllerRef = useRef(null);
 
-  const fetchFiles = useCallback(async (folderId, options = {}) => {
+  const fetchFiles = useCallback(async (folderId) => {
     // Prevent duplicate fetches
-    if (fetchInProgressRef.current && !options.force) {
+    if (fetchInProgressRef.current) {
       return;
     }
 
@@ -182,18 +207,16 @@ export default function DrivePage({ params }) {
       }
 
       // Check client-side cache first
-      if (!options.skipCache) {
-        const cached = getCachedData(folderId);
-        if (cached) {
-          setFiles(cached.files || []);
-          setBreadcrumb(cached.breadcrumb || []);
-          setCurrentFolder(cached.currentFolder || null);
-          setLoading(false);
-          return;
-        }
+      const cached = getCachedData(folderId);
+      if (cached) {
+        setFiles(cached.files || []);
+        setBreadcrumb(cached.breadcrumb || []);
+        setCurrentFolder(cached.currentFolder || null);
+        setLoading(false);
+        return;
       }
 
-      fetchInProgressRef.current = true;
+      // fetchInProgressRef.current = true;
       setLoading(true);
       setError(null);
 
@@ -333,55 +356,53 @@ export default function DrivePage({ params }) {
       <br />
 
       <div
-        className={
-          lato.className +
-          " px-4 md:px-0 md:max-w-[90%] lg:max-w-[80%] xl:max-w-[70%] mx-auto"
-        }
+        className={`
+          ${lato.className} px-4 md:px-0 md:max-w-[90%] lg:max-w-[80%] xl:max-w-[70%] mx-auto`}
       >
         <div className="bg-[#ffffff78] dark:bg-[#071a26] px-3 lg:px-6 xl:px-8 py-8 rounded-lg shadow-md">
           <div className="mx-auto">
             {/* Breadcrumb Navigation */}
-            {breadcrumb.length > 0 && (
+            {breadcrumb && breadcrumb.length > 0 && (
               <nav className="mb-6 p-1" aria-label="Breadcrumb">
-                <ol className="flex items-center flex-wrap space-x-1 text-sm text-gray-600 dark:text-gray-400">
-                  <li>
+                <ol className="flex items-center flex-wrap gap-1 text-sm text-gray-600 dark:text-gray-400">
+                  {/* Home/Drive root */}
+                  <li key="breadcrumb-home" className="flex items-center">
                     <Link
                       href="/drive"
                       className="text-[12px] lg:text-[13px] flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                       prefetch={true}
                     >
                       <i className="fas fa-home mr-1"></i>
-                      Drive
+                      <span className="hidden sm:inline">Drive</span>
                     </Link>
                   </li>
-                  {breadcrumb.map((folder, index) => (
-                    <li key={folder.id} className="flex items-center">
-                      <i className="fas fa-chevron-right mx-1 text-gray-400 text-xs"></i>
-                      {index === breadcrumb.length - 1 ? (
-                        <span className="text-[12px] lg:text-[13px] font-medium text-gray-900 dark:text-gray-100 px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded">
-                          <i className="fas fa-folder mr-1 text-blue-600 dark:text-blue-400"></i>
-                          {folder.name}
-                        </span>
-                      ) : (
-                        <Link
-                          href={`/drive/${folder.id}`}
-                          className="text-[12px] lg:text-[13px] flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                          prefetch={true}
-                        >
-                          <i className="fas fa-folder mr-1"></i>
-                          {folder.name}
-                        </Link>
-                      )}
-                    </li>
-                  ))}
+
+                  {/* Breadcrumb trail */}
+                  {breadcrumb.map((folder, index) => {
+                    if (!folder || !folder.id || !folder.name) {
+                      return null;
+                    }
+
+                    return (
+                      <li
+                        key={`breadcrumb-${folder.id}-${index}`}
+                        className="flex items-center"
+                      >
+                        <i className="fas fa-chevron-right mx-1 text-gray-400 text-[10px]"></i>
+                        <BreadcrumbItem
+                          folder={folder}
+                          isLast={index === breadcrumb.length - 1}
+                          index={index}
+                        />
+                      </li>
+                    );
+                  })}
                 </ol>
               </nav>
-            )}
-
+            )}{" "}
             <h1 className="text-3xl text-center font-bold mb-6 text-gray-700 dark:text-gray-300">
               {currentFolder ? currentFolder.name : "Drive Files"}
             </h1>
-
             {files.length === 0 ? (
               <div className="text-center py-12">
                 <i className="fas fa-folder-open text-6xl text-gray-400 dark:text-gray-600 mb-4"></i>

@@ -92,7 +92,26 @@ async function getAuthClient() {
 }
 
 // ============= BREADCRUMB OPTIMIZATION =============
-async function buildBreadcrumbOptimized(drive, folderId, folderName) {
+/**
+ * Build breadcrumb trail efficiently with smart caching
+ * Strategy:
+ * 1. Check if this folder's breadcrumb is already cached
+ * 2. Traverse up parent chain, collecting IDs
+ * 3. Batch fetch all parent details in parallel
+ * 4. Cache each level for future use
+ *
+ * @param {Object} drive - Google Drive API client
+ * @param {string} folderId - Current folder ID
+ * @param {string} folderName - Current folder name
+ * @param {Array<string>} folderParents - Array of parent folder IDs
+ * @returns {Promise<Array>} Breadcrumb array from root to current folder
+ */
+async function buildBreadcrumbOptimized(
+  drive,
+  folderId,
+  folderName,
+  folderParents
+) {
   const cacheKey = `breadcrumb_${folderId}`;
   const cached = getFromCache(cacheKey, breadcrumbCache);
 
@@ -100,82 +119,114 @@ async function buildBreadcrumbOptimized(drive, folderId, folderName) {
     return cached;
   }
 
+  // Start with current folder
   const breadcrumb = [{ id: folderId, name: folderName }];
 
+  // If no parents, this is root - return just current folder
+  if (!folderParents || folderParents.length === 0) {
+    setCache(cacheKey, breadcrumb, breadcrumbCache);
+    return breadcrumb;
+  }
+
   try {
-    // Get folder info with parents
-    const folderInfo = await drive.files.get({
-      fileId: folderId,
-      fields: "parents",
-    });
-
-    if (!folderInfo.data.parents || folderInfo.data.parents.length === 0) {
-      setCache(cacheKey, breadcrumb, breadcrumbCache);
-      return breadcrumb;
-    }
-
-    // Collect all parent IDs up the chain
+    // Collect all parent folder IDs by traversing up
     const parentChain = [];
-    let currentParentId = folderInfo.data.parents[0];
+    let currentParentId = folderParents[0];
     const seenIds = new Set([folderId]);
     const MAX_DEPTH = 20; // Prevent infinite loops
 
-    // First, collect all parent IDs
-    for (let depth = 0; depth < MAX_DEPTH; depth++) {
-      if (!currentParentId || seenIds.has(currentParentId)) break;
-
-      seenIds.add(currentParentId);
-      parentChain.push(currentParentId);
-
-      // Check if this parent's info is already cached
-      const parentCacheKey = `breadcrumb_${currentParentId}`;
-      const cachedParent = getFromCache(parentCacheKey, breadcrumbCache);
-
-      if (cachedParent) {
-        // Use cached breadcrumb and stop traversing
-        breadcrumb.unshift(...cachedParent);
+    // First pass: Collect parent IDs and check cache
+    while (currentParentId && parentChain.length < MAX_DEPTH) {
+      // Prevent circular references
+      if (seenIds.has(currentParentId)) {
+        console.warn(`Circular reference detected at ${currentParentId}`);
         break;
       }
+      seenIds.add(currentParentId);
 
-      // Fetch parent to get its parent
+      // Check if this parent's breadcrumb is cached
+      const parentBreadcrumbCache = getFromCache(
+        `breadcrumb_${currentParentId}`,
+        breadcrumbCache
+      );
+
+      if (parentBreadcrumbCache) {
+        // Found cached parent chain - use it and stop
+        breadcrumb.unshift(...parentBreadcrumbCache);
+        setCache(cacheKey, breadcrumb, breadcrumbCache);
+        return breadcrumb;
+      }
+
+      // Add to chain for batch fetching
+      parentChain.push(currentParentId);
+
+      // Fetch this parent to get its parent
       try {
         const parentInfo = await drive.files.get({
           fileId: currentParentId,
-          fields: "parents",
+          fields: "id, parents",
         });
+
         currentParentId = parentInfo.data.parents?.[0];
       } catch (err) {
+        // Can't access parent (permission or doesn't exist) - stop here
+        if (err.code !== 404 && err.response?.status !== 404) {
+          console.warn(`Cannot access parent ${currentParentId}:`, err.message);
+        }
         break;
       }
     }
 
-    // Now batch fetch all parent names
+    // Second pass: Batch fetch names for all parents we collected
     if (parentChain.length > 0) {
-      const parentRequests = parentChain.map((parentId) =>
+      const parentDetailsPromises = parentChain.map((parentId) =>
         drive.files
           .get({
             fileId: parentId,
-            fields: "id, name",
+            fields: "id, name, parents",
           })
-          .catch((err) => null)
+          .catch((err) => {
+            if (err.code !== 404 && err.response?.status !== 404) {
+              console.warn(`Failed to fetch parent ${parentId}:`, err.message);
+            }
+            return null;
+          })
       );
 
-      const parentInfos = await Promise.all(parentRequests);
+      const parentDetails = await Promise.all(parentDetailsPromises);
 
-      // Add to breadcrumb in reverse order
-      for (let i = parentInfos.length - 1; i >= 0; i--) {
-        if (parentInfos[i]?.data) {
-          breadcrumb.unshift({
-            id: parentInfos[i].data.id,
-            name: parentInfos[i].data.name,
-          });
+      // Build breadcrumb from root to current (reverse order)
+      const validParents = parentDetails
+        .filter(
+          (parent) => parent !== null && parent?.data?.id && parent?.data?.name
+        )
+        .reverse();
+
+      for (const parent of validParents) {
+        const parentItem = {
+          id: parent.data.id,
+          name: parent.data.name,
+        };
+        breadcrumb.unshift(parentItem);
+
+        // Cache individual parent breadcrumbs for future use
+        const parentBreadcrumbKey = `breadcrumb_${parent.data.id}`;
+        if (!getFromCache(parentBreadcrumbKey, breadcrumbCache)) {
+          // Only cache if not already cached
+          const parentBreadcrumb = breadcrumb.slice(
+            0,
+            breadcrumb.findIndex((b) => b.id === parent.data.id) + 1
+          );
+          setCache(parentBreadcrumbKey, parentBreadcrumb, breadcrumbCache);
         }
       }
     }
   } catch (err) {
-    console.error("Error building breadcrumb:", err);
+    console.error("Error building breadcrumb:", err.message);
+    // Return at least the current folder if breadcrumb building fails
   }
 
+  // Cache this folder's complete breadcrumb
   setCache(cacheKey, breadcrumb, breadcrumbCache);
   return breadcrumb;
 }
@@ -228,7 +279,7 @@ export async function POST(req) {
         fields:
           "files(id, name, mimeType, webViewLink, webContentLink, size, modifiedTime)",
         pageSize: 1000, // Max allowed by Google Drive API
-        orderBy: "folder,name", // Folders first, then alphabetically
+        orderBy: "name", // Sort files alphabetically
       }),
     ]);
 
@@ -236,7 +287,8 @@ export async function POST(req) {
     const breadcrumb = await buildBreadcrumbOptimized(
       drive,
       folderInfo.data.id,
-      folderInfo.data.name
+      folderInfo.data.name,
+      folderInfo.data.parents
     );
 
     const result = {
