@@ -3,11 +3,41 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, use, useCallback, useMemo, memo } from "react";
+import {
+  useEffect,
+  useState,
+  use,
+  useCallback,
+  useMemo,
+  memo,
+  useRef,
+} from "react";
 
 import { motion } from "framer-motion";
 import { lato } from "@/app/ui/fonts";
 import Loading from "@/app/loading";
+
+// Simple client-side cache to prevent re-fetching on back navigation
+const clientCache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCachedData(folderId) {
+  const cached = clientCache.get(folderId);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+  clientCache.delete(folderId);
+  return null;
+}
+
+function setCachedData(folderId, data) {
+  // Prevent cache from growing too large
+  if (clientCache.size > 50) {
+    const firstKey = clientCache.keys().next().value;
+    clientCache.delete(firstKey);
+  }
+  clientCache.set(folderId, { data, timestamp: Date.now() });
+}
 
 // Memoized file icon component
 const FileIcon = memo(({ mimeType }) => {
@@ -135,70 +165,117 @@ export default function DrivePage({ params }) {
   const [breadcrumb, setBreadcrumb] = useState([]);
   const [currentFolder, setCurrentFolder] = useState(null);
 
-  const fetchFiles = useCallback(
-    async (folderId) => {
-      try {
-        setLoading(true);
-        setError(null);
+  // Prevent multiple simultaneous fetches
+  const fetchInProgressRef = useRef(false);
+  const abortControllerRef = useRef(null);
 
-        const response = await fetch(`/api/drive/`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ folderId }),
-        });
+  const fetchFiles = useCallback(async (folderId, options = {}) => {
+    // Prevent duplicate fetches
+    if (fetchInProgressRef.current && !options.force) {
+      return;
+    }
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          const errorMessage =
-            errorData.error ||
-            `HTTP ${response.status}: ${response.statusText}`;
-          throw new Error(errorMessage);
-        }
-
-        const data = await response.json();
-
-        if (data.error) {
-          throw new Error(data.error);
-        }
-
-        setFiles(data.files || []);
-        setBreadcrumb(data.breadcrumb || []);
-        setCurrentFolder(data.currentFolder || null);
-      } catch (err) {
-        setError(err.message);
-        console.error("Error fetching files:", err);
-      } finally {
-        setLoading(false);
+    try {
+      // Cancel previous fetch if still in progress
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
-    },
-    [setFiles, setBreadcrumb, setCurrentFolder]
-  );
+
+      // Check client-side cache first
+      if (!options.skipCache) {
+        const cached = getCachedData(folderId);
+        if (cached) {
+          setFiles(cached.files || []);
+          setBreadcrumb(cached.breadcrumb || []);
+          setCurrentFolder(cached.currentFolder || null);
+          setLoading(false);
+          return;
+        }
+      }
+
+      fetchInProgressRef.current = true;
+      setLoading(true);
+      setError(null);
+
+      // Create new abort controller for this request
+      abortControllerRef.current = new AbortController();
+
+      const response = await fetch(`/api/drive/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ folderId }),
+        signal: abortControllerRef.current.signal,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage =
+          errorData.error || `HTTP ${response.status}: ${response.statusText}`;
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      const result = {
+        files: data.files || [],
+        breadcrumb: data.breadcrumb || [],
+        currentFolder: data.currentFolder || null,
+      };
+
+      setFiles(result.files);
+      setBreadcrumb(result.breadcrumb);
+      setCurrentFolder(result.currentFolder);
+
+      // Cache the result client-side
+      setCachedData(folderId, result);
+    } catch (err) {
+      // Ignore abort errors
+      if (err.name === "AbortError") {
+        return;
+      }
+      setError(err.message);
+      console.error("Error fetching files:", err);
+    } finally {
+      fetchInProgressRef.current = false;
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (resolvedParams.id) {
       fetchFiles(resolvedParams.id);
     }
+
+    // Cleanup function to abort fetch on unmount
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [resolvedParams.id, fetchFiles]);
 
   const handleFolderClick = useCallback(
     (folderId) => {
+      // Optimistically start loading state
+      setLoading(true);
       router.push(`/drive/${folderId}`);
     },
     [router]
   );
 
-  const handlePreview = useCallback(
-    (fileId) => {
-      setPreviewId((prev) => (prev === fileId ? null : fileId));
-    },
-    [setPreviewId]
-  );
+  const handlePreview = useCallback((fileId) => {
+    setPreviewId((prev) => (prev === fileId ? null : fileId));
+  }, []);
 
   const handleClosePreview = useCallback(() => {
     setPreviewId(null);
-  }, [setPreviewId]);
+  }, []);
 
   // Separate folders and files for better UX
   const { folders, regularFiles } = useMemo(() => {
@@ -207,6 +284,26 @@ export default function DrivePage({ params }) {
     return { folders, regularFiles };
   }, [files]);
 
+  // Add keyboard shortcut for closing preview (ESC key)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && previewID) {
+        setPreviewId(null);
+      }
+    };
+
+    if (previewID) {
+      document.addEventListener("keydown", handleKeyDown);
+      // Prevent body scroll when preview is open
+      document.body.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "unset";
+    };
+  }, [previewID]);
+
   if (loading) {
     return <Loading />;
   }
@@ -214,12 +311,14 @@ export default function DrivePage({ params }) {
   if (error) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-4 py-3 rounded">
+        <div className="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-4 py-3 rounded max-w-md">
           <strong className="font-bold">Error: </strong>
           <span className="block sm:inline">{error}</span>
           <button
-            onClick={() => fetchFiles(resolvedParams.id)}
-            className="ml-4 underline hover:text-red-900 dark:hover:text-red-100"
+            onClick={() =>
+              fetchFiles(resolvedParams.id, { force: true, skipCache: true })
+            }
+            className="ml-4 underline hover:text-red-900 dark:hover:text-red-100 transition-colors"
           >
             Retry
           </button>
@@ -284,33 +383,46 @@ export default function DrivePage({ params }) {
             </h1>
 
             {files.length === 0 ? (
-              <p className="text-2xl text-center text-gray-700 dark:text-gray-300">
-                No files found in this folder.
-              </p>
-            ) : (
-              <div className="flex flex-col">
-                {/* Folders first */}
-                {folders.map((file, index) => (
-                  <FileItem
-                    key={file.id}
-                    file={file}
-                    index={index}
-                    onFolderClick={handleFolderClick}
-                    onPreview={handlePreview}
-                  />
-                ))}
-
-                {/* Then files */}
-                {regularFiles.map((file, index) => (
-                  <FileItem
-                    key={file.id}
-                    file={file}
-                    index={folders.length + index}
-                    onFolderClick={handleFolderClick}
-                    onPreview={handlePreview}
-                  />
-                ))}
+              <div className="text-center py-12">
+                <i className="fas fa-folder-open text-6xl text-gray-400 dark:text-gray-600 mb-4"></i>
+                <p className="text-2xl text-gray-700 dark:text-gray-300">
+                  No files found in this folder.
+                </p>
               </div>
+            ) : (
+              <>
+                {/* File count indicator for large folders */}
+                {files.length > 50 && (
+                  <div className="mb-4 text-sm text-gray-600 dark:text-gray-400 text-center">
+                    Showing {files.length} items ({folders.length} folders,{" "}
+                    {regularFiles.length} files)
+                  </div>
+                )}
+
+                <div className="flex flex-col">
+                  {/* Folders first */}
+                  {folders.map((file, index) => (
+                    <FileItem
+                      key={file.id}
+                      file={file}
+                      index={index}
+                      onFolderClick={handleFolderClick}
+                      onPreview={handlePreview}
+                    />
+                  ))}
+
+                  {/* Then files */}
+                  {regularFiles.map((file, index) => (
+                    <FileItem
+                      key={file.id}
+                      file={file}
+                      index={folders.length + index}
+                      onFolderClick={handleFolderClick}
+                      onPreview={handlePreview}
+                    />
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>

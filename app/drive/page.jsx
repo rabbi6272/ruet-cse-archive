@@ -2,68 +2,108 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { lato } from "@/app/ui/fonts";
 import { getRootFolderId } from "@/lib/drive-config";
 import Loading from "../loading";
 
+// Client-side cache for root folders
+let rootFoldersCache = null;
+let rootFoldersCacheTime = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export default function DrivePage() {
   const [rootFolders, setRootFolders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const abortControllerRef = useRef(null);
+
+  const fetchRootFolders = useCallback(async (options = {}) => {
+    try {
+      // Check cache first
+      if (
+        !options.skipCache &&
+        rootFoldersCache &&
+        Date.now() - rootFoldersCacheTime < CACHE_TTL
+      ) {
+        setRootFolders(rootFoldersCache);
+        setLoading(false);
+        return;
+      }
+
+      // Cancel previous request if any
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      setLoading(true);
+      setError(null);
+
+      const rootFolderId = getRootFolderId();
+
+      if (!rootFolderId || rootFolderId === "your-root-folder-id-here") {
+        throw new Error(
+          "Please configure your Google Drive root folder ID in lib/drive-config.js"
+        );
+      }
+
+      abortControllerRef.current = new AbortController();
+
+      const response = await fetch(`/api/drive/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ folderId: rootFolderId }),
+        signal: abortControllerRef.current.signal,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage =
+          errorData.error || `HTTP ${response.status}: ${response.statusText}`;
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Filter only folders for the main drive page
+      const folders =
+        data.files?.filter(
+          (file) => file.mimeType === "application/vnd.google-apps.folder"
+        ) || [];
+
+      setRootFolders(folders);
+
+      // Cache the result
+      rootFoldersCache = folders;
+      rootFoldersCacheTime = Date.now();
+    } catch (err) {
+      // Ignore abort errors
+      if (err.name === "AbortError") {
+        return;
+      }
+      setError(err.message);
+      console.error("Error fetching root folders:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchRootFolders = async () => {
-      try {
-        setLoading(true);
-        const rootFolderId = getRootFolderId();
+    fetchRootFolders();
 
-        if (!rootFolderId || rootFolderId === "your-root-folder-id-here") {
-          throw new Error(
-            "Please configure your Google Drive root folder ID in lib/drive-config.js"
-          );
-        }
-
-        const response = await fetch(`/api/drive/`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ folderId: rootFolderId }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          const errorMessage =
-            errorData.error ||
-            `HTTP ${response.status}: ${response.statusText}`;
-          throw new Error(errorMessage);
-        }
-
-        const data = await response.json();
-
-        if (data.error) {
-          throw new Error(data.error);
-        }
-
-        // Filter only folders for the main drive page
-        const folders =
-          data.files?.filter(
-            (file) => file.mimeType === "application/vnd.google-apps.folder"
-          ) || [];
-
-        setRootFolders(folders);
-      } catch (err) {
-        setError(err.message);
-        console.error("Error fetching root folders:", err);
-      } finally {
-        setLoading(false);
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
     };
-
-    fetchRootFolders();
-  }, []);
+  }, [fetchRootFolders]);
 
   if (loading) {
     return <Loading />;
@@ -72,11 +112,20 @@ export default function DrivePage() {
   if (error) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="text-center">
-          <div className="text-red-500 mb-4">Error: {error}</div>
+        <div className="text-center max-w-md">
+          <div className="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-4 py-3 rounded mb-4">
+            <strong className="font-bold">Error: </strong>
+            <span className="block sm:inline">{error}</span>
+            <button
+              onClick={() => fetchRootFolders({ skipCache: true })}
+              className="ml-4 underline hover:text-red-900 dark:hover:text-red-100 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
           <p className="text-gray-600 dark:text-gray-400 text-sm">
             Please make sure you have configured your Google Drive API
-            credentials and updated the root folder ID in this component.
+            credentials and updated the root folder ID.
           </p>
         </div>
       </div>
