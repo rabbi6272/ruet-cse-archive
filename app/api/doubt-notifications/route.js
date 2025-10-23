@@ -1,6 +1,6 @@
 import { db } from "@/lib/firebase";
 import { ref, onValue, push, update, remove } from "firebase/database";
-import { calculateSolverPoints } from "@/lib/points-system";
+
 import { 
   sendAvengersAssemblyNotification, 
   removeAssemblyNotificationIfResolved,
@@ -112,71 +112,7 @@ export async function POST(request) {
         );
       }
       
-      if (satisfiedDoubtData && satisfiedDoubtData.solution) {
-        // Calculate final points with satisfaction bonus
-        const finalPoints = calculateSolverPoints(
-          satisfiedDoubtData.solution.content,
-          satisfiedDoubtData.solution.attachments || [],
-          satisfiedDoubtData.solution.assignedAt,
-          satisfiedDoubtData.solution.solvedAt,
-          true // User is satisfied
-        );
-        
-        // Update solver's total points
-        const solverRoll = satisfiedDoubtData.solution.solvedBy.roll;
-        const pointsRef = ref(db, `solverPoints/${solverRoll}`);
-        
-        // Get current points
-        const pointsSnapshot = await new Promise((resolve) => {
-          onValue(pointsRef, resolve, { onlyOnce: true });
-        });
-        
-        const currentData = pointsSnapshot.val() || { totalPoints: 0, doubtsResolved: 0 };
-        const newTotalPoints = (currentData.totalPoints || 0) + finalPoints;
-        const newDoubtsResolved = (currentData.doubtsResolved || 0) + 1;
-        
-        // Update solver's points
-        await update(pointsRef, {
-          totalPoints: newTotalPoints,
-          doubtsResolved: newDoubtsResolved,
-          lastUpdated: Date.now(),
-          solverName: satisfiedDoubtData.solution.solvedBy.name
-        });
-        
-        // Add satisfaction confirmation and final points
-        const finalData = {
-          ...satisfiedDoubtData,
-          userSatisfied: true,
-          satisfiedAt: Date.now(),
-          status: "completed",
-          solution: {
-            ...satisfiedDoubtData.solution,
-            finalPoints: finalPoints
-          }
-        };
-        
-        // Move to archive
-        await update(archiveRef, finalData);
-        
-        // Remove from pending/active doubts
-        await remove(doubtRef);
-        
-        // Check and manage assembly notification after doubt resolution
-        try {
-          const result = await manageAssemblyNotification();
-          console.log('Assembly notification managed after doubt resolution:', result.message);
-        } catch (assemblyError) {
-          console.error('Failed to manage assembly notification:', assemblyError);
-        }
-        
-        return Response.json({ 
-          success: true, 
-          message: "Doubt marked as satisfied and archived",
-          pointsAwarded: finalPoints 
-        });
-      } else {
-        return Response.json({ success: false, message: "Doubt not found" }, { status: 404 });
-      }
+      
     }
 
     if (action === "mark_not_satisfied") {

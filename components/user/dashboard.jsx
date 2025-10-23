@@ -17,6 +17,7 @@ import { getUserGroup } from "@/lib/group-utils";
 import AuthUtils from "@/lib/auth-utils-secure";
 import toast, { Toaster } from "react-hot-toast";
 import NotificationCenter from "./NotificationCenter";
+import ActiveUsersIndicator from "@/components/ui/ActiveUsersIndicator";
 import Link from "next/link";
 import hljs from "highlight.js";
 import "highlight.js/styles/monokai.css";
@@ -27,13 +28,11 @@ import {
   getUserNutrinosHistory,
 } from "@/lib/nutrinos-system";
 import { presenceTracker } from "@/lib/presence-tracker";
-import ActiveUsersIndicator from "@/components/ui/ActiveUsersIndicator";
-import AvengersStatusIndicator from "@/components/ui/AvengersStatusIndicator";
 import { useP2PChat } from "@/components/providers/P2PChatProvider";
 import P2PChat from "./P2PChat";
 import GroupChat from "./GroupChat";
 import { notificationSound } from "@/lib/notificationSound";
-import LogoutButton from "@/components/ui/LogoutButton";
+
 
 const ITEMS_PER_PAGE = 5;
 
@@ -77,8 +76,7 @@ const Dashboard = () => {
       setUser(userData);
       loadUserSnippets(userData.roll);
       loadUserNutrinosData(userData.roll);
-      // Load unsolved doubts count for all users
-      loadUnsolvedDoubtsCount();
+    
       // Load pending chat requests count
       loadPendingChatRequestsCount(userData.roll);
       // Load unread messages count
@@ -105,77 +103,8 @@ const Dashboard = () => {
     }
   };
 
-  // Load unsolved doubts count for all users
-  const loadUnsolvedDoubtsCount = () => {
-    try {
-      const doubtsRef = ref(db, "doubts");
-      onValue(doubtsRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          const unsolvedCount = Object.keys(data).filter((key) => {
-            const doubt = data[key];
-            return doubt.status === "pending" || doubt.status === "assigned";
-          }).length;
-          setUnsolvedDoubtsCount(unsolvedCount);
-
-          // Auto-manage assembly notification based on doubt count
-          manageAssemblyNotificationForCount(unsolvedCount);
-        } else {
-          setUnsolvedDoubtsCount(0);
-          // Auto-manage assembly notification when no doubts
-          manageAssemblyNotificationForCount(0);
-        }
-      });
-    } catch (error) {
-      console.error("Error loading unsolved doubts count:", error);
-      setUnsolvedDoubtsCount(0);
-    }
-  };
-
-  // Auto-manage assembly notification based on doubt count
-  const manageAssemblyNotificationForCount = async (doubtCount) => {
-    try {
-      // Only call API if user is available
-      if (!user?.roll) return;
-
-      console.log(
-        `[DASHBOARD] Managing assembly notification for ${doubtCount} doubts`
-      );
-
-      // Use the improved management API
-      const response = await fetch("/api/doubt-notifications", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: "check_assembly_removal",
-          userRoll: user.roll,
-        }),
-      });
-
-      const result = await response.json();
-      console.log(
-        `[DASHBOARD] Assembly notification management result:`,
-        result
-      );
-
-      // Show user feedback for important actions
-      if (result.success && result.action) {
-        switch (result.action) {
-          case "sent":
-            console.log("🦸‍♂️ Avengers Assembly notification sent to all users!");
-            break;
-          case "removed":
-            console.log("✅ Mission complete! Assembly notification removed.");
-            break;
-        }
-      }
-    } catch (error) {
-      console.error("Error managing assembly notification:", error);
-    }
-  };
-
+ 
+  
   // Load pending chat requests count
   const loadPendingChatRequestsCount = (rollNumber) => {
     try {
@@ -491,13 +420,7 @@ const Dashboard = () => {
               {/* Mobile: Stack horizontally, Desktop: Stack vertically */}
               <div className="flex flex-col items-center ">
                 <NotificationCenter userRoll={user?.roll} />
-                <Link
-                  href="/user/notifications"
-                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors px-3 py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-1 self-start lg:self-end"
-                >
-                  <i className="fas fa-external-link-alt text-xs"></i>
-                  <span>View all notifications</span>
-                </Link>
+                
               </div>
             </div>
           </div>
@@ -600,6 +523,7 @@ const Dashboard = () => {
               Quick Actions
             </h3>
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+
               <Link
                 href="/user/create"
                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg transform hover:scale-105"
@@ -611,63 +535,9 @@ const Dashboard = () => {
                 <span className="sm:hidden text-sm font-medium">Add</span>
               </Link>
 
-              <Link
-                href="/contact&help/help"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg transform hover:scale-105"
-              >
-                <i className="fas fa-question-circle text-sm"></i>
-                <span className="hidden sm:inline text-sm font-medium">
-                  Ask Help
-                </span>
-                <span className="sm:hidden text-sm font-medium">Help</span>
-              </Link>
+              
 
-              <Link
-                href="/user/my-doubts"
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg transform hover:scale-105"
-              >
-                <i className="fas fa-list text-sm"></i>
-                <span className="hidden sm:inline text-sm font-medium">
-                  My Doubts
-                </span>
-                <span className="sm:hidden text-sm font-medium">Doubts</span>
-              </Link>
-
-              {/* Solve Doubts Button - Available for all users */}
-              <Link
-                href="/reviewers/dashboard"
-                className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-3 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg transform hover:scale-105 relative"
-              >
-                <i className="fas fa-clipboard-check text-sm"></i>
-                <span className="hidden sm:inline text-sm font-medium">
-                  Solve Doubts
-                </span>
-                <span className="sm:hidden text-sm font-medium">Solve</span>
-                {/* Unsolved doubts count badge */}
-                {unsolvedDoubtsCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-lg animate-pulse">
-                    {unsolvedDoubtsCount > 99 ? "99+" : unsolvedDoubtsCount}
-                  </span>
-                )}
-                {/* Avengers Assembly indicator */}
-                {unsolvedDoubtsCount > 0 && (
-                  <span
-                    className="absolute -top-1 -left-1 text-yellow-400 text-lg animate-bounce"
-                    title="Avenger Assemble!! Go to solve doubts section"
-                  >
-                    🚨
-                  </span>
-                )}
-              </Link>
-
-              {/* Secure Logout Button */}
-              <LogoutButton
-                variant="danger"
-                className="px-4 py-3 text-sm font-medium shadow-md hover:shadow-lg transform hover:scale-105"
-              >
-                <span className="hidden sm:inline">Logout</span>
-                <span className="sm:hidden">Exit</span>
-              </LogoutButton>
+              
             </div>
           </div>
         </div>
@@ -678,9 +548,6 @@ const Dashboard = () => {
             {error}
           </div>
         )}
-
-        {/* Avengers Assembly Status */}
-        <AvengersStatusIndicator unsolvedDoubtsCount={unsolvedDoubtsCount} />
 
         {/* Snippets Section */}
         <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden">
