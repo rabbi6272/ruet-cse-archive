@@ -1,4 +1,4 @@
-const LibraryHeader = () => {
+export function CodeLibraryHeader() {
   return (
     <div className="mb-8">
       <div className="text-center">
@@ -15,6 +15,4 @@ const LibraryHeader = () => {
       </div>
     </div>
   );
-};
-
-export default LibraryHeader;
+}

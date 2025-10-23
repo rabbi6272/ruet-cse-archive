@@ -4,14 +4,12 @@ import { lato } from "@/app/ui/fonts";
 
 // Import the components
 import { useCodeLibrary } from "./useCodeLibrary";
-import LibraryHeader from "./LibraryHeader";
 import SearchAndFilters from "./SearchAndFilters";
 import SnippetCard from "./SnippetCard";
-import Pagination from "./Pagination";
 import StatisticsSidebar from "./StatisticsSidebar";
 import Loading from "@/app/loading";
 
-const CodeLibraryClient = ({ initialSnippets = [] }) => {
+export function CodeLibraryBody({ initialSnippets = [] }) {
   // Use the custom hook with initial data
   const {
     snippets,
@@ -40,13 +38,8 @@ const CodeLibraryClient = ({ initialSnippets = [] }) => {
       className={`${lato.className} min-h-screen transition-colors duration-300 `}
     >
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header - Full Width */}
-        <div className="mb-8">
-          <LibraryHeader />
-        </div>
-
         {/* Main Layout - Split on Large Screens */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 relative">
           {/* Left Side - Code Library Content (2/3 width on large screens) */}
           <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
             <SearchAndFilters
@@ -80,18 +73,10 @@ const CodeLibraryClient = ({ initialSnippets = [] }) => {
                 </div>
               )}
             </div>
-
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={paginate}
-              filteredSnippetsLength={filteredSnippets.length}
-              snippetsPerPage={snippetsPerPage}
-            />
           </div>
 
           {/* Right Side - Statistics Sidebar (1/3 width on large screens) */}
-          <div className="lg:col-span-1 order-1 lg:order-2">
+          <div className="hidden lg:block lg:col-span-1 order-1 lg:order-2 sticky top-0 left-0">
             <div>
               <div className="mb-4">
                 <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-2 flex items-center">
@@ -111,6 +96,4 @@ const CodeLibraryClient = ({ initialSnippets = [] }) => {
       </div>
     </div>
   );
-};
-
-export default CodeLibraryClient;
+}

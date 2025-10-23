@@ -1,12 +1,16 @@
 "use client";
 
-const Pagination = ({
-  currentPage,
-  totalPages,
-  onPageChange,
-  filteredSnippetsLength,
-  snippetsPerPage,
-}) => {
+import { useCodeLibrary } from "./useCodeLibrary";
+
+export function CodeLibraryPagination() {
+  const {
+    currentPage,
+    totalPages,
+    onPageChange = paginate,
+    filteredSnippetsLength = filteredSnippets.length,
+    snippetsPerPage = snippetsPerPage,
+  } = useCodeLibrary();
+
   // Generate pagination numbers with ellipsis
   const generatePaginationNumbers = () => {
     const delta =
@@ -126,6 +130,4 @@ const Pagination = ({
       </nav>
     </div>
   );
-};
-
-export default Pagination;
+}

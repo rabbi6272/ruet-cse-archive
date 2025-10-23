@@ -1,5 +1,6 @@
-import CodeLibraryClient from "@/components/codelibrary/CodeLibraryClient";
-//by bitto
+import { CodeLibraryHeader } from "@/components/codelibrary/LibraryHeader";
+import { CodeLibraryBody } from "@/components/codelibrary/CodeLibraryClient";
+// import { CodeLibraryPagination } from "@/components/codelibrary/Pagination";
 
 export const metadata = {
   title: "Code Library - Programming Solutions & Examples",
@@ -47,5 +48,14 @@ export const metadata = {
 };
 
 export default function CodeLibrary() {
-  return <CodeLibraryClient />;
+  return (
+    <>
+      <div className="mb-8">
+        <CodeLibraryHeader />
+      </div>
+
+      <CodeLibraryBody />
+      {/* <CodeLibraryPagination /> */}
+    </>
+  );
 }
