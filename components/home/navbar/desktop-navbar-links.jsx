@@ -53,18 +53,8 @@ export function DesktopNavbarLinks() {
             <i className="fas fa-chevron-down ml-1 text-xs"></i>
           </button>
           <div className="dropdown bg-[#ffffff]/90 dark:bg-[#071a26]/90 backdrop-blur-lg shadow-lg absolute left-0 mt-4 py-1 w-44 rounded-lg z-50">
-            <Link
-              href="/contact&help/help"
-              className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-[#071a26]/90 hover:text-blue-600 dark:hover:text-blue-500 "
-            >
-              Get Help
-            </Link>
-            <Link
-              href="/contact&help/doubts"
-              className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-[#071a26]/90 hover:text-blue-600 dark:hover:text-blue-500 "
-            >
-              Browse Doubts
-            </Link>
+            
+           
             <Link
               href="https://www.ruet.ac.bd/"
               target="_blank"

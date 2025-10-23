@@ -33,6 +33,7 @@ export function Leafletmap() {
   const [allAlumniData, setAllAlumniData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -47,6 +48,7 @@ export function Leafletmap() {
         shadowUrl:
           "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
       });
+      setMapReady(true);
     }
   }, []);
 
@@ -166,20 +168,9 @@ export function Leafletmap() {
     );
   };
 
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading alumni network...</p>
-        </div>
-      </div>
-    );
-  }
-
   // Show error state (but still render the map with available data)
   const showError = error && allAlumniData.length === 0;
+  const showLoading = loading || !mapReady;
 
   return (
     <div>
@@ -192,57 +183,78 @@ export function Leafletmap() {
         </div>
       )}
       
-      {/* Alumni stats bar */}
+      {/* Alumni stats bar - always present to maintain layout */}
       <div className="bg-blue-50 border-b border-blue-200 px-4 py-2 text-sm text-blue-800">
         <div className="flex justify-between items-center">
-          <span>
-            Showing {allAlumniData.length} alumni 
-            {!error && allAlumniData.some(a => a.isDynamic) && (
-              <span className="ml-2 text-green-700">
-                (Including {allAlumniData.filter(a => a.isDynamic).length} recently added)
+          {showLoading ? (
+            <>
+              <span>Loading alumni data...</span>
+              <span className="text-xs">🗺️ Please wait</span>
+            </>
+          ) : (
+            <>
+              <span>
+                Showing {allAlumniData.length} alumni 
+                {!error && allAlumniData.some(a => a.isDynamic) && (
+                  <span className="ml-2 text-green-700">
+                    (Including {allAlumniData.filter(a => a.isDynamic).length} recently added)
+                  </span>
+                )}
               </span>
-            )}
-          </span>
-          <span className="text-xs">
-            🗺️ Click markers to zoom • Close popup to zoom out
-          </span>
+              <span className="text-xs">
+                🗺️ Click markers to zoom • Close popup to zoom out
+              </span>
+            </>
+          )}
         </div>
       </div>
 
-      <MapContainer
-        center={[20, 0]}
-        zoom={2}
-        style={{ height: "calc(100vh - 48px)", width: "100%", zIndex: 0 }}
-        maxBounds={[
-          [-85, -180],
-          [85, 180],
-        ]}
-        maxBoundsViscosity={1.0}
-        minZoom={2}
-        maxZoom={18}
-      >
-        <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-          attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        />
-        {allAlumniData
-          .filter(alumnus => {
-            // Filter out alumni with invalid coordinates
-            return Array.isArray(alumnus.coordinates) && 
-                   alumnus.coordinates.length >= 2 &&
-                   typeof alumnus.coordinates[0] === 'number' &&
-                   typeof alumnus.coordinates[1] === 'number' &&
-                   !isNaN(alumnus.coordinates[0]) &&
-                   !isNaN(alumnus.coordinates[1]);
-          })
-          .map((alumnus) => (
-            <MarkerWithEvents 
-              key={alumnus.Id || alumnus.firebaseId || `${alumnus.name}-${alumnus.series}`} 
-              alumnus={alumnus} 
+      {/* Map container - always present with fixed height */}
+      <div style={{ height: "calc(100vh - 48px)", width: "100%", position: "relative" }}>
+        {showLoading ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading alumni network...</p>
+            </div>
+          </div>
+        ) : (
+          <MapContainer
+            center={[20, 0]}
+            zoom={2}
+            style={{ height: "100%", width: "100%", zIndex: 0 }}
+            maxBounds={[
+              [-85, -180],
+              [85, 180],
+            ]}
+            maxBoundsViscosity={1.0}
+            minZoom={2}
+            maxZoom={18}
+          >
+            <TileLayer
+              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+              attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
-          ))
-        }
-      </MapContainer>
+            {allAlumniData
+              .filter(alumnus => {
+                // Filter out alumni with invalid coordinates
+                return Array.isArray(alumnus.coordinates) && 
+                       alumnus.coordinates.length >= 2 &&
+                       typeof alumnus.coordinates[0] === 'number' &&
+                       typeof alumnus.coordinates[1] === 'number' &&
+                       !isNaN(alumnus.coordinates[0]) &&
+                       !isNaN(alumnus.coordinates[1]);
+              })
+              .map((alumnus) => (
+                <MarkerWithEvents 
+                  key={alumnus.Id || alumnus.firebaseId || `${alumnus.name}-${alumnus.series}`} 
+                  alumnus={alumnus} 
+                />
+              ))
+            }
+          </MapContainer>
+        )}
+      </div>
     </div>
   );
 }
