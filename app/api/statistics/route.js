@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase-admin";
 import {
   getStudentName,
   createStudentMapping,
@@ -9,6 +8,13 @@ import { getUserDisplayRole } from "@/lib/auth-utils";
 
 export async function GET() {
   try {
+    // Import firebase-admin dynamically to avoid build issues
+    const { adminDb } = await import("@/lib/firebase-admin");
+    
+    if (!adminDb) {
+      throw new Error("Firebase Admin not available");
+    }
+    
     // Fetch all users' Nutrinos data from Firebase
     const nutrinosRef = adminDb.ref("userNutrinos");
     const snapshot = await nutrinosRef.once("value");
@@ -32,7 +38,7 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to fetch statistics data",
+        error: "Failed to fetch statistics data. Using client-side fallback.",
       },
       { status: 500 }
     );
