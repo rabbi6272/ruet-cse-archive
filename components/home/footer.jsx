@@ -118,21 +118,20 @@ export function FooterComponent() {
             </div>
           </div>
         </div>
-        <hr
-          data-testid="footer-divider"
-          className={`my-6 w-full border-gray-700 dark:border-gray-200 sm:mx-auto lg:my-8 `}
-        ></hr>
+        <br />
+         <br />
+          <br />
         <div className={`w-full text-center`}>
           <div
             data-testid="flowbite-footer-copyright"
             className={`text-sm text-gray-600 dark:text-gray-200 sm:text-center `}
           >
-            ©2025
+            © 2025
             <Link
               href="/contact&help/developers"
               className={`ml-1 hover:underline `}
             >
-              Avengers (sec c)
+              Avengers - CSE'24 
             </Link>
           </div>
         </div>

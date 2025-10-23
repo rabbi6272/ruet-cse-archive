@@ -4,7 +4,7 @@ import { FooterComponent } from "@/components/home/footer";
 import { PageTitleProvider } from "@/components/providers/PageTitleProvider";
 import { P2PChatProvider } from "@/components/providers/P2PChatProvider";
 import GlobalPresenceTracker from "@/components/providers/GlobalPresenceTracker";
-import AIAssistant from "@/components/ai/AIAssistant";
+
 import NoSSR from "@/components/ui/NoSSR";
 import FirebaseObfuscationInit from "@/components/security/FirebaseObfuscationInit";
 
@@ -173,9 +173,7 @@ export default function RootLayout({ children }) {
             <GlobalPresenceTracker />
             <MainPage>{children}</MainPage>
             <FooterComponent />
-            <NoSSR fallback={null}>
-              <AIAssistant />
-            </NoSSR>
+            
           </P2PChatProvider>
         </PageTitleProvider>
       </body>
