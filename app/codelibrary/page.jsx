@@ -1,6 +1,5 @@
 import { CodeLibraryHeader } from "@/components/codelibrary/LibraryHeader";
-import { CodeLibraryBody } from "@/components/codelibrary/CodeLibraryClient";
-// import { CodeLibraryPagination } from "@/components/codelibrary/Pagination";
+import { CodeLibraryBody } from "@/components/codelibrary/CodeLibraryBody";
 
 export const metadata = {
   title: "Code Library - Programming Solutions & Examples",
@@ -55,7 +54,6 @@ export default function CodeLibrary() {
       </div>
 
       <CodeLibraryBody />
-      {/* <CodeLibraryPagination /> */}
     </>
   );
 }

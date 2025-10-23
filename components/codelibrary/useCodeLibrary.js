@@ -12,29 +12,31 @@ export const useCodeLibrary = (initialSnippets = []) => {
   // Reading: Public access for all users
   // Copying: Public access (no auth required)
   // Liking: Requires authentication
-  const [snippets, setSnippets] = useState([]);
+  const [loadCount, setLoadCount] = useState(5); // Number of snippets to load initially
+  const [TotalSnippets, setTotalSnippets] = useState([]);
+  const [loadedSnippets, setLoadedSnippets] = useState([]);
   const [filteredSnippets, setFilteredSnippets] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [languageFilter, setLanguageFilter] = useState("");
   const [authorFilter, setAuthorFilter] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
   const [expandedSnippets, setExpandedSnippets] = useState({});
   const [animateLike, setAnimateLike] = useState({});
   const [animateCopy, setAnimateCopy] = useState({});
   const [copiedStates, setCopiedStates] = useState({});
+  const [hasMore, setHasMore] = useState(true);
 
-  const snippetsPerPage = 5;
   const needsHighlightRef = useRef(false);
 
-  // Fetch snippets from new codes/ structure
+  //get all snippets from database
   useEffect(() => {
     const codesRef = ref(codelibraryDb, "codes/");
+
     const unsubscribe = onValue(
       codesRef,
       (snapshot) => {
         const data = snapshot.val();
         if (data) {
-          // Flatten: [{...snippet, rollNumber, id}, ...]
+          // Flatten and transform all snippets
           const allSnippets = [];
           Object.entries(data).forEach(([rollNumber, codes]) => {
             Object.entries(codes).forEach(([codeId, snippet]) => {
@@ -49,33 +51,63 @@ export const useCodeLibrary = (initialSnippets = []) => {
                   snippet.language?.toLowerCase() === "js"
                     ? "javascript"
                     : snippet.language?.toLowerCase(),
+                // Ensure timestamp for sorting
+                timestamp: snippet.date ? new Date(snippet.date).getTime() : 0,
               });
             });
           });
-          // Sort by date (newest first)
-          allSnippets.sort((a, b) => new Date(b.date) - new Date(a.date));
-          setSnippets(allSnippets);
+
+          // Sort by timestamp (newest first)
+          allSnippets.sort((a, b) => b.timestamp - a.timestamp);
+
+          // Store ALL fetched snippets in TotalSnippets
+          setTotalSnippets(allSnippets);
+
+          // Store total count for reference
+          const totalCount = allSnippets.length;
+
+          // Limit to requested count for display optimization
+          const limitedSnippets = allSnippets.slice(0, loadCount);
+          setHasMore(totalCount > loadCount);
+          setLoadedSnippets(limitedSnippets);
+
           console.log(
-            `✅ Loaded ${allSnippets.length} code snippets from codes/`
+            `✅ Fetched ${totalCount} total snippets, displaying ${limitedSnippets.length}`
           );
         } else {
-          setSnippets([]);
+          setTotalSnippets([]);
+          setLoadedSnippets([]);
+          setHasMore(false);
           console.log("No snippets found in codes/");
         }
       },
       (error) => {
         console.error("Firebase error:", error);
-        setSnippets([]);
+        setTotalSnippets([]);
+        setLoadedSnippets([]);
+        setHasMore(false);
       }
     );
+
     return () => unsubscribe();
   }, []);
 
+  function loadMore() {
+    if (!hasMore) return;
+    const newLoadCount = loadCount + 10;
+    setLoadCount(newLoadCount);
+
+    // Load more snippets from TotalSnippets
+    const limitedSnippets = TotalSnippets.slice(0, newLoadCount);
+    setLoadedSnippets(limitedSnippets);
+    setHasMore(TotalSnippets.length > newLoadCount);
+  }
+
   // Filter snippets
   useEffect(() => {
-    let result = snippets;
+    let result = [];
     if (searchTerm) {
-      result = result.filter(
+      result = TotalSnippets.filter(
         (snippet) =>
           snippet.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           "" ||
@@ -86,22 +118,19 @@ export const useCodeLibrary = (initialSnippets = []) => {
       );
     }
     if (languageFilter) {
-      result = result.filter(
+      result = TotalSnippets.filter(
         (snippet) =>
           snippet.language?.toLowerCase() === languageFilter.toLowerCase()
       );
     }
     if (authorFilter) {
-      result = result.filter(
+      result = TotalSnippets.filter(
         (snippet) =>
           snippet.author?.toLowerCase() === authorFilter.toLowerCase()
       );
     }
     setFilteredSnippets(result);
-    if (currentPage > Math.ceil(result.length / snippetsPerPage)) {
-      setCurrentPage(1);
-    }
-  }, [searchTerm, languageFilter, authorFilter, snippets, currentPage]);
+  }, [searchTerm, languageFilter, authorFilter, loadedSnippets]);
 
   // Highlight code blocks
   useEffect(() => {
@@ -125,7 +154,7 @@ export const useCodeLibrary = (initialSnippets = []) => {
     }, 100);
 
     return () => clearTimeout(timeout);
-  }, [filteredSnippets, expandedSnippets, currentPage]);
+  }, [filteredSnippets, expandedSnippets]);
 
   // Copy code function
   const copyCode = async (id, code) => {
@@ -139,7 +168,7 @@ export const useCodeLibrary = (initialSnippets = []) => {
         setCopiedStates((prev) => ({ ...prev, [id]: false }));
       }, 2000); // Show "Copied" for 2 seconds
 
-      setSnippets((prevSnippets) =>
+      setLoadedSnippets((prevSnippets) =>
         prevSnippets.map((snippet) =>
           snippet.id === id
             ? { ...snippet, copiesCount: (snippet.copiesCount || 0) + 1 }
@@ -152,7 +181,8 @@ export const useCodeLibrary = (initialSnippets = []) => {
         const { db } = await import("@/lib/firebase");
         const snippetRef = ref(db, `codeSnippets/${id}`);
         await update(snippetRef, {
-          copiesCount: (snippets.find((s) => s.id === id).copiesCount || 0) + 1,
+          copiesCount:
+            (loadedSnippets.find((s) => s.id === id).copiesCount || 0) + 1,
         });
         console.log("✅ Copy count updated successfully");
       } catch (error) {
@@ -174,14 +204,14 @@ export const useCodeLibrary = (initialSnippets = []) => {
       return;
     }
 
-    const snippet = snippets.find((s) => s.id === id);
+    const snippet = loadedSnippets.find((s) => s.id === id);
     if (snippet.isLiked) return;
 
     const newIsLiked = true;
     setAnimateLike((prev) => ({ ...prev, [id]: true }));
     setTimeout(() => setAnimateLike((prev) => ({ ...prev, [id]: false })), 500);
 
-    setSnippets((prevSnippets) =>
+    setLoadedSnippets((prevSnippets) =>
       prevSnippets.map((snippet) =>
         snippet.id === id
           ? {
@@ -205,7 +235,7 @@ export const useCodeLibrary = (initialSnippets = []) => {
     } catch (error) {
       console.error("Failed to update like count:", error);
       // Revert the like if the update failed
-      setSnippets((prevSnippets) =>
+      setLoadedSnippets((prevSnippets) =>
         prevSnippets.map((s) =>
           s.id === id
             ? {
@@ -228,32 +258,20 @@ export const useCodeLibrary = (initialSnippets = []) => {
     }));
   };
 
-  // Pagination
-  const indexOfLastSnippet = currentPage * snippetsPerPage;
-  const indexOfFirstSnippet = indexOfLastSnippet - snippetsPerPage;
-  const currentSnippets = filteredSnippets.slice(
-    indexOfFirstSnippet,
-    indexOfLastSnippet
-  );
-  const totalPages = Math.ceil(filteredSnippets.length / snippetsPerPage);
-
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
   return {
     // State
-    snippets,
+    TotalSnippets,
+    loadedSnippets,
     filteredSnippets,
-    currentSnippets,
     searchTerm,
     languageFilter,
     authorFilter,
-    currentPage,
-    totalPages,
     expandedSnippets,
     animateLike,
     animateCopy,
     copiedStates,
-    snippetsPerPage,
+    hasMore,
+    loadCount,
 
     // Setters
     setSearchTerm,
@@ -264,6 +282,6 @@ export const useCodeLibrary = (initialSnippets = []) => {
     copyCode,
     toggleLike,
     toggleExpand,
-    paginate,
+    loadMore, // Helper to load 10 more
   };
 };
