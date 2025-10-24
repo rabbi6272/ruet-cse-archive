@@ -105,7 +105,7 @@ const FileItem = memo(({ file, index, onFolderClick, onPreview }) => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.5) }}
+      transition={{ duration: 0.3, delay: index * 0.04 }}
       viewport={{ once: true, margin: "50px" }}
       className="px-2 py-4 lg:p-4 border-b border-gray-200 dark:border-gray-700 flex"
     >

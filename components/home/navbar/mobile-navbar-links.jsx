@@ -16,7 +16,6 @@ const mobileNavItems = [
   {
     label: "Contact & Help",
     subItems: [
-      
       {
         name: "Official Website",
         href: "https://www.ruet.ac.bd/",
@@ -74,21 +73,11 @@ export function MobileNavbarLinks() {
       {/* Add slide-in animation with proper enter/exit states */}
       <div
         ref={navRef}
-        className={`fixed bg-white dark:bg-[#071a26] p-6 overflow-y-auto overflow-x-hidden transition-all duration-500 ease-out ${
-          isNavOpen
-            ? "translate-x-0 opacity-100 visible"
-            : "translate-x-full opacity-0 invisible"
+        className={`mobile-navbar bg-white dark:bg-[#071a26] p-6 overflow-y-auto overflow-x-hidden ${
+          isNavOpen ? "show" : "hide"
         }`}
         style={{
-          position: "fixed",
-          top: "0",
-          right: "0",
           left: isNavOpen ? "0" : "100%",
-          width: "100vw",
-          height: "100vh",
-          zIndex: 99999,
-          maxHeight: "100vh",
-          transform: isNavOpen ? "translateX(0)" : "translateX(100%)",
         }}
       >
         {/* Header and Menu */}
