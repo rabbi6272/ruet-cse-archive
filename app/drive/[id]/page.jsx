@@ -275,11 +275,13 @@ export default function DrivePage({ params }) {
       fetchFiles(resolvedParams.id);
     }
 
-    // Cleanup function to abort fetch on unmount
+    // Cleanup function to abort fetch on unmount and restore body scroll
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
+      // Ensure body scroll is restored when component unmounts
+      document.body.style.overflow = "";
     };
   }, [resolvedParams.id, fetchFiles]);
 
@@ -318,13 +320,14 @@ export default function DrivePage({ params }) {
     if (previewID) {
       document.addEventListener("keydown", handleKeyDown);
       // Prevent body scroll when preview is open
+      const originalOverflow = document.body.style.overflow;
       document.body.style.overflow = "hidden";
-    }
 
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "unset";
-    };
+      return () => {
+        document.removeEventListener("keydown", handleKeyDown);
+        document.body.style.overflow = originalOverflow;
+      };
+    }
   }, [previewID]);
 
   if (loading) {

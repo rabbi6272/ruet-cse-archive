@@ -11,10 +11,10 @@ export function Navbar({ scrolled }) {
     <nav
       className={`${
         inter.className
-      } navbar top-0 w-full z-50 transition-colors duration-300 ${
+      }  w-full z-50 sticky top-0 transition-colors duration-300 ${
         scrolled
-          ? "sticky bg-white/90 dark:bg-[#071a26]/80 backdrop-blur-md shadow-lg border-b border-gray-200/20 dark:border-gray-700/20"
-          : "static bg-transparent"
+          ? "bg-white/90 dark:bg-[#071a26]/80 backdrop-blur-md shadow-lg border-b border-gray-200/20 dark:border-gray-700/20"
+          : "bg-transparent"
       }`}
     >
       <div className="w-full mx-auto px-3 md:px-5 lg:px-8 xl:px-10 flex items-center justify-between h-[70px]">
