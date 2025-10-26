@@ -1,5 +1,5 @@
 import { ResourcesHeader } from "@/components/resources/resources-header";
-import { ResourcesGridOptimized } from "@/components/resources/resources-grid-super-optimized";
+import { ResourcesGridOptimized } from "@/components/resources/resources-card-grid";
 
 // Page metadata for SEO
 export const metadata = {

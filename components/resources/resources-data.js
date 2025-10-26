@@ -3,6 +3,7 @@ import image1 from "@/public/images/resources/image1.jpg";
 import image2 from "@/public/images/resources/image2.jpg";
 import image3 from "@/public/images/resources/image3.jpg";
 import image4 from "@/public/images/resources/image4.jpg";
+
 import { ref, get } from "firebase/database";
 import { db } from "@/lib/firebase";
 
