@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 // Minimal client component only for interactive links with lazy toast loading
 export function ResourceCardLinks({ links }) {
   return (
-    <div className=" flex gap-3">
+    <div className="flex gap-3">
       {links.map((link, index) => (
         <Link
           key={index}
