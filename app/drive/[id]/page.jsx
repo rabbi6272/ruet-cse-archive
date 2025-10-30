@@ -104,8 +104,8 @@ const FileItem = memo(({ file, index, onFolderClick, onPreview }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: index * 0.04 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: index * 0.03 }}
       viewport={{ once: true, margin: "50px" }}
       className="px-2 py-4 lg:p-4 border-b border-gray-200 dark:border-gray-700 flex"
     >
@@ -134,14 +134,14 @@ const FileItem = memo(({ file, index, onFolderClick, onPreview }) => {
         <div className="flex items-center justify-between gap-2 lg:gap-4">
           <Link
             href={file.webContentLink}
-            className="flex-1 border-2 border-blue-600 hover:bg-blue-600 transition-colors duration-300 grid place-items-center text-gray-700 dark:text-gray-200 w-10 h-10 rounded-full"
+            className="flex-1 border-2 border-gray-600 cursor-pointer grid place-items-center text-gray-700 dark:text-gray-200 w-12 h-9 rounded-full"
             aria-label={`Download ${file.name}`}
           >
             <i className="fas fa-download text-[13px]"></i>
           </Link>
           <button
             onClick={handlePreview}
-            className="flex-1 border-2 border-blue-600 hover:bg-blue-600 transition-colors duration-300 grid place-items-center text-gray-700 dark:text-gray-200 w-10 h-10 rounded-full"
+            className="flex-1 border-2 border-gray-600 cursor-pointer grid place-items-center text-gray-700 dark:text-gray-200 w-12 h-9 rounded-full"
             aria-label={`Preview ${file.name}`}
           >
             <i className="fas fa-eye text-[13px]"></i>
@@ -184,7 +184,7 @@ export default function DrivePage({ params }) {
   const resolvedParams = use(params);
 
   const [files, setFiles] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [previewID, setPreviewId] = useState(null);
   const [breadcrumb, setBreadcrumb] = useState([]);
@@ -205,6 +205,9 @@ export default function DrivePage({ params }) {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
+      // fetchInProgressRef.current = true;
+      setLoading(true);
+      setError(null);
 
       // Check client-side cache first
       const cached = getCachedData(folderId);
@@ -215,10 +218,6 @@ export default function DrivePage({ params }) {
         setLoading(false);
         return;
       }
-
-      // fetchInProgressRef.current = true;
-      setLoading(true);
-      setError(null);
 
       // Create new abort controller for this request
       abortControllerRef.current = new AbortController();
@@ -402,10 +401,14 @@ export default function DrivePage({ params }) {
                   })}
                 </ol>
               </nav>
-            )}{" "}
+            )}
+
+            {/* Folder Heading */}
             <h1 className="text-3xl text-center font-bold mb-6 text-gray-700 dark:text-gray-300">
               {currentFolder ? currentFolder.name : "Drive Files"}
             </h1>
+
+            {/* File List */}
             {files.length === 0 ? (
               <div className="text-center py-12">
                 <i className="fas fa-folder-open text-6xl text-gray-400 dark:text-gray-600 mb-4"></i>

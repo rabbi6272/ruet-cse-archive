@@ -94,7 +94,7 @@ export function ShelfGrid() {
             key={item.id}
             className="opacity-0 animate-slide-up"
             style={{
-              animationDelay: `${index * 100}ms`,
+              animationDelay: `${index * 50}ms`,
               animationFillMode: "forwards",
             }}
           >
