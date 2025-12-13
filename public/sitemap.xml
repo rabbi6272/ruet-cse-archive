@@ -36,29 +36,12 @@
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
+    </url>
   <url>
-    <loc>https://csearchive.vercel.app/contact%26help/help</loc>
-    <lastmod>2025-08-01</lastmod>
+    <loc>https://csearchive.vercel.app/contact/developers</loc>
+    <lastmod>2024-01-01T00:00:00.000Z</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://csearchive.vercel.app/contact%26help/developers</loc>
-    <lastmod>2025-08-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://csearchive.vercel.app/contact%26help/doubts</loc>
-    <lastmod>2025-08-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://csearchive.vercel.app/contact%26help/statistics</loc>
-    <lastmod>2025-08-01</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://csearchive.vercel.app/user/login</loc>
@@ -134,27 +117,9 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://ruet-cse-archive.vercel.app/contact%26help/help</loc>
+    <loc>https://ruet-cse-archive.vercel.app/contact/developers</loc>
     <lastmod>2025-08-01</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://ruet-cse-archive.vercel.app/contact%26help/developers</loc>
-    <lastmod>2025-08-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://ruet-cse-archive.vercel.app/contact%26help/doubts</loc>
-    <lastmod>2025-08-01</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://ruet-cse-archive.vercel.app/contact%26help/statistics</loc>
-    <lastmod>2025-08-01</lastmod>
-    <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   <url>

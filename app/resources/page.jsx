@@ -1,5 +1,6 @@
 import { ResourcesHeader } from "@/components/resources/resources-header";
 import { ResourcesGridOptimized } from "@/components/resources/resources-card-grid";
+import GraphBackgroundWrapper from "@/components/ui/GraphBackgroundWrapper";
 
 // Page metadata for SEO
 export const metadata = {
@@ -31,8 +32,11 @@ export const metadata = {
 // Client component to support dynamic data fetching
 export default function Resources() {
   return (
-    <div className="min-h-screen">
-      <div className="container mx-auto px-6 py-8">
+    <div className="min-h-screen bg-white dark:bg-gray-900 relative">
+      {/* Graph Background */}
+      <GraphBackgroundWrapper />
+      
+      <div className="container mx-auto px-6 py-8 relative z-10">
         <ResourcesHeader />
         <ResourcesGridOptimized />
       </div>

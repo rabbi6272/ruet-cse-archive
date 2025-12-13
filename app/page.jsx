@@ -1,6 +1,3 @@
-import { FAQSection } from "@/components/home/faq-section";
-import { FeaturesList } from "@/components/home/features-list";
-import { HeroImage } from "@/components/home/hero-image";
 import { HeroSection } from "@/components/home/hero-section";
 
 export const metadata = {
@@ -55,18 +52,6 @@ export default function Home() {
     <div className="w-full">
       {/* Hero Section */}
       <HeroSection />
-
-      {/* Image Section */}
-      <HeroImage />
-      <br />
-
-      {/*Features List*/}
-      <FeaturesList />
-      <br />
-
-      {/* FAQ Section */}
-      <FAQSection />
-      <br />
     </div>
   );
 }

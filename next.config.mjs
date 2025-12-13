@@ -1,5 +1,3 @@
-import withFlowbiteReact from "flowbite-react/plugin/nextjs";
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Fix Windows OneDrive symlink issues
@@ -96,4 +94,4 @@ const nextConfig = {
   allowedDevOrigins: ["192.168.56.1", "192.168.0.235"],
 };
 
-export default withFlowbiteReact(nextConfig);
+export default nextConfig;

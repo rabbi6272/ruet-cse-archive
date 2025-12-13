@@ -1,91 +1,82 @@
+"use client";
+
 import { LoginButton } from "./login-button";
 import Link from "next/link";
-import { inter } from "@/app/ui/fonts";
+import { usePathname } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { ibmPlexSans } from "@/app/ui/fonts";
 
 export function DesktopNavbarLinks() {
+  const pathname = usePathname();
+  
+  const isActive = (path) => pathname === path;
+  
   return (
-    <div className={`${inter.className} desktop-menu hidden lg:block`}>
+    <div className={`${ibmPlexSans.className} desktop-menu hidden lg:block`}>
       <div className="flex items-baseline space-x-1 text-gray-700 dark:text-gray-200">
-        {/* <!-- Nav Item 1 --> */}
-        <div className="nav-item relative">
+        <Button variant="ghost" size="sm" asChild>
           <Link
             href="/resources"
-            className="text-gray-700 dark:text-gray-200 hover:text-blue-500  hover:bg-gray-300 dark:hover:bg-transparent px-3.5 py-2.5 rounded-full text-sm font-medium flex items-center transition-all duration-500"
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+              isActive("/resources")
+                ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                : "text-gray-700 dark:text-gray-200 hover:text-blue-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+            }`}
           >
             Resources
           </Link>
-        </div>
+        </Button>
 
-        {/* <!-- Nav Item 2 --> */}
-        <div className="nav-item relative">
+        <Button variant="ghost" size="sm" asChild>
           <Link
             href="/shelf"
-            className="text-gray-700 dark:text-gray-200 hover:text-blue-500  hover:bg-gray-300 dark:hover:bg-transparent px-3.5 py-2.5 rounded-full text-sm font-medium flex items-center transition-all duration-500"
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+              isActive("/shelf")
+                ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                : "text-gray-700 dark:text-gray-200 hover:text-blue-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+            }`}
           >
             Book Shelf
           </Link>
-        </div>
+        </Button>
 
-        {/* <!-- Nav Item 3 --> */}
-        <div className="nav-item relative">
+        <Button variant="ghost" size="sm" asChild>
           <Link
             href="/codelibrary"
-            className="text-gray-700 dark:text-gray-200 hover:text-blue-500  hover:bg-gray-300 dark:hover:bg-transparent px-3.5 py-2.5 rounded-full text-sm font-medium flex items-center transition-all duration-500"
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+              isActive("/codelibrary")
+                ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                : "text-gray-700 dark:text-gray-200 hover:text-blue-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+            }`}
           >
             Code Library
           </Link>
-        </div>
+        </Button>
 
-        {/* <!-- Nav Item 4 --> */}
-        <div className="nav-item relative">
-          <Link
-            href="/alumni"
-            className="text-gray-700 dark:text-gray-200 hover:text-blue-500  hover:bg-gray-300 dark:hover:bg-transparent px-3.5 py-2.5 rounded-full text-sm font-medium flex items-center transition-all duration-500"
-          >
-            Global Ruet
+        <Button variant="ghost" size="sm" className={`text-gray-700 dark:text-gray-200 hover:text-blue-500 px-3 py-1.5 rounded-full text-sm font-medium ${
+          isActive("/contact/developers") ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : ""
+        }`} asChild>
+          <Link href="/contact/developers">
+            Contact
           </Link>
-        </div>
+        </Button>
 
-        {/* <!-- Nav Item 5 --> */}
-        <div className="nav-item relative">
-          <button className="text-gray-700 dark:text-gray-200 hover:text-blue-500  hover:bg-gray-300 dark:hover:bg-transparent px-3.5 py-2.5 rounded-full text-sm font-medium flex items-center transition-all duration-500">
-            Contact & Help
-            <i className="fas fa-chevron-down ml-1 text-xs"></i>
-          </button>
-          <div className="dropdown bg-[#ffffff]/90 dark:bg-[#071a26]/90 backdrop-blur-lg shadow-lg absolute left-0 mt-4 py-1 w-44 rounded-lg z-50">
-            
-           
-            <Link
-              href="https://www.ruet.ac.bd/"
-              target="_blank"
-              className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-[#071a26]/90 hover:text-blue-600 dark:hover:text-blue-500"
-            >
-              Official Website
-            </Link>
-            <Link
-              href="https://www.facebook.com/people/RUET-CSE-24/61574730479807/"
-              target="_blank"
-              className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-[#071a26]/90 hover:text-blue-600 dark:hover:text-blue-500"
-            >
-              Facebook Page
-            </Link>
-            <Link
-              href="/contact&help/developers"
-              className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-[#071a26]/90 hover:text-blue-600 dark:hover:text-blue-500"
-            >
-              Contributors
-            </Link>
-          </div>
-        </div>
-
-        {/* <!-- Nav Item 6 --> */}
-        <div className="nav-item relative">
-          <button className="text-gray-700 dark:text-gray-200 hover:text-blue-500 hover:bg-gray-300 dark:hover:bg-transparent px-3.5 py-2.5 rounded-full text-sm font-medium flex items-center transition-all duration-500">
+        <Button variant="ghost" size="sm" asChild>
+          <Link
+            href="/apps"
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+              isActive("/apps")
+                ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                : "text-gray-700 dark:text-gray-200 hover:text-blue-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+            }`}
+          >
             Apps
-          </button>
-        </div>
+          </Link>
+        </Button>
 
-        {/* <!-- Nav Item 7 --> */}
+        <ThemeToggle className="text-gray-700 dark:text-gray-200 hover:text-blue-500 px-3 py-1.5 rounded-full" />
+
         <LoginButton />
       </div>
     </div>

@@ -1,4 +1,5 @@
 import "./globals.css";
+import "@/lib/fontawesome";
 
 import { FooterComponent } from "@/components/home/footer";
 import { PageTitleProvider } from "@/components/providers/PageTitleProvider";
@@ -8,7 +9,7 @@ import GlobalPresenceTracker from "@/components/providers/GlobalPresenceTracker"
 import NoSSR from "@/components/ui/NoSSR";
 import FirebaseObfuscationInit from "@/components/security/FirebaseObfuscationInit";
 
-import { lato } from "./ui/fonts";
+import { ibmPlexSans } from "./ui/fonts";
 import { Toaster } from "react-hot-toast";
 
 import { Analytics } from "@vercel/analytics/next";
@@ -159,7 +160,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body
-        className={`${lato.className} antialiased bg-gray-200 dark:bg-[#071a26f1]`}
+        className={`${ibmPlexSans.className} antialiased bg-gray-200 dark:bg-gray-900`}
         suppressHydrationWarning={true}
       >
         <PageTitleProvider>

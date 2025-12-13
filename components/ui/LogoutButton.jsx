@@ -2,6 +2,9 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSignOut } from '@fortawesome/free-solid-svg-icons';
+import { Button } from "@/components/ui/button";
 import AuthUtils from "@/lib/auth-utils-secure";
 import toast from "react-hot-toast";
 
@@ -9,7 +12,8 @@ const LogoutButton = ({
   className = "", 
   variant = "default", 
   showIcon = true, 
-  children 
+  children,
+  size = "default" 
 }) => {
   const router = useRouter();
 
@@ -30,34 +34,35 @@ const LogoutButton = ({
     }
   };
 
-  const getVariantClasses = () => {
+  // Map custom variants to shadcn button variants
+  const getButtonVariant = () => {
     switch (variant) {
       case "danger":
-        return "bg-red-500 hover:bg-red-600 text-white border-red-500 hover:border-red-600";
+        return "destructive";
       case "outline":
-        return "bg-transparent hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 border-red-300 dark:border-red-600 hover:border-red-400";
+        return "outline";
       case "ghost":
-        return "bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 border-transparent";
+        return "ghost";
       case "minimal":
-        return "bg-transparent hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 border-none shadow-none hover:shadow-none";
+        return "ghost";
       default:
-        return "bg-gray-500 hover:bg-gray-600 text-white border-gray-500 hover:border-gray-600";
+        return "secondary";
     }
   };
 
-  const baseClasses = "px-4 py-2 rounded-lg border font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center gap-2";
-
   return (
-    <button
+    <Button
       onClick={handleLogout}
-      className={`${baseClasses} ${getVariantClasses()} ${className}`}
+      variant={getButtonVariant()}
+      size={size}
+      className={className}
       title="Logout"
     >
       {showIcon && (
-        <i className="fas fa-sign-out-alt"></i>
+        <FontAwesomeIcon icon={faSignOut} className="h-4 w-4 mr-2" />
       )}
       {children || "Logout"}
-    </button>
+    </Button>
   );
 };
 

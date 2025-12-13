@@ -16,7 +16,7 @@ export default function Loading() {
           }}
         >
           <div
-            className="bg-[#fff] dark:bg-[#263238]"
+            className="bg-[#fff] dark:bg-gray-800"
             style={{
               position: "absolute",
               left: "50%",

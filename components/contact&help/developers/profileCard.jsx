@@ -52,7 +52,7 @@ export function ProfileCard({
     >
       {/* Front Side */}
       <div
-        className={`absolute inset-0 flex flex-col items-center pt-6 px-4 bg-gradient-to-b from-blue-50 to-white transition-all duration-500 ${
+        className={`absolute inset-0 flex flex-col items-center pt-6 px-4 bg-gradient-to-b from-blue-50 to-white dark:from-gray-800 dark:to-gray-900 transition-all duration-500 ${
           isFlipped ? "opacity-0" : "opacity-100 group-hover:opacity-0"
         }`}
       >

@@ -1,4 +1,4 @@
-import { AddCodeSnippetForm } from "@/components/user/add-code-snippet-form";
+import AddCodeSnippetForm from "@/components/user/add-code-snippet-form";
 
 export default function Home() {
   return (

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { Button } from "@/components/ui/button";
 
 // Minimal client component only for interactive links with lazy toast loading
 export function ResourceCardLinks({ links }) {
@@ -16,17 +17,17 @@ export function ResourceCardLinks({ links }) {
     : [secondLink].filter(Boolean);
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex jsutify-between gap-2">
+    <div className="flex flex-col gap-2">
+      <div className="flex justify-between gap-2">
         {firstLinkArray?.map((link, index) => (
-          <Link
+          <Button
             key={index}
-            href={link.url || "#"}
-            className={`w-full rounded-full px-4 py-2 text-center font-semibold transition-all duration-200 transform hover:scale-105 ${
-              link.url !== ""
-                ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg"
-                : "bg-gray-600 hover:bg-gray-700 text-gray-200 cursor-not-allowed"
+            variant={link.url !== "" ? "default" : "secondary"}
+            size="sm"
+            className={`flex-1 h-8 text-xs font-medium ${
+              link.url === "" ? "opacity-50 cursor-not-allowed" : ""
             }`}
+            asChild={link.url !== ""}
             onClick={(e) => {
               if (link.url === "") {
                 e.preventDefault();
@@ -37,21 +38,25 @@ export function ResourceCardLinks({ links }) {
               link.url === "" ? "(coming soon)" : ""
             }`}
           >
-            {link.label}
-          </Link>
+            {link.url !== "" ? (
+              <Link href={link.url}>{link.label}</Link>
+            ) : (
+              <span>{link.label}</span>
+            )}
+          </Button>
         ))}
       </div>
 
-      <div className="flex jsutify-between">
+      <div className="flex justify-between gap-2">
         {secondLinkArray?.map((link, index) => (
-          <Link
+          <Button
             key={index}
-            href={link.url || "#"}
-            className={`w-full rounded-full px-4 py-2 text-center font-semibold transition-all duration-200 transform hover:scale-105 ${
-              link.url !== ""
-                ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg"
-                : "bg-gray-600 hover:bg-gray-700 text-gray-200 cursor-not-allowed"
+            variant={link.url !== "" ? "outline" : "secondary"}
+            size="sm"
+            className={`flex-1 h-8 text-xs font-medium ${
+              link.url === "" ? "opacity-50 cursor-not-allowed" : ""
             }`}
+            asChild={link.url !== ""}
             onClick={(e) => {
               if (link.url === "") {
                 e.preventDefault();
@@ -62,8 +67,12 @@ export function ResourceCardLinks({ links }) {
               link.url === "" ? "(coming soon)" : ""
             }`}
           >
-            {link.label}
-          </Link>
+            {link.url !== "" ? (
+              <Link href={link.url}>{link.label}</Link>
+            ) : (
+              <span>{link.label}</span>
+            )}
+          </Button>
         ))}
       </div>
     </div>

@@ -14,7 +14,10 @@ import {
 } from "react";
 
 import { motion } from "framer-motion";
-import { lato } from "@/app/ui/fonts";
+import { ibmPlexSans } from "@/app/ui/fonts";
+import { BookmarkButton } from "@/components/drive/BookmarkButton";
+import { BookmarkIcon } from "@/components/drive/BookmarkIcon";
+import { Toaster } from "react-hot-toast";
 import Loading from "@/app/loading";
 
 // Simple client-side cache to prevent re-fetching on back navigation
@@ -84,7 +87,7 @@ const FileIcon = memo(({ mimeType }) => {
 FileIcon.displayName = "FileIcon";
 
 // Memoized file item component
-const FileItem = memo(({ file, index, onFolderClick, onPreview }) => {
+const FileItem = memo(({ file, index, onFolderClick, onPreview, breadcrumbPath }) => {
   const isFolder = file.mimeType.includes("folder");
 
   const handleClick = useCallback(() => {
@@ -107,7 +110,7 @@ const FileItem = memo(({ file, index, onFolderClick, onPreview }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.03 }}
       viewport={{ once: true, margin: "50px" }}
-      className="px-2 py-4 lg:p-4 border-b border-gray-200 dark:border-gray-700 flex"
+      className="px-2 py-4 lg:p-4 border-b border-gray-200 dark:border-gray-700 flex group"
     >
       <div className="flex-1 flex items-center gap-1">
         <span className="text-gray-600 dark:text-gray-300 mr-1.5 lg:mr-2 xl:mr-3 text-lg">
@@ -124,10 +127,24 @@ const FileItem = memo(({ file, index, onFolderClick, onPreview }) => {
             isFolder
               ? "cursor-pointer hover:text-blue-600 dark:hover:text-blue-500"
               : ""
-          } text-lg text-gray-700 dark:text-gray-300 text-wrap truncate transition-colors`}
+          } text-lg text-gray-700 dark:text-gray-300 text-wrap truncate transition-colors flex-1`}
         >
           {file.name}
         </h3>
+
+        {/* Bookmark Button */}
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity mr-2">
+          <BookmarkButton
+            item={{
+              id: file.id,
+              name: file.name,
+              type: isFolder ? 'folder' : 'file',
+              mimeType: file.mimeType,
+              path: breadcrumbPath
+            }}
+            size="sm"
+          />
+        </div>
       </div>
 
       {file.webContentLink && (
@@ -329,6 +346,12 @@ export default function DrivePage({ params }) {
     }
   }, [previewID]);
 
+  // Generate breadcrumb path string for bookmarks
+  const breadcrumbPath = useMemo(() => {
+    if (!breadcrumb || breadcrumb.length === 0) return 'Drive';
+    return 'Drive > ' + breadcrumb.map(folder => folder.name).join(' > ');
+  }, [breadcrumb]);
+
   if (loading) {
     return <Loading />;
   }
@@ -359,54 +382,71 @@ export default function DrivePage({ params }) {
 
       <div
         className={`
-          ${lato.className} px-4 md:px-0 md:max-w-[90%] lg:max-w-[80%] xl:max-w-[70%] mx-auto`}
+          ${ibmPlexSans.className} px-4 md:px-0 md:max-w-[90%] lg:max-w-[80%] xl:max-w-[70%] mx-auto`}
       >
-        <div className="bg-[#ffffff78] dark:bg-[#071a26] px-3 lg:px-6 xl:px-8 py-8 rounded-lg shadow-md">
+        <div className="bg-[#ffffff78] dark:bg-gray-900 px-3 lg:px-6 xl:px-8 py-8 rounded-lg shadow-md">
           <div className="mx-auto">
             {/* Breadcrumb Navigation */}
+            {/* Breadcrumb and Bookmark Icon */}
             {breadcrumb && breadcrumb.length > 0 && (
-              <nav className="mb-6 p-1" aria-label="Breadcrumb">
-                <ol className="flex items-center flex-wrap gap-1 text-sm text-gray-600 dark:text-gray-400">
-                  {/* Home/Drive root */}
-                  <li key="breadcrumb-home" className="flex items-center">
-                    <Link
-                      href="/drive"
-                      className="text-[12px] lg:text-[13px] flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                      prefetch={true}
-                    >
-                      <i className="fas fa-home mr-1"></i>
-                      <span className="hidden sm:inline">Drive</span>
-                    </Link>
-                  </li>
-
-                  {/* Breadcrumb trail */}
-                  {breadcrumb.map((folder, index) => {
-                    if (!folder || !folder.id || !folder.name) {
-                      return null;
-                    }
-
-                    return (
-                      <li
-                        key={`breadcrumb-${folder.id}-${index}`}
-                        className="flex items-center"
+              <div className="flex items-start justify-between mb-6">
+                <nav className="flex-1" aria-label="Breadcrumb">
+                  <ol className="flex items-center flex-wrap gap-1 text-sm text-gray-600 dark:text-gray-400 p-1">
+                    {/* Home/Drive root */}
+                    <li key="breadcrumb-home" className="flex items-center">
+                      <Link
+                        href="/drive"
+                        className="text-[12px] lg:text-[13px] flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                        prefetch={true}
                       >
-                        <i className="fas fa-chevron-right mx-1 text-gray-400 text-[10px]"></i>
-                        <BreadcrumbItem
-                          folder={folder}
-                          isLast={index === breadcrumb.length - 1}
-                          index={index}
-                        />
-                      </li>
-                    );
-                  })}
-                </ol>
-              </nav>
+                        <i className="fas fa-home mr-1"></i>
+                        <span className="hidden sm:inline">Drive</span>
+                      </Link>
+                    </li>
+
+                    {/* Breadcrumb trail */}
+                    {breadcrumb.map((folder, index) => {
+                      if (!folder || !folder.id || !folder.name) {
+                        return null;
+                      }
+
+                      return (
+                        <li
+                          key={`breadcrumb-${folder.id}-${index}`}
+                          className="flex items-center"
+                        >
+                          <i className="fas fa-chevron-right mx-1 text-gray-400 text-[10px]"></i>
+                          <BreadcrumbItem
+                            folder={folder}
+                            isLast={index === breadcrumb.length - 1}
+                            index={index}
+                          />
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </nav>
+                
+                {/* Bookmark Icon */}
+                <div className="ml-4 pt-1">
+                  <BookmarkIcon />
+                </div>
+              </div>
             )}
 
-            {/* Folder Heading */}
-            <h1 className="text-3xl text-center font-bold mb-6 text-gray-700 dark:text-gray-300">
-              {currentFolder ? currentFolder.name : "Drive Files"}
-            </h1>
+            {/* Folder Heading with Bookmark Icon */}
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-3xl font-bold text-gray-700 dark:text-gray-300 flex-1 text-center">
+                {currentFolder ? currentFolder.name : "Drive Files"}
+              </h1>
+              
+              {/* Bookmark Icon for pages without breadcrumb */}
+              {(!breadcrumb || breadcrumb.length === 0) && (
+                <div className="ml-4">
+                  <BookmarkIcon />
+                </div>
+              )}
+            </div>
 
             {/* File List */}
             {files.length === 0 ? (
@@ -435,6 +475,7 @@ export default function DrivePage({ params }) {
                       index={index}
                       onFolderClick={handleFolderClick}
                       onPreview={handlePreview}
+                      breadcrumbPath={breadcrumbPath}
                     />
                   ))}
 
@@ -446,6 +487,7 @@ export default function DrivePage({ params }) {
                       index={folders.length + index}
                       onFolderClick={handleFolderClick}
                       onPreview={handlePreview}
+                      breadcrumbPath={breadcrumbPath}
                     />
                   ))}
                 </div>
@@ -481,6 +523,7 @@ export default function DrivePage({ params }) {
           ></iframe>
         </div>
       )}
+      <Toaster />
     </>
   );
 }

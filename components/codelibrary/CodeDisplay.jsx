@@ -1,3 +1,8 @@
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck, faCopy, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+
 const CodeDisplay = ({
   snippet,
   isExpanded,
@@ -11,26 +16,29 @@ const CodeDisplay = ({
   };
 
   return (
-    <div className="code-container dark:bg-gray-900 bg-gray-200 mt-4 rounded-lg overflow-hidden relative group">
+    <Card className="bg-muted/50 overflow-hidden relative group">
       {/* Copy button */}
-      <button
-        className={`copy-btn px-2 py-1 rounded text-xs absolute top-2 right-2 opacity-100 xl:opacity-0 transition-all duration-300 group-hover:opacity-100 dark:bg-gray-900 dark:hover:bg-gray-800 dark:text-white bg-gray-900 hover:bg-gray-800 text-white ${
-          copiedStates[snippet.id] ? "bg-green-600 dark:bg-green-600" : ""
+      <Button
+        variant={copiedStates[snippet.id] ? "default" : "secondary"}
+        size="sm"
+        className={`absolute top-2 right-2 opacity-100 xl:opacity-0 transition-all duration-300 group-hover:opacity-100 z-10 ${
+          copiedStates[snippet.id] ? "bg-green-600 hover:bg-green-700" : ""
         }`}
         onClick={() => onCopyCode(snippet.id, snippet.codeSnippet)}
       >
-        <i
-          className={`${
-            copiedStates[snippet.id] ? "fas fa-check" : "far fa-copy"
-          } mr-1`}
-        ></i>
+        <FontAwesomeIcon
+          icon={copiedStates[snippet.id] ? faCheck : faCopy}
+          className="h-3 w-3 mr-1"
+        />
         {copiedStates[snippet.id] ? "Copied" : "Copy"}
-      </button>
+      </Button>
 
       {/* Code snippet */}
       <pre
-        className={`p-4 overflow-x-auto transition-transform duration-500 ${
-          isCodeLong(snippet.codeSnippet) && !isExpanded ? "max-h-70" : ""
+        className={`p-4 overflow-x-auto transition-all duration-500 text-sm bg-background/50 ${
+          isCodeLong(snippet.codeSnippet) && !isExpanded 
+            ? "max-h-72 overflow-hidden" 
+            : ""
         }`}
       >
         <code
@@ -47,17 +55,22 @@ const CodeDisplay = ({
 
       {/* Code expand button */}
       {isCodeLong(snippet.codeSnippet) && (
-        <div className="flex justify-center p-2">
-          <button
-            className="px-6 py-2 text-sm font-medium rounded-full mx-auto dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-300 bg-gray-300 hover:bg-gray-400 text-gray-600 transition-colors duration-300"
+        <div className="flex justify-center p-3 border-t">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
             onClick={() => onToggleExpand(snippet.id)}
           >
-            {isExpanded ? "Collapse " : "Expand "}
-            Code
-          </button>
+            <FontAwesomeIcon
+              icon={isExpanded ? faChevronUp : faChevronDown}
+              className="h-3 w-3"
+            />
+            {isExpanded ? "Collapse" : "Expand"} Code
+          </Button>
         </div>
       )}
-    </div>
+    </Card>
   );
 };
 

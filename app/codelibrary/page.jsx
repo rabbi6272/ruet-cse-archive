@@ -49,7 +49,7 @@ export const metadata = {
 export default function CodeLibrary() {
   return (
     <>
-      <div className="mb-8">
+      <div className="mb-4">
         <CodeLibraryHeader />
       </div>
 
