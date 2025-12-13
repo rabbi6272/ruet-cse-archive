@@ -1,5 +1,7 @@
 import { HeroSection } from "@/components/home/hero-section";
 
+//by bitto
+
 export const metadata = {
   title: "RUET CSE Archive - A Complete Resource Hub for RUET CSE Students",
   description:
