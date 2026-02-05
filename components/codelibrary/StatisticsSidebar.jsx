@@ -223,7 +223,7 @@ const StatisticsSidebar = () => {
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-sm p-3 shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg border border-gray-200 dark:border-gray-700">
         <div className="animate-pulse">
           <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
           <div className="space-y-3">
@@ -238,7 +238,7 @@ const StatisticsSidebar = () => {
 
   if (error) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-sm p-3 shadow-md border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg border border-gray-200 dark:border-gray-700">
         <div className="text-center">
           <div className="text-2xl mb-2">😞</div>
           <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
@@ -254,10 +254,10 @@ const StatisticsSidebar = () => {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-6">
       {/* Stats Overview */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="bg-white dark:bg-gray-800 rounded-sm p-2 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-md border border-gray-200 dark:border-gray-700 text-center">
           <div className="text-lg mb-1">👥</div>
           <div className="text-lg font-bold text-gray-900 dark:text-white">
             {totalUsers}
@@ -266,7 +266,7 @@ const StatisticsSidebar = () => {
             Active Coders
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-sm p-2 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-md border border-gray-200 dark:border-gray-700 text-center">
           <div className="text-lg mb-1">⚡</div>
           <div className="text-sm font-bold text-green-600 dark:text-green-400">
             {totalNutrinos.toFixed(0)}
@@ -278,8 +278,9 @@ const StatisticsSidebar = () => {
       </div>
 
       {/* Top Contributors This Month */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-sm p-3 shadow-md">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center">
+          <span className="text-xl mr-2">⭐</span>
           This Month
         </h3>
         <div className="space-y-2">
@@ -308,7 +309,8 @@ const StatisticsSidebar = () => {
             ))
           ) : (
             <div className="text-center py-4">
-              <p className="text-gray-400 text-xs">
+              <div className="text-2xl mb-1">🚀</div>
+              <p className="text-gray-500 dark:text-gray-400 text-xs">
                 Be the first this month!
               </p>
             </div>
@@ -317,8 +319,9 @@ const StatisticsSidebar = () => {
       </div>
 
       {/* All-Time Champions */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-sm p-3 shadow-md">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center">
+          <span className="text-xl mr-2">🏆</span>
           All-Time Top
         </h3>
         <div className="space-y-2">
@@ -364,8 +367,9 @@ const StatisticsSidebar = () => {
       </div>
 
       {/* Activity Trend Chart */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-sm p-3 shadow-md">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg border border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center">
+          <span className="text-xl mr-2">📈</span>
           Activity Trend
         </h3>
         {Object.keys(monthlyActivity).length > 0 ? (
@@ -376,8 +380,9 @@ const StatisticsSidebar = () => {
             />
           </div>
         ) : (
-          <div className="h-48 flex items-center justify-center text-gray-400">
+          <div className="h-48 flex items-center justify-center text-gray-500 dark:text-gray-400">
             <div className="text-center">
+              <div className="text-2xl mb-1">📊</div>
               <p className="text-xs">No data yet</p>
             </div>
           </div>

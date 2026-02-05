@@ -54,7 +54,7 @@ export function AnimatedCounter({ target, suffix = "", duration = 3000 }) {
   return (
     <span
       ref={counterRef}
-      className="font-bold text-lg text-white tracking-wider"
+      className="font-semibold text-gray-700 dark:text-gray-200"
     >
       {count}
       {suffix}

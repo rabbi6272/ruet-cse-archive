@@ -1,61 +1,141 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ibmPlexSans } from "@/app/ui/fonts";
+
+import { inter } from "@/app/ui/fonts";
 
 export function FooterComponent() {
   return (
-    <footer className={`${ibmPlexSans.className} w-full bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700`}>
-      <Card className="rounded-none border-0 bg-transparent">
-        <CardContent className="p-2 lg:px-4 lg:py-2">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            {/* Logo Section */}
-            <div className="flex items-center space-x-2">
-              <Image
-                src="/images/lg/ruet.png"
-                alt="RUET logo"
-                width={32}
-                height={32}
-                className="object-contain"
-              />
-              <Image
-                src="/images/logo.png"
-                alt="CSE Archive logo"
-                width={48}
-                height={48}
-                className="object-contain"
-              />
-            </div>
-
-            {/* About Section */}
-            <div className="flex items-center gap-4">
-              <Button variant="link" size="sm" className="h-auto p-0" asChild>
-                <Link href="https://www.ruet.ac.bd/" target="_blank">
-                  RUET
-                </Link>
-              </Button>
-              <Button variant="link" size="sm" className="h-auto p-0" asChild>
-                <Link href="https://www.cse.ruet.ac.bd/" target="_blank">
-                  RUET CSE
-                </Link>
-              </Button>
-            </div>
-
-            {/* Copyright */}
-            <div className="text-center md:text-right">
-              <p className="text-sm text-muted-foreground">
-                © 2025{" "}
-                <Button variant="link" size="sm" className="h-auto p-0 text-sm" asChild>
-                  <Link href="/contact/developers">
-                    Avengers - CSE'24
+    <footer
+      data-testid="flowbite-footer"
+      className={`${inter.className} morphic-effect bg-morphic-light bg-[#ffffffe6] dark:bg-[#071a26] rounded-t-lg shadow-sm md:flex md:items-center md:justify-between w-full p-6 lg:px-14 lg:py-6 `}
+    >
+      <div className={`w-full `}>
+        <div
+          className={`grid w-full justify-between sm:flex sm:justify-between md:flex md:grid-cols-1 `}
+        >
+          <div
+            className={`flex items-center justify-center sm:justify-start pb-6 lg:pb-0`}
+          >
+            <Image
+              src={"/images/lg/ruet.png"}
+              alt="ruet logo"
+              width={70}
+              height={70}
+              className="mr-4"
+            />
+            <Image
+              src={"/images/logo.png"}
+              alt="logo"
+              width={120}
+              height={120}
+            />
+          </div>
+          <div
+            className={`grid grid-cols-2 gap-8 sm:mt-4 sm:grid-cols-3 sm:gap-6 `}
+          >
+            <div>
+              <h2
+                data-testid="flowbite-footer-title"
+                className={`mb-6 text-md tracking-wide font-semibold uppercase text-gray-600 dark:text-gray-200 `}
+              >
+                about
+              </h2>
+              <ul
+                data-testid="footer-groupLink"
+                className={`flex flex-wrap text-sm text-gray-600 dark:text-gray-200 flex-col space-y-4 `}
+              >
+                <li className={`me-4 last:mr-0 md:mr-6 `}>
+                  <Link
+                    href="https://www.ruet.ac.bd/"
+                    target="_blank"
+                    className={`hover:underline `}
+                  >
+                    RUET
                   </Link>
-                </Button>
-              </p>
+                </li>
+                <li className={`me-4 last:mr-0 md:mr-6 `}>
+                  <Link
+                    href="https://www.cse.ruet.ac.bd/"
+                    target="_blank"
+                    className={`hover:underline `}
+                  >
+                    RUET CSE
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h2
+                data-testid="flowbite-footer-title"
+                className={`mb-6 text-md tracking-wide font-semibold uppercase text-gray-600 dark:text-gray-200 `}
+              >
+                Follow us
+              </h2>
+              <ul
+                data-testid="footer-groupLink"
+                className={`flex flex-wrap text-sm text-gray-600 dark:text-gray-200 flex-col space-y-4 `}
+              >
+                <li className={`me-4 last:mr-0 md:mr-6 `}>
+                  <Link
+                    href="https://www.facebook.com/RUETOfficial/"
+                    className={`hover:underline `}
+                    target="_blank"
+                  >
+                    Facebook
+                  </Link>
+                </li>
+                <li className={`me-4 last:mr-0 md:mr-6 `}>
+                  <Link href="#" className={`hover:underline `}>
+                    Discord
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h2
+                data-testid="flowbite-footer-title"
+                className={`mb-6 text-md tracking-wide font-semibold uppercase text-gray-600 dark:text-gray-200 `}
+              >
+                Legal
+              </h2>
+              <ul
+                data-testid="footer-groupLink"
+                className={`flex flex-wrap text-sm text-gray-600 dark:text-gray-200 flex-col space-y-4 `}
+              >
+                <li className={`me-4 last:mr-0 md:mr-6 `}>
+                  <Link href="#" className={`hover:underline `}>
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li className={`me-4 last:mr-0 md:mr-6 `}>
+                  <Link href="#" className={`hover:underline `}>
+                    Terms &amp; Conditions
+                  </Link>
+                </li>
+              </ul>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <br />
+         <br />
+          <br />
+        <div className={`w-full text-center`}>
+          <div
+            data-testid="flowbite-footer-copyright"
+            className={`text-sm text-gray-600 dark:text-gray-200 sm:text-center `}
+          >
+            © 2025
+            <Link
+              href="/contact&help/developers"
+              className={`ml-1 hover:underline `}
+            >
+              Avengers - CSE'24 
+            </Link>
+          </div>
+        </div>
+      </div>
     </footer>
   );
 }

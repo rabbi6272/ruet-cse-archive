@@ -4,11 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
-import { ibmPlexSans } from "@/app/ui/fonts";
+import { lato } from "@/app/ui/fonts";
 import { getRootFolderId } from "@/lib/drive-config";
-import { BookmarkButton } from "@/components/drive/BookmarkButton";
-import { BookmarksList } from "@/components/drive/BookmarksList";
-import { Toaster } from "react-hot-toast";
 import Loading from "../loading";
 
 // Client-side cache for root folders
@@ -139,7 +136,7 @@ export default function DrivePage() {
     <>
       <br />
       <br />
-      <div className={ibmPlexSans.className + " px-4 lg:px-6"}>
+      <div className={lato.className + " px-4 lg:px-6"}>
         <div className="bg-[#ffffff78] dark:bg-gray-900 px-4 lg:px-6 py-8 rounded-lg shadow-md">
           <div className="mx-auto">
             {/* Breadcrumb Navigation */}
@@ -158,11 +155,6 @@ export default function DrivePage() {
               Drive Folders
             </h1>
 
-            {/* Bookmarks Section */}
-            <div className="mb-8">
-              <BookmarksList />
-            </div>
-
             {rootFolders.length === 0 ? (
               <p className="text-2xl text-center text-gray-700 dark:text-gray-300">
                 No folders found in the root directory.
@@ -176,7 +168,7 @@ export default function DrivePage() {
                     transition={{ duration: 0.5, delay: index * 0.1 }}
                     viewport={{ once: true }}
                     key={folder.id}
-                    className="p-4 rounded-lg relative group"
+                    className="p-4 rounded-lg"
                   >
                     <Link href={`/drive/${folder.id}`}>
                       <div className="flex flex-col items-center gap-1 hover:scale-105 transition-transform duration-300 cursor-pointer">
@@ -197,20 +189,6 @@ export default function DrivePage() {
                         </div>
                       </div>
                     </Link>
-                    
-                    {/* Bookmark Button */}
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <BookmarkButton
-                        item={{
-                          id: folder.id,
-                          name: folder.name,
-                          type: 'folder',
-                          mimeType: 'application/vnd.google-apps.folder',
-                          path: 'Drive'
-                        }}
-                        size="sm"
-                      />
-                    </div>
                   </motion.div>
                 ))}
               </div>
@@ -220,7 +198,6 @@ export default function DrivePage() {
       </div>
       <br />
       <br />
-      <Toaster />
     </>
   );
 }

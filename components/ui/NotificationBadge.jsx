@@ -1,8 +1,5 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-
 export function NotificationBadge({ count, className = "", size = "sm" }) {
   if (!count || count === 0) return null;
 
@@ -16,19 +13,14 @@ export function NotificationBadge({ count, className = "", size = "sm" }) {
   };
 
   return (
-    <Badge 
-      variant="destructive"
-      className={cn(
-        "absolute rounded-full flex items-center justify-center px-1 animate-pulse",
-        sizeClasses[size],
-        className
-      )}
+    <span
+      className={`absolute bg-red-500 text-white font-bold rounded-full flex items-center justify-center px-1 animate-pulse ${sizeClasses[size]} ${className}`}
       style={{
         lineHeight: "1",
         zIndex: 10,
       }}
     >
       {displayCount}
-    </Badge>
+    </span>
   );
 }

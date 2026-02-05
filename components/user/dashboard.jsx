@@ -17,6 +17,7 @@ import { getUserGroup } from "@/lib/group-utils";
 import AuthUtils from "@/lib/auth-utils-secure";
 import toast, { Toaster } from "react-hot-toast";
 import NotificationCenter from "./NotificationCenter";
+import ActiveUsersIndicator from "@/components/ui/ActiveUsersIndicator";
 import Link from "next/link";
 import hljs from "highlight.js";
 import "highlight.js/styles/monokai.css";
@@ -31,16 +32,7 @@ import { useP2PChat } from "@/components/providers/P2PChatProvider";
 import P2PChat from "./P2PChat";
 import GroupChat from "./GroupChat";
 import { notificationSound } from "@/lib/notificationSound";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ibmPlexSans } from "@/app/ui/fonts";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEdit, faTrash, faCopy, faEye, faExternalLinkAlt, faCode, faRobot } from "@fortawesome/free-solid-svg-icons";
-import AppPublishForm from "./AppPublishForm";
+
 
 const ITEMS_PER_PAGE = 5;
 
@@ -57,787 +49,920 @@ const Dashboard = () => {
   const [expandedSnippets, setExpandedSnippets] = useState({});
   const [userNutrinos, setUserNutrinos] = useState({
     totalNutrinos: 0,
+    rank: "Newbie",
     level: 1,
-    rank: "Beginner",
   });
-  const [showNutrinosHistory, setShowNutrinosHistory] = useState(false);
-  const [showAppPublishForm, setShowAppPublishForm] = useState(false);
   const [nutrinosHistory, setNutrinosHistory] = useState([]);
-  const [isGroupChatOpen, setIsGroupChatOpen] = useState(false);
-  const [groupUnreadCount, setGroupUnreadCount] = useState(0);
-  const [prevGroupUnreadCount, setPrevGroupUnreadCount] = useState(0);
+  const [showNutrinosHistory, setShowNutrinosHistory] = useState(false);
+  const [unsolvedDoubtsCount, setUnsolvedDoubtsCount] = useState(0);
   const [pendingChatRequests, setPendingChatRequests] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
-  const [activeTab, setActiveTab] = useState('posts'); // 'posts', 'apps', or 'bookmarks'
-  const [publishedApps, setPublishedApps] = useState([]);
-  const [editingAppId, setEditingAppId] = useState(null);
-  const [editAppForm, setEditAppForm] = useState({});
+  const [isGroupChatOpen, setIsGroupChatOpen] = useState(false);
+  const [groupUnreadCount, setGroupUnreadCount] = useState(0);
 
-  // Get current user and load data
+  // Previous counts for sound notification tracking
+  const [prevPendingChatRequests, setPrevPendingChatRequests] = useState(0);
+  const [prevUnreadMessagesCount, setPrevUnreadMessagesCount] = useState(0);
+  const [prevGroupUnreadCount, setPrevGroupUnreadCount] = useState(0);
+
+  const maxCodeLines = 20;
+
+  // Check authentication and load user data
   useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        console.log("Loading user data...");
-        const currentUser = AuthUtils.getUserData();
-        console.log("Current user:", currentUser);
-        
-        if (!currentUser) {
-          console.log("No user found, redirecting to login");
-          router.push("/user/login");
-          return;
-        }
-        
-        setUser(currentUser);
-        setLoading(false); // Set loading false once we have user
-        
-        // Load user snippets
-        const userSnippetsRef = query(
-          ref(db, "snippets"),
-          orderByChild("authorRoll"),
-          equalTo(currentUser.roll)
-        );
-        
-        onValue(userSnippetsRef, (snapshot) => {
-          const data = snapshot.val();
-          if (data) {
-            const snippetsArray = Object.keys(data).map((key) => ({
-              id: key,
-              ...data[key],
-            }));
-            setSnippets(snippetsArray.reverse());
-          } else {
-            setSnippets([]);
-          }
-        });
+    if (!AuthUtils.isAuthenticated()) {
+      router.push("/user/login");
+    } else {
+      const userData = AuthUtils.getUserData();
+      setUser(userData);
+      loadUserSnippets(userData.roll);
+      loadUserNutrinosData(userData.roll);
+    
+      // Load pending chat requests count
+      loadPendingChatRequestsCount(userData.roll);
+      // Load unread messages count
+      loadUnreadMessagesCount(userData.roll);
+      // Load group unread count
+      loadGroupUnreadCount(userData.roll);
+      // Record daily visit for Nutrinos
+      recordDailyVisit(userData.roll);
+    }
 
-        // Load user published apps
-        const userAppsRef = query(
-          ref(db, "publishedApps"),
-          orderByChild("authorRoll"),
-          equalTo(currentUser.roll)
-        );
-        
-        onValue(userAppsRef, (snapshot) => {
-          const data = snapshot.val();
-          if (data) {
-            const appsArray = Object.keys(data).map((key) => ({
-              id: key,
-              ...data[key],
-            }));
-            setPublishedApps(appsArray.reverse());
-          } else {
-            setPublishedApps([]);
-          }
-        });
-
-        // Load nutrinos data in background
-        try {
-          const nutrinosData = await getUserNutrinos(currentUser.roll);
-          setUserNutrinos(nutrinosData);
-          
-          // Load nutrinos history
-          const history = await getUserNutrinosHistory(currentUser.roll);
-          setNutrinosHistory(history);
-
-          // Record daily visit
-          await recordDailyVisit(currentUser.roll);
-
-          // Setup presence tracking
-          presenceTracker.currentUser = currentUser;
-          presenceTracker.startTracking(currentUser.roll, currentUser.name, 'dashboard');
-        } catch (nutrinossError) {
-          console.warn("Error loading nutrinos data:", nutrinossError);
-          // Don't block the UI for nutrinos errors
-        }
-        
-      } catch (error) {
-        console.error("Error loading user data:", error);
-        setError(`Failed to load user data: ${error.message}`);
-        setLoading(false);
-      }
-    };
-
-    loadUserData();
+    // Note: Presence tracking is now handled globally by GlobalPresenceTracker
   }, [router]);
 
-  // Pagination
+  // Load user's Nutrinos data
+  const loadUserNutrinosData = async (rollNumber) => {
+    try {
+      const nutrinosData = await getUserNutrinos(rollNumber);
+      setUserNutrinos(nutrinosData);
+
+      const history = await getUserNutrinosHistory(rollNumber, 5);
+      setNutrinosHistory(history);
+    } catch (error) {
+      console.error("Error loading Nutrinos data:", error);
+    }
+  };
+
+ 
+  
+  // Load pending chat requests count
+  const loadPendingChatRequestsCount = (rollNumber) => {
+    try {
+      const requestsRef = ref(db, "p2pChatRequests");
+      const incomingRequestsQuery = query(
+        requestsRef,
+        orderByChild("toRoll"),
+        equalTo(rollNumber)
+      );
+
+      onValue(incomingRequestsQuery, (snapshot) => {
+        const data = snapshot.val() || {};
+        const pendingCount = Object.keys(data).filter((key) => {
+          const request = data[key];
+          return request.status === "pending";
+        }).length;
+
+        // Play sound notification if count increased (new request received)
+        if (
+          pendingCount > prevPendingChatRequests &&
+          prevPendingChatRequests !== 0
+        ) {
+          notificationSound.playNotificationSound().catch(console.error);
+        }
+
+        setPrevPendingChatRequests(pendingCount); // Fix: Set previous count to current count
+        setPendingChatRequests(pendingCount);
+      });
+    } catch (error) {
+      console.error("Error loading pending chat requests count:", error);
+      setPendingChatRequests(0);
+    }
+  };
+
+  // Load unread messages count
+  const loadUnreadMessagesCount = (rollNumber) => {
+    try {
+      const unreadRef = ref(db, `unreadCounts/${rollNumber}`);
+
+      onValue(unreadRef, (snapshot) => {
+        const data = snapshot.val() || {};
+        const totalUnread = Object.values(data).reduce(
+          (total, count) => total + (count || 0),
+          0
+        );
+
+        // Play sound notification if count increased (new message received)
+        if (
+          totalUnread > prevUnreadMessagesCount &&
+          prevUnreadMessagesCount !== 0
+        ) {
+          notificationSound.playNotificationSound().catch(console.error);
+        }
+
+        setPrevUnreadMessagesCount(totalUnread); // Fix: Set previous count to current count
+        setUnreadMessagesCount(totalUnread);
+      });
+    } catch (error) {
+      console.error("Error loading unread messages count:", error);
+      setUnreadMessagesCount(0);
+    }
+  };
+
+  // Load group unread count
+  const loadGroupUnreadCount = (rollNumber) => {
+    try {
+      const userGroup = getUserGroup(rollNumber);
+      if (!userGroup) {
+        return;
+      }
+
+      const unreadRef = ref(
+        db,
+        `groupUnreadCounts/${userGroup.id}/${rollNumber}`
+      );
+
+      onValue(unreadRef, (snapshot) => {
+        const count = snapshot.val() || 0;
+        console.log(
+          `[DASHBOARD] Group unread count changed: ${prevGroupUnreadCount} -> ${count}`
+        );
+
+        // Play sound notification if count increased (new group message received)
+        if (count > prevGroupUnreadCount && prevGroupUnreadCount !== 0) {
+          console.log(
+            `[DASHBOARD] Playing notification sound for group message`
+          );
+          notificationSound.playNotificationSound().catch(console.error);
+        }
+
+        setPrevGroupUnreadCount(count); // Fix: Set previous count to current count
+        setGroupUnreadCount(count);
+      });
+    } catch (error) {
+      console.error("Error loading group unread count:", error);
+      setGroupUnreadCount(0);
+    }
+  };
+
+  // Highlight code blocks after component renders
+  useEffect(() => {
+    const codeBlocks = document.querySelectorAll("pre code");
+    codeBlocks.forEach((block) => {
+      hljs.highlightElement(block);
+    });
+  }, [snippets, editingId]);
+
+  // Load user's snippets from Firebase
+  const loadUserSnippets = (rollNumber) => {
+    setLoading(true);
+    try {
+      const snippetsRef = ref(db, "codeSnippets");
+      const userSnippetsQuery = query(
+        snippetsRef,
+        orderByChild("rollNumber"),
+        equalTo(rollNumber)
+      );
+
+      onValue(userSnippetsQuery, (snapshot) => {
+        const snippetsData = snapshot.val() || {};
+        const snippetsArray = Object.entries(snippetsData).map(
+          ([id, data]) => ({
+            id,
+            ...data,
+          })
+        );
+        // Sort by date (newest first)
+        snippetsArray.sort((a, b) => new Date(b.date) - new Date(a.date));
+        setSnippets(snippetsArray);
+        setLoading(false);
+      });
+    } catch (err) {
+      setError("Failed to load snippets. Please try again.");
+      setLoading(false);
+      console.error("Error loading snippets:", err);
+    }
+  };
+
+  // Handle edit button click
+  const handleEditClick = (snippet) => {
+    setEditingId(snippet.id);
+    setEditForm({
+      title: snippet.title,
+      description: snippet.description,
+      codeSnippet: snippet.codeSnippet,
+    });
+  };
+
+  // Handle edit form changes
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // Save edited snippet
+  const handleSaveEdit = async (snippetId) => {
+    try {
+      const snippetRef = ref(db, `codeSnippets/${snippetId}`);
+      await update(snippetRef, {
+        title: editForm.title,
+        description: editForm.description,
+        codeSnippet: editForm.codeSnippet,
+        lastUpdated: new Date().toISOString(),
+      });
+      setEditingId(null);
+
+      // Award Nutrinos for editing snippet
+      await awardSnippetNutrinos.edit(user.roll, snippetId);
+
+      // Refresh Nutrinos data
+      await loadUserNutrinosData(user.roll);
+
+      toast.success("Snippet updated successfully! +1.5 Nutrinos earned!");
+    } catch (err) {
+      setError("Failed to update snippet. Please try again.");
+      toast.error("Failed to update snippet. Please try again.");
+      console.error("Error updating snippet:", err);
+    }
+  };
+
+  // Delete snippet
+  const handleDeleteSnippet = async (snippetId) => {
+    if (
+      confirm(
+        "Are you sure you want to delete this snippet? You will lose 3 Nutrinos."
+      )
+    ) {
+      try {
+        const snippetRef = ref(db, `codeSnippets/${snippetId}`);
+        await remove(snippetRef);
+
+        // Award negative Nutrinos for deleting snippet
+        await awardSnippetNutrinos.delete(user.roll, snippetId);
+
+        // Refresh Nutrinos data
+        await loadUserNutrinosData(user.roll);
+
+        toast.success("Snippet deleted successfully! -3 Nutrinos deducted.");
+      } catch (err) {
+        setError("Failed to delete snippet. Please try again.");
+        toast.error("Failed to delete snippet. Please try again.");
+        console.error("Error deleting snippet:", err);
+      }
+    }
+  };
+
+  // Cancel editing
+  const handleCancelEdit = () => {
+    setEditingId(null);
+  };
+
+  const toggleExpand = (id) => {
+    setExpandedSnippets((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+
+    // Re-highlight after state change and DOM update
+    setTimeout(() => {
+      const codeBlocks = document.querySelectorAll("pre code");
+      codeBlocks.forEach((block) => {
+        // Remove existing highlighting classes
+        block.removeAttribute("data-highlighted");
+        block.className = block.className.replace(/hljs[^\s]*/g, "").trim();
+        // Re-apply highlighting
+        hljs.highlightElement(block);
+      });
+    }, 100);
+  };
+
+  const isCodeLong = (code) => {
+    return code?.split("\n").length > maxCodeLines;
+  };
+
+  // Pagination logic
   const totalPages = Math.ceil(snippets.length / ITEMS_PER_PAGE);
   const paginatedSnippets = snippets.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
 
-  // Edit handlers
-  const handleEditClick = (snippet) => {
-    setEditingId(snippet.id);
-    setEditForm({
-      title: snippet.title,
-      description: snippet.description || "",
-      language: snippet.language,
-      code: snippet.code,
-      tags: snippet.tags ? snippet.tags.join(", ") : "",
-    });
-  };
-
-  const handleEditChange = (e) => {
-    setEditForm({
-      ...editForm,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleSaveEdit = async () => {
-    try {
-      const snippetRef = ref(db, `snippets/${editingId}`);
-      await update(snippetRef, {
-        title: editForm.title,
-        description: editForm.description,
-        language: editForm.language,
-        code: editForm.code,
-        tags: editForm.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
-        updatedAt: Date.now(),
-      });
-      setEditingId(null);
-      toast.success("Snippet updated successfully!");
-    } catch (error) {
-      console.error("Error updating snippet:", error);
-      toast.error("Failed to update snippet");
-    }
-  };
-
-  const handleDelete = async (snippetId) => {
-    if (window.confirm("Are you sure you want to delete this snippet?")) {
-      try {
-        await remove(ref(db, `snippets/${snippetId}`));
-        toast.success("Snippet deleted successfully!");
-      } catch (error) {
-        console.error("Error deleting snippet:", error);
-        toast.error("Failed to delete snippet");
-      }
-    }
-  };
-
-  // App editing handlers
-  const handleEditAppClick = (app) => {
-    setEditingAppId(app.id);
-    setEditAppForm({
-      appName: app.appName,
-      purpose: app.purpose,
-      githubUrl: app.githubUrl,
-      liveLink: app.liveLink || "",
-      isAiUsed: app.isAiUsed,
-      aiPurpose: app.aiPurpose || "",
-    });
-  };
-
-  const handleEditAppChange = (e) => {
-    setEditAppForm({
-      ...editAppForm,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleSaveAppEdit = async () => {
-    try {
-      // Validation
-      if (!editAppForm.appName.trim() || !editAppForm.purpose.trim() || !editAppForm.githubUrl.trim()) {
-        toast.error("Please fill in all required fields");
-        return;
-      }
-
-      const githubUrlPattern = /^https:\/\/github\.com\/[\w-]+\/[\w.-]+/;
-      if (!githubUrlPattern.test(editAppForm.githubUrl)) {
-        toast.error("Please enter a valid GitHub URL");
-        return;
-      }
-
-      if (editAppForm.liveLink && !editAppForm.liveLink.startsWith('http')) {
-        toast.error("Live link must start with http:// or https://");
-        return;
-      }
-
-      if (editAppForm.isAiUsed === "yes" && !editAppForm.aiPurpose.trim()) {
-        toast.error("Please specify how AI was used");
-        return;
-      }
-
-      const appRef = ref(db, `publishedApps/${editingAppId}`);
-      await update(appRef, {
-        appName: editAppForm.appName,
-        purpose: editAppForm.purpose,
-        githubUrl: editAppForm.githubUrl,
-        liveLink: editAppForm.liveLink,
-        isAiUsed: editAppForm.isAiUsed,
-        aiPurpose: editAppForm.aiPurpose,
-        updatedAt: Date.now(),
-      });
-      setEditingAppId(null);
-      toast.success("App updated successfully!");
-    } catch (error) {
-      console.error("Error updating app:", error);
-      toast.error("Failed to update app");
-    }
-  };
-
-  const handleDeleteApp = async (appId) => {
-    if (window.confirm("Are you sure you want to delete this app?")) {
-      try {
-        await remove(ref(db, `publishedApps/${appId}`));
-        toast.success("App deleted successfully!");
-      } catch (error) {
-        console.error("Error deleting app:", error);
-        toast.error("Failed to delete app");
-      }
-    }
-  };
-
-  const toggleSnippetExpansion = (snippetId) => {
-    setExpandedSnippets(prev => ({
-      ...prev,
-      [snippetId]: !prev[snippetId]
-    }));
-  };
-
-  const isCodeTruncated = (code) => {
-    const maxCodeLines = 10;
-    return code?.split("\n").length > maxCodeLines;
-  };
-
-  if (loading) {
-    return (
-      <div className={`${ibmPlexSans.className} flex justify-center items-center h-screen`}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
   if (!user) {
     return (
-      <div className={`${ibmPlexSans.className} flex justify-center items-center h-screen`}>
-        <div className="text-center">
-          <p className="text-muted-foreground mb-4">Authentication required</p>
-          <Button onClick={() => router.push("/user/login")}>
-            Go to Login
-          </Button>
-        </div>
+      <div className="flex justify-center items-center h-screen">
+        <p className="text-lg">Loading user data...</p>
       </div>
     );
   }
 
   return (
-    <div className={`${ibmPlexSans.className} min-h-screen bg-white dark:bg-gray-900`}>
-      {/* Header Profile Section */}
-      <div className="border-b border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-3 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-lg font-semibold">
+    <div className="min-h-screen py-4 px-4">
+      <div className="w-full lg:max-w-6xl mx-auto">
+        {/* User Profile Section */}
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl p-2 lg:p-6 mb-6">
+          {/* Main Profile Header */}
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-6">
+            {/* Left Section - User Info */}
+            <div className="flex items-start gap-4 flex-1">
+              {/* Avatar */}
+              <div className="flex-shrink-0 h-16 w-16 lg:h-20 lg:w-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xl lg:text-3xl font-bold shadow-lg">
                 {user.name.charAt(0)}
               </div>
-              <div>
-                <h1 className="text-lg font-semibold">{user.name}</h1>
-                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                  <span>{user.roll}</span>
-                  <span>•</span>
-                  <span>{snippets.length} posts</span>
-                  <Badge variant="outline" className="ml-2 text-xs">{userNutrinos.rank}</Badge>
+
+              {/* User Details */}
+              <div className="flex-1 min-w-0">
+                <h1 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+                  {user.name}
+                </h1>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  <span className="flex items-center gap-1">
+                    <i className="fas fa-id-badge text-blue-500"></i>
+                    Roll: {user.roll}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <i className="fas fa-code text-green-500"></i>
+                    {snippets.length}{" "}
+                    {snippets.length === 1 ? "snippet" : "snippets"}
+                  </span>
+                </div>
+
+                {/* Status Badges */}
+                <div className="flex flex-wrap gap-2">
+                  {/* Role Badge */}
+                  <div className="flex items-center gap-1 bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-md">
+                    <span>🛡️</span>
+                    <span>{getUserDisplayRole(user)}</span>
+                  </div>
+
+                  {/* Rank Badge */}
+                  <div className="flex items-center gap-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-md hover:shadow-lg transition-all duration-200">
+                    <span>🏆</span>
+                    <span>{userNutrinos.rank}</span>
+                  </div>
+
+                  {/* Level Badge */}
+                  <div className="flex items-center gap-1 bg-gradient-to-r from-green-500 to-teal-600 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-md hover:shadow-lg transition-all duration-200">
+                    <span>📊</span>
+                    <span>Level {userNutrinos.level}</span>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <NotificationCenter userRoll={user?.roll} />
+
+            {/* Right Section - Active Users & Notifications */}
+            <div className="flex flex-row lg:flex-col items-baseline lg:items-end gap-3 w-full lg:w-auto">
+              <ActiveUsersIndicator
+                showDetails={true}
+                className="flex-shrink-0 "
+              />
+              {/* Mobile: Stack horizontally, Desktop: Stack vertically */}
+              <div className="flex flex-col items-center ">
+                <NotificationCenter userRoll={user?.roll} />
+                
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="max-w-2xl mx-auto">
-        {/* Navigation Tabs */}
-        <div className="px-3 py-3 border-b border-gray-100 dark:border-gray-800">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <Button
-                variant={activeTab === 'posts' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setActiveTab('posts')}
-                className="text-sm"
-              >
-                Posts ({snippets.length})
-              </Button>
-              <Button
-                variant={activeTab === 'apps' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setActiveTab('apps')}
-                className="text-sm"
-              >
-                Published Apps ({publishedApps.length})
-              </Button>
-              <Button
-                variant={activeTab === 'bookmarks' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setActiveTab('bookmarks')}
-                className="text-sm"
-              >
-                Bookmarks
-              </Button>
-            </div>
-            <div className="flex items-center gap-2">
-              {activeTab === 'posts' && (
-                <>
-                  <Button asChild variant="outline" size="sm" className="text-blue-600">
-                    <Link href="/user/create">
-                      + New Post
-                    </Link>
-                  </Button>
-                </>
-              )}
-              {activeTab === 'apps' && (
-                <>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setShowAppPublishForm(true)}
-                    className="text-blue-600"
-                  >
-                    + Publish App
-                  </Button>
-                </>
-              )}
-              <Button 
-                variant="ghost" 
-                size="sm" 
+          {/* Nutrinos Section */}
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-4 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              {/* Nutrinos Display */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 bg-gradient-to-r from-green-400 to-emerald-500 text-white px-4 py-2 rounded-lg shadow-lg">
+                  <i className="fas fa-bolt text-lg"></i>
+                  <div className="text-left">
+                    <div className="text-xs opacity-90">Total Nutrinos</div>
+                    <div className="text-lg font-bold">
+                      {userNutrinos.totalNutrinos.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <div>Current Progress</div>
+                  <div className="font-semibold text-green-600 dark:text-green-400">
+                    {userNutrinos.rank} • Level {userNutrinos.level}
+                  </div>
+                </div>
+              </div>
+
+              {/* History Button */}
+              <button
                 onClick={() => setShowNutrinosHistory(!showNutrinosHistory)}
-                className="text-gray-500 dark:text-gray-400"
+                className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-all duration-200 px-4 py-2 rounded-lg hover:bg-white dark:hover:bg-gray-800 border border-indigo-200 dark:border-indigo-800 flex items-center gap-2"
               >
-                Activity
-              </Button>
+                <i className="fas fa-history"></i>
+                <span>Activity History</span>
+              </button>
             </div>
           </div>
-        </div>
 
-        {/* Activity History Dropdown */}
-        {showNutrinosHistory && (
-          <div className="px-3 border-b border-gray-100 dark:border-gray-800 max-h-64 overflow-y-auto">
-            {nutrinosHistory.length > 0 ? (
-              nutrinosHistory.map((entry) => (
-                <div key={entry.id} className="py-3 flex justify-between items-center">
-                  <div>
-                    <p className="text-sm font-medium">
-                      {typeof entry.reason === "string" ? entry.reason : "Activity completed"}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {new Date(entry.timestamp).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <Badge variant={entry.nutrinos >= 0 ? "default" : "destructive"} className="text-xs">
-                    {entry.nutrinos >= 0 ? "+" : ""}{entry.nutrinos.toFixed(2)}
-                  </Badge>
+          {/* Nutrinos History Dropdown */}
+          {showNutrinosHistory && (
+            <div className="relative mb-6">
+              <div className="absolute top-0 left-0 right-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    Recent Nutrinos Activity
+                  </h3>
                 </div>
-              ))
-            ) : (
-              <div className="py-8 text-center text-gray-500 dark:text-gray-400">
-                <p className="text-sm">No activity yet</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Error Display */}
-        {error && (
-          <div className="px-3 py-3 bg-red-50 border-b border-red-100 dark:bg-red-900/20">
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-          </div>
-        )}
-
-        {/* Tab Content */}
-        {activeTab === 'posts' ? (
-          <div className="divide-y divide-gray-100 dark:divide-gray-800">
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent"></div>
-              </div>
-            ) : snippets.length === 0 ? (
-              <div className="text-center py-16 px-3">
-                <div className="text-6xl mb-4">📝</div>
-                <p className="text-gray-500 dark:text-gray-400 mb-2">No code snippets yet</p>
-                <p className="text-sm text-gray-400">Share your first code snippet with the community!</p>
-              </div>
-            ) : (
-              paginatedSnippets.map((snippet) => (
-              <div key={snippet.id} className="px-3 py-4">
-                {editingId === snippet.id ? (
-                  <div className="space-y-3">
-                    <Input
-                      name="title"
-                      value={editForm.title}
-                      onChange={handleEditChange}
-                      placeholder="Title"
-                      className="border-0 border-b border-gray-200 rounded-none px-0 focus:border-blue-500"
-                    />
-                    <Textarea
-                      name="description"
-                      value={editForm.description}
-                      onChange={handleEditChange}
-                      placeholder="Description"
-                      rows={2}
-                      className="border-0 border-b border-gray-200 rounded-none px-0 resize-none"
-                    />
-                    <div className="flex gap-2">
-                      <Select value={editForm.language} onValueChange={(value) => setEditForm({...editForm, language: value})}>
-                        <SelectTrigger className="w-32 h-8">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="javascript">JavaScript</SelectItem>
-                          <SelectItem value="python">Python</SelectItem>
-                          <SelectItem value="java">Java</SelectItem>
-                          <SelectItem value="cpp">C++</SelectItem>
-                          <SelectItem value="c">C</SelectItem>
-                          <SelectItem value="html">HTML</SelectItem>
-                          <SelectItem value="css">CSS</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        name="tags"
-                        value={editForm.tags}
-                        onChange={handleEditChange}
-                        placeholder="Tags (comma separated)"
-                        className="flex-1 h-8"
-                      />
-                    </div>
-                    <Textarea
-                      name="code"
-                      value={editForm.code}
-                      onChange={handleEditChange}
-                      rows={8}
-                      className="font-mono text-sm border border-gray-200 rounded-lg"
-                    />
-                    <div className="flex gap-2">
-                      <Button onClick={handleSaveEdit} size="sm">Save</Button>
-                      <Button variant="outline" size="sm" onClick={() => setEditingId(null)}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold">{snippet.title}</h3>
-                          <Badge variant="outline" className="text-xs">{snippet.language}</Badge>
-                        </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{snippet.description}</p>
-                        <div className="flex items-center gap-4 text-xs text-gray-400">
-                          <span>{new Date(snippet.createdAt).toLocaleDateString()}</span>
-                          {snippet.tags && snippet.tags.length > 0 && (
-                            <div className="flex gap-1">
-                              {snippet.tags.slice(0, 3).map((tag) => (
-                                <span key={tag} className="text-blue-500">#{tag}</span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex gap-1 ml-3">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditClick(snippet)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <FontAwesomeIcon icon={faEdit} className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(snippet.id)}
-                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
-                        >
-                          <FontAwesomeIcon icon={faTrash} className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center justify-between px-3 py-2 bg-gray-100 dark:bg-gray-800 border-b">
-                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">
-                          {snippet.language}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigator.clipboard.writeText(snippet.code)}
-                          className="h-6 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                        >
-                          <FontAwesomeIcon icon={faCopy} className="h-3 w-3 mr-1" />
-                          Copy
-                        </Button>
-                      </div>
-                      <div className="relative">
-                        {!expandedSnippets[snippet.id] && isCodeTruncated(snippet.code) ? (
-                          <>
-                            <pre className="p-3 text-sm overflow-x-auto bg-white dark:bg-gray-900">
-                              <code 
-                                className="text-gray-800 dark:text-gray-100"
-                                dangerouslySetInnerHTML={{
-                                  __html: hljs.highlightAuto(
-                                    snippet.code.split("\n").slice(0, 10).join("\n")
-                                  ).value,
-                                }}
-                              />
-                            </pre>
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-white dark:from-gray-900 to-transparent h-12 flex items-end justify-center pb-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => toggleSnippetExpansion(snippet.id)}
-                                className="h-6 text-xs"
-                              >
-                                Show More
-                              </Button>
-                            </div>
-                          </>
-                        ) : (
-                          <pre className="p-3 text-sm overflow-x-auto bg-white dark:bg-gray-900">
-                            <code 
-                              className="text-gray-800 dark:text-gray-100"
-                              dangerouslySetInnerHTML={{
-                                __html: hljs.highlightAuto(snippet.code).value,
-                              }}
-                            />
-                          </pre>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-          
-          {/* Load More / Pagination */}
-          {activeTab === 'posts' && snippets.length > ITEMS_PER_PAGE && (
-            <div className="px-3 py-4 border-t border-gray-100 dark:border-gray-800">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, snippets.length)} of {snippets.length}
-                </span>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className="h-8"
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    className="h-8"
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-        ) : activeTab === 'apps' ? (
-          <div className="divide-y divide-gray-100 dark:divide-gray-800">
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent"></div>
-              </div>
-            ) : publishedApps.length === 0 ? (
-              <div className="text-center py-16 px-3">
-                <div className="text-6xl mb-4">🚀</div>
-                <p className="text-gray-500 dark:text-gray-400 mb-2">No published apps yet</p>
-                <p className="text-sm text-gray-400">Share your first app with the community!</p>
-              </div>
-            ) : (
-              publishedApps.map((app) => (
-                <div key={app.id} className="px-3 py-4">
-                  {editingAppId === app.id ? (
-                    <div className="space-y-3">
-                      <Input
-                        name="appName"
-                        value={editAppForm.appName}
-                        onChange={handleEditAppChange}
-                        placeholder="App Name"
-                        className="border-0 border-b border-gray-200 rounded-none px-0 focus:border-blue-500"
-                      />
-                      <Textarea
-                        name="purpose"
-                        value={editAppForm.purpose}
-                        onChange={handleEditAppChange}
-                        placeholder="Purpose"
-                        rows={2}
-                        className="border-0 border-b border-gray-200 rounded-none px-0 resize-none"
-                      />
-                      <Input
-                        name="githubUrl"
-                        value={editAppForm.githubUrl}
-                        onChange={handleEditAppChange}
-                        placeholder="GitHub URL"
-                        className="border-0 border-b border-gray-200 rounded-none px-0 focus:border-blue-500"
-                      />
-                      <Input
-                        name="liveLink"
-                        value={editAppForm.liveLink}
-                        onChange={handleEditAppChange}
-                        placeholder="Live Link (optional)"
-                        className="border-0 border-b border-gray-200 rounded-none px-0 focus:border-blue-500"
-                      />
-                      <div className="flex gap-2">
-                        <Select 
-                          value={editAppForm.isAiUsed} 
-                          onValueChange={(value) => setEditAppForm({...editAppForm, isAiUsed: value, aiPurpose: value === "no" ? "" : editAppForm.aiPurpose})}
-                        >
-                          <SelectTrigger className="w-32 h-8">
-                            <SelectValue placeholder="AI Used?" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="yes">Yes</SelectItem>
-                            <SelectItem value="no">No</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {editAppForm.isAiUsed === "yes" && (
-                          <Input
-                            name="aiPurpose"
-                            value={editAppForm.aiPurpose}
-                            onChange={handleEditAppChange}
-                            placeholder="How was AI used?"
-                            className="flex-1 h-8"
-                          />
-                        )}
-                      </div>
-                      <div className="flex gap-2 pt-2">
-                        <Button size="sm" onClick={handleSaveAppEdit} className="h-8">
-                          Save
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => setEditingAppId(null)} className="h-8">
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="text-2xl">🚀</div>
-                          <div>
-                            <h3 className={`font-semibold text-gray-900 dark:text-white ${ibmPlexSans.className}`}>
-                              {app.appName}
-                            </h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              {new Date(app.publishedAt).toLocaleDateString()}
+                <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                  {nutrinosHistory.length > 0 ? (
+                    nutrinosHistory.map((entry) => (
+                      <div
+                        key={entry.id}
+                        className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      >
+                        <div className="flex justify-between items-center">
+                          <div className="flex-1">
+                            <p className="text-sm text-gray-900 dark:text-gray-100">
+                              {typeof entry.reason === "string"
+                                ? entry.reason
+                                : "Activity completed"}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {new Date(entry.timestamp).toLocaleDateString()}
                             </p>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {app.upvotes > 0 && (
-                            <Badge variant="secondary" className="text-xs">
-                              👍 {app.upvotes}
-                            </Badge>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEditAppClick(app)}
-                            className="h-8 w-8 p-0 text-gray-500 hover:text-blue-600"
+                          <div
+                            className={`text-sm font-bold px-2 py-1 rounded ${
+                              entry.nutrinos >= 0
+                                ? "text-green-600 bg-green-100 dark:bg-green-900/30"
+                                : "text-red-600 bg-red-100 dark:bg-red-900/30"
+                            }`}
                           >
-                            <FontAwesomeIcon icon={faEdit} className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDeleteApp(app.id)}
-                            className="h-8 w-8 p-0 text-gray-500 hover:text-red-600"
-                          >
-                            <FontAwesomeIcon icon={faTrash} className="w-3 h-3" />
-                          </Button>
+                            {entry.nutrinos >= 0 ? "+" : ""}
+                            {entry.nutrinos.toFixed(2)}
+                          </div>
                         </div>
                       </div>
-                      
-                      <p className="text-gray-700 dark:text-gray-300">
-                        {app.purpose}
-                      </p>
-                      
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <a 
-                          href={app.githubUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
-                        >
-                          <FontAwesomeIcon icon={faCode} className="w-3 h-3" />
-                          Code
-                        </a>
-                        {app.liveLink && (
-                          <a 
-                            href={app.liveLink} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-sm text-green-600 hover:underline"
-                          >
-                            <FontAwesomeIcon icon={faExternalLinkAlt} className="w-3 h-3" />
-                            Live Demo
-                          </a>
-                        )}
-                        {app.isAiUsed === "yes" && (
-                          <Badge variant="outline" className="text-xs">
-                            <FontAwesomeIcon icon={faRobot} className="w-3 h-3 mr-1" />
-                            AI: {app.aiPurpose}
-                          </Badge>
-                        )}
-                      </div>
+                    ))
+                  ) : (
+                    <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                      <i className="fas fa-inbox text-2xl mb-2 opacity-50"></i>
+                      <p className="text-sm">No Nutrinos activity yet</p>
                     </div>
                   )}
                 </div>
-              ))
-            )}
+              </div>
+            </div>
+          )}
+
+          {/* Overlay to close Nutrinos history when clicking outside */}
+          {showNutrinosHistory && (
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setShowNutrinosHistory(false)}
+            />
+          )}
+
+          {/* Quick Actions */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              Quick Actions
+            </h3>
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+
+              <Link
+                href="/user/create"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg transform hover:scale-105"
+              >
+                <i className="fas fa-plus text-sm"></i>
+                <span className="hidden sm:inline text-sm font-medium">
+                  Add Codesnippet
+                </span>
+                <span className="sm:hidden text-sm font-medium">Add</span>
+              </Link>
+
+              
+
+              
+            </div>
           </div>
-        ) : (
-          /* Empty state for bookmarks tab - now handled in resources page */
-          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-            <p className="text-lg mb-2">📚 Bookmarks</p>
-            <p className="text-sm">Visit the Resources page to access your bookmarks</p>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 rounded-lg border border-red-200 dark:border-red-800 text-sm">
+            {error}
           </div>
         )}
+
+        {/* Snippets Section */}
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl overflow-hidden">
+          {/* Snippets Header */}
+          <div className="px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Your Code Snippets
+            </h2>
+          </div>
+
+          {loading ? (
+            <div className="p-8 flex justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-indigo-500 border-t-transparent"></div>
+            </div>
+          ) : snippets.length === 0 ? (
+            <div className="p-8 text-center">
+              <div className="text-gray-400 mb-2">
+                <i className="fas fa-code text-3xl"></i>
+              </div>
+              <p className="text-gray-500 dark:text-gray-400">
+                No code snippets yet
+              </p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+                Start by posting your first snippet!
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              {paginatedSnippets.map((snippet) => (
+                <div key={snippet.id} className="p-4 lg:p-6">
+                  {editingId === snippet.id ? (
+                    // Edit Form
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Title
+                        </label>
+                        <input
+                          type="text"
+                          name="title"
+                          value={editForm.title}
+                          onChange={handleEditChange}
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-gray-100"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Description
+                        </label>
+                        <textarea
+                          name="description"
+                          value={editForm.description}
+                          onChange={handleEditChange}
+                          rows="3"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-gray-100"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Code
+                        </label>
+                        <textarea
+                          name="codeSnippet"
+                          value={editForm.codeSnippet}
+                          onChange={handleEditChange}
+                          rows="20"
+                          className="w-full px-3 py-2 font-mono text-sm border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-gray-100"
+                        />
+                      </div>
+
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => handleSaveEdit(snippet.id)}
+                          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={handleCancelEdit}
+                          className="px-4 py-2 bg-gray-100 dark:bg-gray-600 border border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    // Snippet Display
+                    <div>
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                            {snippet.title}
+                          </h3>
+                          <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                            <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full text-xs font-medium">
+                              {snippet.language}
+                            </span>
+                            <span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-1 rounded-full text-xs font-medium">
+                              {snippet.difficulty}
+                            </span>
+                            <span className="text-xs">
+                              {new Date(snippet.date).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 self-start">
+                          <button
+                            onClick={() => handleEditClick(snippet)}
+                            className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 text-sm font-medium px-3 py-1 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                          >
+                            <i className="fas fa-edit mr-1"></i>
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSnippet(snippet.id)}
+                            className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-medium px-3 py-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          >
+                            <i className="fas fa-trash mr-1"></i>
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+
+                      <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
+                        {snippet.description}
+                      </p>
+
+                      <div className="code-container bg-gray-900 rounded-xl overflow-hidden relative group">
+                        {/* Code snippet */}
+                        <pre
+                          className={`p-4 overflow-x-auto transition-transform duration-500 ${
+                            isCodeLong(snippet.codeSnippet) &&
+                            !expandedSnippets[snippet.id]
+                              ? "max-h-90"
+                              : ""
+                          }`}
+                        >
+                          <code
+                            className={`language-${
+                              snippet.language?.toLowerCase() || "text"
+                            }`}
+                          >
+                            {isCodeLong(snippet.codeSnippet) &&
+                            !expandedSnippets[snippet.id]
+                              ? snippet.codeSnippet
+                                  .split("\n")
+                                  .slice(0, maxCodeLines)
+                                  .join("\n") + "\n..."
+                              : snippet.codeSnippet}
+                          </code>
+                        </pre>
+
+                        {/* Code expand button */}
+                        {isCodeLong(snippet.codeSnippet) && (
+                          <div className="flex justify-center p-3">
+                            <button
+                              className="px-4 py-2 text-sm font-medium rounded-full bg-gray-800 hover:bg-gray-700 text-gray-300 transition-colors shadow-sm"
+                              onClick={() => {
+                                // Remove highlighting before animation
+                                const codeBlocks =
+                                  document.querySelectorAll("pre code");
+                                codeBlocks.forEach((block) => {
+                                  block.removeAttribute("data-highlighted");
+                                  block.className = block.className
+                                    .replace(/hljs[^\s]*/g, "")
+                                    .trim();
+                                });
+                                toggleExpand(snippet.id);
+                              }}
+                            >
+                              {expandedSnippets[snippet.id]
+                                ? "Collapse"
+                                : "Expand"}{" "}
+                              Code
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {snippet.tags && snippet.tags.length > 0 && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {snippet.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {snippets.length > ITEMS_PER_PAGE && (
+            <div className="px-4 lg:px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Showing{" "}
+                    <span className="font-medium">
+                      {(currentPage - 1) * ITEMS_PER_PAGE + 1}
+                    </span>{" "}
+                    to{" "}
+                    <span className="font-medium">
+                      {Math.min(currentPage * ITEMS_PER_PAGE, snippets.length)}
+                    </span>{" "}
+                    of <span className="font-medium">{snippets.length}</span>{" "}
+                    snippets
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={currentPage === 1}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      currentPage === 1
+                        ? "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                        : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
+                    }`}
+                  >
+                    <i className="fas fa-chevron-left mr-1"></i>
+                    Previous
+                  </button>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
+                    disabled={currentPage === totalPages}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      currentPage === totalPages
+                        ? "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                        : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600"
+                    }`}
+                  >
+                    Next
+                    <i className="fas fa-chevron-right ml-1"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Chat Components */}
+      {/* Chat Bubbles */}
+      <div className="fixed bottom-6 right-6 z-[55] sm:bottom-8 sm:right-8 flex flex-col gap-4">
+        {/* Group Chat Bubble */}
+        <button
+          onClick={async () => {
+            console.log(
+              `[DASHBOARD] Opening group chat, current unread count: ${groupUnreadCount}`
+            );
+            setIsGroupChatOpen(true);
+
+            // Clear unread count when opening group chat
+            if (user?.roll) {
+              try {
+                const userGroup = getUserGroup(user.roll);
+                if (userGroup && groupUnreadCount > 0) {
+                  console.log(
+                    `[DASHBOARD] Clearing unread count for group ${userGroup.id}`
+                  );
+                  const unreadRef = ref(
+                    db,
+                    `groupUnreadCounts/${userGroup.id}/${user.roll}`
+                  );
+                  await update(ref(db, `groupUnreadCounts/${userGroup.id}`), {
+                    [user.roll]: 0,
+                  });
+                  console.log(`[DASHBOARD] Unread count cleared successfully`);
+                }
+                setGroupUnreadCount(0);
+                setPrevGroupUnreadCount(0);
+              } catch (error) {
+                console.error("Error clearing group unread count:", error);
+              }
+            }
+          }}
+          className="relative group w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-green-500 via-emerald-600 to-teal-700 hover:from-green-400 hover:via-emerald-500 hover:to-teal-600 text-white rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-110 border-2 border-white/20 backdrop-blur-sm flex items-center justify-center"
+          title="Group Chat"
+        >
+          {/* Group chat icon */}
+          <div className="relative">
+            <i className="fas fa-users text-xl sm:text-2xl filter drop-shadow-sm"></i>
+
+            {/* Notification badge - only show when there are unread messages */}
+            {groupUnreadCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[1.25rem] h-5 px-1 flex items-center justify-center shadow-lg border-2 border-white animate-pulse">
+                {groupUnreadCount > 9 ? "9+" : groupUnreadCount}
+              </span>
+            )}
+
+            {/* Enhanced Online indicator with accurate presence detection */}
+            <div className="absolute -bottom-1 -right-1 flex items-center justify-center">
+              <div className="relative">
+                <div className="w-4 h-4 bg-green-400 rounded-full border-2 border-white shadow-md"></div>
+                <div className="absolute top-0 left-0 w-4 h-4 bg-green-300 rounded-full animate-pulse"></div>
+                <div className="absolute top-0 left-0 w-4 h-4 bg-green-400 rounded-full animate-ping opacity-75"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Enhanced tooltip */}
+          <div className="hidden sm:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 px-4 py-3 bg-gray-900/95 backdrop-blur-sm text-white text-sm rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap shadow-2xl border border-gray-700/50">
+            <div className="flex items-center gap-2">
+              <i className="fas fa-users text-green-400"></i>
+              <span className="font-semibold">Group Chat</span>
+            </div>
+            {groupUnreadCount > 0 && (
+              <div className="text-xs text-yellow-300 mt-2 text-center font-medium">
+                � {groupUnreadCount} new message
+                {groupUnreadCount > 1 ? "s" : ""}!
+              </div>
+            )}
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900/95"></div>
+          </div>
+
+          {/* Floating animation rings */}
+          <div className="absolute inset-0 rounded-full border-2 border-white/30 animate-ping"></div>
+          <div className="absolute inset-0 rounded-full border border-white/20 animate-pulse"></div>
+        </button>
+
+        {/* P2P Chat Bubble */}
+        <button
+          onClick={() => openP2PChat()}
+          className="relative group w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-700 hover:from-blue-400 hover:via-indigo-500 hover:to-purple-600 text-white rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-110 border-2 border-white/20 backdrop-blur-sm flex items-center justify-center"
+          title="P2P Chat"
+        >
+          {/* Chat icon with enhanced styling */}
+          <div className="relative">
+            <i className="fab fa-facebook-messenger text-xl sm:text-2xl filter drop-shadow-sm"></i>
+            {/* Notification badge for pending requests or unread messages */}
+            {(pendingChatRequests > 0 || unreadMessagesCount > 0) && (
+              <span className="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center shadow-lg border-2 border-white animate-pulse">
+                {pendingChatRequests + unreadMessagesCount > 9
+                  ? "9+"
+                  : pendingChatRequests + unreadMessagesCount}
+              </span>
+            )}
+            {/* Enhanced online indicator with accurate pulse system */}
+            <div className="absolute -bottom-1 -right-1 w-4 h-4">
+              {/* Primary indicator dot */}
+              <div className="relative w-full h-full bg-green-400 rounded-full border-2 border-white">
+                {/* Inner pulse */}
+                <div className="absolute inset-0.5 bg-green-300 rounded-full animate-pulse"></div>
+                {/* Outer pulse rings */}
+                <div className="absolute -inset-1 bg-green-400/60 rounded-full animate-ping"></div>
+                <div className="absolute -inset-0.5 bg-green-300/40 rounded-full animate-pulse"></div>
+                {/* Core dot */}
+                <div className="relative w-1.5 h-1.5 bg-white rounded-full animate-pulse mx-auto mt-0.5"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Enhanced tooltip */}
+          <div className="hidden sm:block absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 px-4 py-2 bg-gray-900/95 backdrop-blur-sm text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap shadow-xl border border-gray-700">
+            <div className="flex items-center gap-2">
+              <i className="fab fa-facebook-messenger text-blue-400"></i>
+              <span className="font-medium">P2P Chat with Classmates</span>
+            </div>
+            {(pendingChatRequests > 0 || unreadMessagesCount > 0) && (
+              <div className="text-xs text-yellow-300 mt-1 text-center">
+                {pendingChatRequests > 0 && (
+                  <div>
+                    🔔 {pendingChatRequests} pending request
+                    {pendingChatRequests > 1 ? "s" : ""}
+                  </div>
+                )}
+                {unreadMessagesCount > 0 && (
+                  <div>
+                    💬 {unreadMessagesCount} unread message
+                    {unreadMessagesCount > 1 ? "s" : ""}
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900/95"></div>
+          </div>
+
+          {/* Floating animation rings */}
+          <div className="absolute inset-0 rounded-full border-2 border-white/30 animate-ping"></div>
+          <div className="absolute inset-0 rounded-full border border-white/20 animate-pulse"></div>
+        </button>
+      </div>
+
+      {/* P2P Chat Modal */}
       <P2PChat
         userRoll={user?.roll}
         userName={user?.name}
         isOpen={isP2PChatOpen}
         onClose={() => closeP2PChat()}
       />
+
+      {/* Group Chat Modal */}
       <GroupChat
         userRoll={user?.roll}
         userName={user?.name}
         isOpen={isGroupChatOpen}
         onClose={() => setIsGroupChatOpen(false)}
-        onUnreadCountChange={(count) => setGroupUnreadCount(count)}
+        onUnreadCountChange={(count) => {
+          setGroupUnreadCount(count);
+          setPrevGroupUnreadCount(count);
+        }}
       />
-      
-      {/* App Publish Form */}
-      <AppPublishForm 
-        isOpen={showAppPublishForm}
-        onClose={() => setShowAppPublishForm(false)}
-        user={user}
-      />
-
-      <Toaster />
     </div>
   );
 };

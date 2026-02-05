@@ -1,11 +1,7 @@
-"use client";
-
 import Link from "next/link";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
 import { AnimatedCards } from "./animated-cards";
 
-// Client component with parallax effects
+// Server component for static content
 export function FAQSection() {
   const cards = [
     {
@@ -54,13 +50,36 @@ export function FAQSection() {
       ),
     },
     {
+      icon: "fa-solid fa-graduation-cap",
+      title: "What's in the Alumni Section?",
+      content: (
+        <>
+          <p>
+            The Alumni Section connects you with RUET CSE graduates, sharing
+            their experiences, career journeys, and advice for current students.
+          </p>
+
+          <p>
+            Discover inspiring stories from{" "}
+            <Link
+              href="/alumni"
+              className="text-blue-600 dark:text-blue-500 hover:underline"
+            >
+              Alumni
+            </Link>{" "}
+            and build your network for future opportunities.
+          </p>
+        </>
+      ),
+    },
+    {
       icon: "fa-solid fa-users",
       title: "Who are we?",
       content: (
         <p>
           We are a group of{" "}
           <Link
-            href="/contact/developers"
+            href="/contact&help/developers"
             className="text-blue-600 dark:text-blue-500 hover:underline"
           >
             RUET CSE students
@@ -83,120 +102,35 @@ export function FAQSection() {
     // },
   ];
 
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start end", "end start"]
-  });
-
-  // Create parallax transforms for different elements
-  const headerY = useTransform(scrollYProgress, [0, 1], [100, -100]);
-  const headerOpacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0]);
-  
-  const cardsY = useTransform(scrollYProgress, [0, 1], [50, -50]);
-  const cardsScale = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [0.8, 1, 1, 0.9]);
-
   return (
-    <motion.div 
-      ref={ref}
-      className="w-full px-4 mx-auto text-center relative overflow-hidden"
-    >
-      {/* Parallax Background Elements */}
-      <motion.div
-        style={{ y: useTransform(scrollYProgress, [0, 1], [200, -200]) }}
-        className="absolute inset-0 -z-10"
-      >
-        <div className="absolute top-10 left-10 w-32 h-32 bg-blue-100 dark:bg-blue-900/20 rounded-full blur-3xl opacity-30"></div>
-        <div className="absolute bottom-10 right-10 w-40 h-40 bg-purple-100 dark:bg-purple-900/20 rounded-full blur-3xl opacity-30"></div>
-      </motion.div>
-
-      {/* Parallax Header */}
-      <motion.div
-        style={{ 
-          y: headerY,
-          opacity: headerOpacity
-        }}
-      >
-        <motion.h1 
-          className="text-2xl md:text-3xl lg:text-4xl font-extrabold"
-          initial={{ scale: 0.8 }}
-          whileInView={{ scale: 1 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-        >
-          <span className="text-transparent bg-clip-text bg-gradient-to-r to-gray-700 from-gray-500 dark:to-neutral-400 dark:from-neutral-200">
-            But Why this?
-          </span>
-        </motion.h1>
-        <motion.p 
-          className="text-md font-normal text-gray-500 lg:text-xl dark:text-gray-400"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
-          Let's answer some FAQs.
-        </motion.p>
-      </motion.div>
+    <div className="w-full px-4 mx-auto text-center">
+      <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold">
+        <span className="text-transparent bg-clip-text bg-gradient-to-r to-gray-700 from-gray-500 dark:to-neutral-400 dark:from-neutral-200">
+          But Why this?
+        </span>
+      </h1>
+      <p className="text-md font-normal text-gray-500 lg:text-xl dark:text-gray-400">
+        Let's answer some FAQs.
+      </p>
       <br />
 
-      {/* Parallax Cards Grid */}
-      <motion.div 
-        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:px-10 gap-4 mx-auto"
-        style={{ 
-          y: cardsY,
-          scale: cardsScale
-        }}
-      >
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:px-10 gap-4 mx-auto">
         {cards.map((card, index) => (
-          <motion.div
-            key={card.title}
-            initial={{ opacity: 0, y: 50, rotateX: 15 }}
-            whileInView={{ 
-              opacity: 1, 
-              y: 0, 
-              rotateX: 0,
-              transition: { 
-                duration: 0.6, 
-                delay: index * 0.1,
-                ease: "easeOut"
-              }
-            }}
-            whileHover={{ 
-              scale: 1.05,
-              rotateY: 5,
-              transition: { duration: 0.3 }
-            }}
-            style={{
-              y: useTransform(scrollYProgress, [0, 1], [index * 20, -index * 20])
-            }}
-          >
-            <AnimatedCards index={index}>
-              <motion.div 
-                className="p-4"
-                whileHover={{
-                  backgroundColor: "rgba(59, 130, 246, 0.05)",
-                  transition: { duration: 0.3 }
-                }}
-              >
-                <motion.i
-                  className={`${card.icon} pb-4 text-5xl text-gray-700 dark:text-gray-300`}
-                  whileHover={{ 
-                    scale: 1.2, 
-                    rotate: 10,
-                    color: "#3B82F6"
-                  }}
-                  transition={{ duration: 0.3 }}
-                ></motion.i>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  {card.title}
-                </h3>
-                <div className="text-gray-500 dark:text-gray-400 space-y-2">
-                  {card.content}
-                </div>
-              </motion.div>
-            </AnimatedCards>
-          </motion.div>
+          <AnimatedCards key={card.title} index={index}>
+            <div className="p-4">
+              <i
+                className={`${card.icon} pb-4 text-5xl text-gray-700 dark:text-gray-300`}
+              ></i>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                {card.title}
+              </h3>
+              <div className="text-gray-500 dark:text-gray-400 space-y-2">
+                {card.content}
+              </div>
+            </div>
+          </AnimatedCards>
         ))}
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }

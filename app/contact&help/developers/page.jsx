@@ -245,7 +245,7 @@ export default function Developers() {
       {error && (
         <div className="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded">
           <div className="flex items-center">
-            <span className="text-yellow-500 mr-2">!</span>
+            <span className="text-yellow-500 mr-2">⚠️</span>
             <span>
               Some developer data may not be up to date. Showing available
               information.
@@ -271,7 +271,7 @@ export default function Developers() {
           <div className="mb-12 ">
             <h4
               className={
-                " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-200 dark:bg-gray-800 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
+                " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
               }
             >
               Developers
@@ -295,7 +295,7 @@ export default function Developers() {
           <div className="mb-12 ">
             <h4
               className={
-                " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-200 dark:bg-gray-800 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
+                " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
               }
             >
               Security
@@ -317,7 +317,7 @@ export default function Developers() {
           <div className="mb-12 ">
             <h4
               className={
-                " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-200 dark:bg-gray-800 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
+                " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
               }
             >
               Code Reviewers & Testers
@@ -341,7 +341,7 @@ export default function Developers() {
           <div className="mb-12 ">
             <h4
               className={
-                " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-200 dark:bg-gray-800 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
+                " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
               }
             >
               Resources Management

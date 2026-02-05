@@ -29,67 +29,39 @@ export const useCodeLibrary = (initialSnippets = []) => {
 
   //get all snippets from database
   useEffect(() => {
-    // First try to get from public_codes for better performance
-    const publicCodesRef = ref(codelibraryDb, "public_codes/");
-    
+    const codesRef = ref(codelibraryDb, "codes/");
+
     const unsubscribe = onValue(
-      publicCodesRef,
+      codesRef,
       (snapshot) => {
-        let allSnippets = [];
-        
-        if (snapshot.exists()) {
-          const publicData = snapshot.val();
-          // Convert public_codes to array
-          allSnippets = Object.values(publicData).map(snippet => ({
-            ...snippet,
-            id: snippet.id || snippet.uid,
-            author: snippet.authorRoll || snippet.rollNumber || 'Unknown'
-          }));
-        }
-        
-        // Fallback: If no public codes, get from user codes
-        if (allSnippets.length === 0) {
-          const codesRef = ref(codelibraryDb, "codes/");
-          onValue(codesRef, (userSnapshot) => {
-            const userData = userSnapshot.val();
-            if (userData) {
-              // Flatten and transform all snippets from user codes
-              Object.entries(userData).forEach(([rollNumber, userCodes]) => {
-                if (typeof userCodes === 'object') {
-                  Object.entries(userCodes).forEach(([codeId, snippet]) => {
-                    if (snippet && snippet.isPublic !== false) { // Only include public snippets
-                      allSnippets.push({
-                        ...snippet,
-                        rollNumber,
-                        author: rollNumber,
-                        id: snippet.id || snippet.uid || codeId,
-                        isLiked: localStorage.getItem(`liked_${snippet.id || codeId}`) === "true",
-                        likesCount: snippet.likesCount || 0,
-                        copiesCount: snippet.copiesCount || 0,
-                        language: snippet.language?.toLowerCase() === "js" ? "javascript" : snippet.language?.toLowerCase(),
-                        timestamp: snippet.createdAt ? new Date(snippet.createdAt).getTime() : 
-                                  snippet.date ? new Date(snippet.date).getTime() : 0,
-                      });
-                    }
-                  });
-                }
+        const data = snapshot.val();
+        if (data) {
+          // Flatten and transform all snippets
+          const allSnippets = [];
+          Object.entries(data).forEach(([rollNumber, codes]) => {
+            Object.entries(codes).forEach(([codeId, snippet]) => {
+              allSnippets.push({
+                ...snippet,
+                rollNumber,
+                id: codeId,
+                isLiked: localStorage.getItem(`liked_${codeId}`) === "true",
+                likesCount: snippet.likesCount || 0,
+                copiesCount: snippet.copiesCount || 0,
+                language:
+                  snippet.language?.toLowerCase() === "js"
+                    ? "javascript"
+                    : snippet.language?.toLowerCase(),
+                // Ensure timestamp for sorting
+                timestamp: snippet.date ? new Date(snippet.date).getTime() : 0,
               });
-            }
-            
-            // Process the fetched snippets
-            processSnippets(allSnippets);
+            });
           });
-        } else {
-          // Process public codes directly
-          processSnippets(allSnippets);
-        }
-        
-        function processSnippets(snippets) {
+
           // Sort by timestamp (newest first)
-          snippets.sort((a, b) => b.timestamp - a.timestamp);
+          allSnippets.sort((a, b) => b.timestamp - a.timestamp);
 
           // Store ALL fetched snippets in TotalSnippets
-          setTotalSnippets(snippets);
+          setTotalSnippets(allSnippets);
 
           // Store total count for reference
           const totalCount = allSnippets.length;
@@ -102,30 +74,15 @@ export const useCodeLibrary = (initialSnippets = []) => {
           console.log(
             `✅ Fetched ${totalCount} total snippets, displaying ${limitedSnippets.length}`
           );
-        }
-        
-        function processSnippets(snippets) {
-          // Sort by timestamp (newest first)
-          snippets.sort((a, b) => b.timestamp - a.timestamp);
-
-          // Store ALL fetched snippets in TotalSnippets
-          setTotalSnippets(snippets);
-
-          // Store total count for reference
-          const totalCount = snippets.length;
-
-          // Limit to requested count for display optimization
-          const limitedSnippets = snippets.slice(0, loadCount);
-          setHasMore(totalCount > loadCount);
-          setLoadedSnippets(limitedSnippets);
-
-          console.log(
-            `✅ Fetched ${totalCount} total snippets, displaying ${limitedSnippets.length}`
-          );
+        } else {
+          setTotalSnippets([]);
+          setLoadedSnippets([]);
+          setHasMore(false);
+          console.log("No snippets found in codes/");
         }
       },
       (error) => {
-        console.error("Error fetching code snippets:", error);
+        console.error("Firebase error:", error);
         setTotalSnippets([]);
         setLoadedSnippets([]);
         setHasMore(false);
@@ -133,7 +90,7 @@ export const useCodeLibrary = (initialSnippets = []) => {
     );
 
     return () => unsubscribe();
-  }, [loadCount]);
+  }, []);
 
   function loadMore() {
     if (!hasMore) return;

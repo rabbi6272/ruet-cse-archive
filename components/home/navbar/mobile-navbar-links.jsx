@@ -2,14 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBars, faXmark, faChevronDown } from '@fortawesome/free-solid-svg-icons';
-import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ibmPlexSans } from "@/app/ui/fonts";
+import { inter } from "@/app/ui/fonts";
 import { useNotificationCount } from "@/lib/useNotificationCount";
 import { NotificationBadge } from "@/components/ui/NotificationBadge";
 import AuthUtils from "@/lib/auth-utils-secure";
@@ -19,60 +12,106 @@ const mobileNavItems = [
   { label: "Resources", href: "/resources" },
   { label: "Book shelf", href: "/shelf" },
   { label: "Code Library", href: "/codelibrary" },
-  { label: "Apps", href: "/apps" },
-  { label: "Contact", href: "/contact/developers" },
+  { label: "Global Ruet", href: "/alumni" },
+  {
+    label: "Contact & Help",
+    subItems: [
+      {
+        name: "Official Website",
+        href: "https://www.ruet.ac.bd/",
+        target: "_blank",
+      },
+      {
+        name: "Facebook Page",
+        href: "https://www.facebook.com/people/RUET-CSE-24/61574730479807/",
+        target: "_blank",
+      },
+      { name: "Contributors", href: "/contact&help/developers" },
+    ],
+  },
+  {
+    label: "Apps",
+    href: "/contact&help/#",
+  },
 ];
 
 export function MobileNavbarLinks() {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [isNavOpen, setIsNavOpen] = useState(false);
-  const pathname = usePathname();
+  const navRef = useRef();
+  const buttonRef = useRef();
 
-  const isActive = (href) => pathname === href;
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        navRef.current &&
+        !navRef.current.contains(e.target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target)
+      ) {
+        setOpenDropdown(null);
+        setIsNavOpen(false);
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, []);
 
   const toggleDropdown = useCallback((index) => {
     setOpenDropdown((prev) => (prev === index ? null : index));
   }, []);
 
   return (
-    <div className={`${ibmPlexSans.className} tracking-wide block lg:hidden`}>
-      <Sheet open={isNavOpen} onOpenChange={setIsNavOpen}>
-        <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="p-3">
-            <FontAwesomeIcon 
-              icon={faBars} 
-              className="h-6 w-6 text-gray-800 dark:text-gray-200" 
-            />
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="right" className="w-72 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700">
-          <SheetHeader>
-            <SheetTitle className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-              Menu
-            </SheetTitle>
-          </SheetHeader>
-          
-          <div className="flex flex-col space-y-2 mt-6">
-            {mobileNavItems.map((item, index) => (
-              <div key={item.label} className="nav-item">
-                {item.subItems ? (
-                  <Collapsible 
-                    open={openDropdown === index} 
-                    onOpenChange={() => toggleDropdown(index)}
+    <div className={`${inter.className} tracking-wide block lg:hidden`}>
+      <button ref={buttonRef} onClick={() => setIsNavOpen(!isNavOpen)}>
+        <i className="fas fa-bars-staggered text-gray-800 dark:text-gray-200 text-2xl cursor-pointer p-3 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-800 transition duration-500"></i>
+      </button>
+
+      {/* Add slide-in animation with proper enter/exit states */}
+      <div
+        ref={navRef}
+        className={`mobile-navbar bg-white dark:bg-[#071a26] p-6 overflow-y-auto overflow-x-hidden ${
+          isNavOpen ? "show" : "hide"
+        }`}
+        style={{
+          left: isNavOpen ? "0" : "100%",
+        }}
+      >
+        {/* Header and Menu */}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+            Menu
+          </h3>
+          <button onClick={() => setIsNavOpen(!isNavOpen)}>
+            <i className="fas fa-xmark text-gray-600 dark:text-gray-100 text-xl cursor-pointer"></i>
+          </button>
+        </div>
+
+        {/* Menu Items */}
+        <div className="flex flex-col space-y-2">
+          {mobileNavItems.map((item, index) => (
+            <div key={item.label} className="nav-item relative py-1">
+              {item.subItems ? (
+                <>
+                  <button
+                    onClick={() => toggleDropdown(index)}
+                    className="w-full text-left text-gray-700 dark:text-gray-200 hover:text-indigo-600 hover:bg-gray-200 dark:hover:bg-gray-800 px-4 py-2 rounded-md text-sm font-medium transition-all duration-500 flex items-center justify-between"
                   >
-                    <CollapsibleTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        className="w-full justify-between text-left text-gray-700 dark:text-gray-200 hover:text-indigo-600 hover:bg-gray-100 dark:hover:bg-gray-800"
-                      >
-                        {item.label}
-                        <FontAwesomeIcon 
-                          icon={faChevronDown} 
-                          className={`h-3 w-3 transition-transform ${openDropdown === index ? 'rotate-180' : ''}`}
-                        />
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="pl-4 space-y-1">
+                    {item.label}
+                    <i className="fas fa-chevron-down ml-2 text-xs"></i>
+                  </button>
+                  {/* Use CSS transitions instead of Framer Motion */}
+                  <div
+                    className={`overflow-hidden transition-all duration-300 ease-out ${
+                      openDropdown === index
+                        ? "max-h-96 opacity-100"
+                        : "max-h-0 opacity-0"
+                    }`}
+                  >
+                    <div className="pl-4">
                       {item.subItems.map((sub) =>
                         sub.target === "_blank" ? (
                           <a
@@ -80,8 +119,8 @@ export function MobileNavbarLinks() {
                             href={sub.href}
                             target="_blank"
                             rel="noopener noreferrer"
-                            onClick={() => setIsNavOpen(false)}
-                            className="block w-full px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-indigo-600 transition-colors"
+                            onClick={() => setIsNavOpen(!isNavOpen)}
+                            className="block w-full px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-indigo-600"
                           >
                             {sub.name}
                           </a>
@@ -89,46 +128,34 @@ export function MobileNavbarLinks() {
                           <Link
                             key={sub.name}
                             href={sub.href}
-                            onClick={() => setIsNavOpen(false)}
-                            className="block w-full px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-indigo-600 transition-colors"
+                            onClick={() => setIsNavOpen(!isNavOpen)}
+                            className="block w-full px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-indigo-600"
                           >
                             {sub.name}
                           </Link>
                         )
                       )}
-                    </CollapsibleContent>
-                  </Collapsible>
-                ) : (
-                  <Button variant="ghost" className="w-full justify-start" asChild>
-                    <Link
-                      href={item.href}
-                      onClick={() => setIsNavOpen(false)}
-                      className={`transition-all ${
-                        isActive(item.href)
-                          ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                          : "text-gray-700 dark:text-gray-200 hover:text-indigo-600 hover:bg-gray-100 dark:hover:bg-gray-800"
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <Link
+                  href={item.href}
+                  onClick={() => setIsNavOpen(!isNavOpen)}
+                  className="block text-gray-700 dark:text-gray-200 hover:text-indigo-600 hover:bg-gray-200 dark:hover:bg-gray-800 px-4 py-2 rounded-md text-sm font-medium transition-all duration-500"
+                >
+                  {item.label}
+                </Link>
+              )}
+            </div>
+          ))}
+        </div>
 
-          <div className="mt-8 space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Theme</span>
-              <ThemeToggle />
-            </div>
-            
-            <div onClick={() => setIsNavOpen(false)}>
-              <LoginButton />
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+        {/* Login Button */}
+        <div className="mt-8" onClick={() => setIsNavOpen(!isNavOpen)}>
+          <LoginButton />
+        </div>
+      </div>
     </div>
   );
 }

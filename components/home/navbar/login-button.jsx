@@ -1,7 +1,6 @@
 "use client";
 
 import { NotificationBadge } from "@/components/ui/NotificationBadge";
-import { Button } from "@/components/ui/button";
 import AuthUtils from "@/lib/auth-utils-secure";
 import { useNotificationCount } from "@/lib/useNotificationCount";
 import Link from "next/link";
@@ -44,22 +43,22 @@ export function LoginButton() {
 
   if (userData) {
     return (
-      <div className="relative">
-        <Button asChild variant="default" size="sm" className="bg-blue-600 hover:bg-blue-700">
-          <Link href="/user/dashboard">
-            <ShinyText text="Dashboard" speed={2.5} className="text-white" />
-          </Link>
-        </Button>
+      <Link
+        href="/user/dashboard"
+        className="relative text-center bg-blue-600 hover:bg-blue-700 px-5 py-2 rounded-full text-sm font-bold transition-all duration-300"
+      >
+        <ShinyText text="Dashboard" speed={2.5} className="text-gray-300" />
         {!isLoading && !error && <NotificationBadge count={unreadCount} />}
-      </div>
+      </Link>
     );
   } else {
     return (
-      <Button asChild variant="default" size="sm" className="bg-blue-600 hover:bg-blue-700">
-        <Link href="/user/login">
-          <ShinyText text="Login" speed={2.5} className="text-white" />
-        </Link>
-      </Button>
+      <Link
+        href="/user/login"
+        className="text-center bg-blue-600 hover:bg-blue-700 px-5 py-2 rounded-full text-sm font-bold transition-all duration-300"
+      >
+        <ShinyText text="Login" speed={2.5} className="text-gray-300" />
+      </Link>
     );
   }
 }

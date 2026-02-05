@@ -1,10 +1,4 @@
 "use client";
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHeart } from '@fortawesome/free-solid-svg-icons';
-import { faHeart as faHeartRegular } from '@fortawesome/free-regular-svg-icons';
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import CommentSection from "./CommentSection";
 import CodeDisplay from "./CodeDisplay";
 import { getNameFromRoll, formatDate } from "./utils";
@@ -19,28 +13,24 @@ const SnippetCard = ({
   animateLike,
 }) => {
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow duration-200 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-sm">
-      <CardHeader className="pb-2 pt-3 px-3">
+    <div className="rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 dark:bg-gray-800 border dark:border-gray-700 bg-white border-gray-300">
+      <div className="p-4 lg:p-5">
         <div className="flex justify-between items-start">
-          <Badge variant="secondary" className="text-xs font-semibold uppercase">
+          <span className="inline-block text-xs px-2 py-1 rounded-full font-semibold uppercase dark:bg-blue-900 dark:text-blue-300 bg-blue-100 text-blue-800">
             {snippet.language}
-          </Badge>
-          <span className="text-xs text-muted-foreground">
+          </span>
+          <span className="text-xs dark:text-gray-400 text-gray-500">
             {formatDate(snippet.date)}
           </span>
         </div>
-        
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold text-foreground">
-            {snippet.title}
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            {snippet.description}
-          </p>
-        </div>
-      </CardHeader>
 
-      <CardContent className="space-y-2 px-3 pb-3">
+        <h3 className="mt-2 text-lg font-semibold dark:text-gray-100 text-gray-800">
+          {snippet.title}
+        </h3>
+        <p className="mt-1 text-wrap dark:text-gray-400 text-gray-600">
+          {snippet.description}
+        </p>
+
         <CodeDisplay
           snippet={snippet}
           isExpanded={isExpanded}
@@ -49,32 +39,28 @@ const SnippetCard = ({
           copiedStates={copiedStates}
         />
 
-        {/* About the author and code interaction */}
-        <div className="flex justify-between items-center text-sm">
-          <span className="font-medium text-muted-foreground">
+        {/* About the author and code description */}
+        <div className="mt-4 flex justify-between items-center text-sm">
+          {/* Author Name */}
+          <span className="font-medium dark:text-gray-400 text-gray-500">
             {getNameFromRoll(snippet.rollNumber) + ` (${snippet.rollNumber})`}
           </span>
-          
-          <div className="flex items-center space-x-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`p-2 ${
+          {/* Likes and Copies */}
+          <div className="flex items-center space-x-2">
+            <button
+              className={`mr-2 ${
                 snippet.isLiked
                   ? "text-red-500"
-                  : "text-muted-foreground"
+                  : "dark:text-gray-400 text-gray-500"
               } hover:text-red-500 ${
                 animateLike[snippet.id] ? "animate-bounce" : ""
               }`}
               onClick={() => onToggleLike(snippet.id)}
             >
-              <FontAwesomeIcon 
-                icon={snippet.isLiked ? faHeart : faHeartRegular} 
-                className="h-4 w-4"
-              />
-            </Button>
+              <i className={`${snippet.isLiked ? "fas" : "far"} fa-heart`}></i>
+            </button>
             <span
-              className={`text-muted-foreground text-sm ${
+              className={`dark:text-gray-400 text-gray-600 ${
                 animateLike[snippet.id] ? "animate-bounce" : ""
               }`}
             >
@@ -85,8 +71,8 @@ const SnippetCard = ({
 
         {/* Comment Section */}
         <CommentSection snippet={snippet} />
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 

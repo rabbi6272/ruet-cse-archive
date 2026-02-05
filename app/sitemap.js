@@ -42,10 +42,22 @@ export default function sitemap() {
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/contact/developers`,
+      url: `${baseUrl}/contact%26help/help`,
+      lastModified: currentDate,
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/contact%26help/developers`,
       lastModified: currentDate,
       changeFrequency: 'monthly',
       priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/contact%26help/doubts`,
+      lastModified: currentDate,
+      changeFrequency: 'weekly',
+      priority: 0.7,
     },
     {
       url: `${baseUrl}/user/login`,
