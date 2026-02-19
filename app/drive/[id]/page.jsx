@@ -98,7 +98,7 @@ const FileItem = memo(({ file, index, onFolderClick, onPreview }) => {
       e.stopPropagation();
       onPreview(file.id);
     },
-    [file.id, onPreview]
+    [file.id, onPreview],
   );
 
   return (
@@ -137,14 +137,14 @@ const FileItem = memo(({ file, index, onFolderClick, onPreview }) => {
             className="flex-1 border-2 border-gray-600 cursor-pointer grid place-items-center text-gray-700 dark:text-gray-200 w-12 h-9 rounded-full"
             aria-label={`Download ${file.name}`}
           >
-            <i className="fas fa-download text-[13px]"></i>
+            <i className="fas fa-download text-sm"></i>
           </Link>
           <button
             onClick={handlePreview}
             className="flex-1 border-2 border-gray-600 cursor-pointer grid place-items-center text-gray-700 dark:text-gray-200 w-12 h-9 rounded-full"
             aria-label={`Preview ${file.name}`}
           >
-            <i className="fas fa-eye text-[13px]"></i>
+            <i className="fas fa-eye text-sm"></i>
           </button>
         </div>
       )}
@@ -158,7 +158,7 @@ FileItem.displayName = "FileItem";
 const BreadcrumbItem = memo(({ folder, isLast, index }) => {
   if (isLast) {
     return (
-      <span className="text-[12px] lg:text-[13px] font-medium text-gray-900 dark:text-gray-100 px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded">
+      <span className="text-sm lg:text-base font-medium text-gray-900 dark:text-gray-100 px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded">
         <i className="fas fa-folder mr-1 text-blue-600 dark:text-blue-400"></i>
         {folder.name}
       </span>
@@ -168,7 +168,7 @@ const BreadcrumbItem = memo(({ folder, isLast, index }) => {
   return (
     <Link
       href={`/drive/${folder.id}`}
-      className="text-[12px] lg:text-[13px] flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+      className="text-sm lg:text-base flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
       prefetch={true}
     >
       <i className="fas fa-folder mr-1"></i>
@@ -290,7 +290,7 @@ export default function DrivePage({ params }) {
       setLoading(true);
       router.push(`/drive/${folderId}`);
     },
-    [router]
+    [router],
   );
 
   const handlePreview = useCallback((fileId) => {
@@ -371,7 +371,7 @@ export default function DrivePage({ params }) {
                   <li key="breadcrumb-home" className="flex items-center">
                     <Link
                       href="/drive"
-                      className="text-[12px] lg:text-[13px] flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                      className="text-sm lg:text-base flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                       prefetch={true}
                     >
                       <i className="fas fa-home mr-1"></i>
@@ -390,7 +390,7 @@ export default function DrivePage({ params }) {
                         key={`breadcrumb-${folder.id}-${index}`}
                         className="flex items-center"
                       >
-                        <i className="fas fa-chevron-right mx-1 text-gray-400 text-[10px]"></i>
+                        <i className="fas fa-chevron-right mx-1 text-gray-400 text-xs"></i>
                         <BreadcrumbItem
                           folder={folder}
                           isLast={index === breadcrumb.length - 1}
@@ -404,7 +404,7 @@ export default function DrivePage({ params }) {
             )}
 
             {/* Folder Heading */}
-            <h1 className="text-3xl text-center font-bold mb-6 text-gray-700 dark:text-gray-300">
+            <h1 className="text-xl text-center font-bold mb-6 text-gray-700 dark:text-gray-300">
               {currentFolder ? currentFolder.name : "Drive Files"}
             </h1>
 
@@ -412,7 +412,7 @@ export default function DrivePage({ params }) {
             {files.length === 0 ? (
               <div className="text-center py-12">
                 <i className="fas fa-folder-open text-6xl text-gray-400 dark:text-gray-600 mb-4"></i>
-                <p className="text-2xl text-gray-700 dark:text-gray-300">
+                <p className="text-xl text-gray-700 dark:text-gray-300">
                   No files found in this folder.
                 </p>
               </div>
