@@ -16,7 +16,7 @@ export function ResourceCardLinks({ links }) {
     : [secondLink].filter(Boolean);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 p-2">
       <div className="flex jsutify-between gap-2">
         {firstLinkArray?.map((link, index) => (
           <Link
