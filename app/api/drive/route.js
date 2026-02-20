@@ -5,9 +5,11 @@ import { NextResponse } from "next/server";
 
 // ============= CACHING LAYER =============
 const cache = new Map();
-const breadcrumbCache = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 const MAX_CACHE_SIZE = 100; // Prevent memory leaks
+
+// Request deduplication: prevents multiple simultaneous requests for same folder
+const pendingRequests = new Map();
 
 // Clean old cache entries
 function cleanCache(cacheMap) {
@@ -32,18 +34,18 @@ function getCacheKey(folderId) {
   return `drive_${folderId}`;
 }
 
-function getFromCache(key, cacheMap = cache) {
-  const cached = cacheMap.get(key);
+function getFromCache(key) {
+  const cached = cache.get(key);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
     return cached.data;
   }
-  cacheMap.delete(key);
+  cache.delete(key);
   return null;
 }
 
-function setCache(key, data, cacheMap = cache) {
-  cleanCache(cacheMap);
-  cacheMap.set(key, { data, timestamp: Date.now() });
+function setCache(key, data) {
+  cleanCache(cache);
+  cache.set(key, { data, timestamp: Date.now() });
 }
 
 // ============= AUTH CLIENT SINGLETON =============
@@ -91,155 +93,26 @@ async function getAuthClient() {
   return authClientCache;
 }
 
-// ============= BREADCRUMB OPTIMIZATION =============
-/**
- * Build breadcrumb trail efficiently with smart caching
- * Strategy:
- * 1. Check if this folder's breadcrumb is already cached
- * 2. Traverse up parent chain, collecting IDs
- * 3. Batch fetch all parent details in parallel
- * 4. Cache each level for future use
- *
- * @param {Object} drive - Google Drive API client
- * @param {string} folderId - Current folder ID
- * @param {string} folderName - Current folder name
- * @param {Array<string>} folderParents - Array of parent folder IDs
- * @returns {Promise<Array>} Breadcrumb array from root to current folder
- */
-async function buildBreadcrumbOptimized(
-  drive,
-  folderId,
-  folderName,
-  folderParents
-) {
-  const cacheKey = `breadcrumb_${folderId}`;
-  const cached = getFromCache(cacheKey, breadcrumbCache);
-
-  if (cached) {
-    return cached;
-  }
-
-  // Start with current folder
-  const breadcrumb = [{ id: folderId, name: folderName }];
-
-  // If no parents, this is root - return just current folder
-  if (!folderParents || folderParents.length === 0) {
-    setCache(cacheKey, breadcrumb, breadcrumbCache);
-    return breadcrumb;
-  }
-
-  try {
-    // Collect all parent folder IDs by traversing up
-    const parentChain = [];
-    let currentParentId = folderParents[0];
-    const seenIds = new Set([folderId]);
-    const MAX_DEPTH = 20; // Prevent infinite loops
-
-    // First pass: Collect parent IDs and check cache
-    while (currentParentId && parentChain.length < MAX_DEPTH) {
-      // Prevent circular references
-      if (seenIds.has(currentParentId)) {
-        console.warn(`Circular reference detected at ${currentParentId}`);
-        break;
-      }
-      seenIds.add(currentParentId);
-
-      // Check if this parent's breadcrumb is cached
-      const parentBreadcrumbCache = getFromCache(
-        `breadcrumb_${currentParentId}`,
-        breadcrumbCache
-      );
-
-      if (parentBreadcrumbCache) {
-        // Found cached parent chain - use it and stop
-        breadcrumb.unshift(...parentBreadcrumbCache);
-        setCache(cacheKey, breadcrumb, breadcrumbCache);
-        return breadcrumb;
-      }
-
-      // Add to chain for batch fetching
-      parentChain.push(currentParentId);
-
-      // Fetch this parent to get its parent
-      try {
-        const parentInfo = await drive.files.get({
-          fileId: currentParentId,
-          fields: "id, parents",
-        });
-
-        currentParentId = parentInfo.data.parents?.[0];
-      } catch (err) {
-        // Can't access parent (permission or doesn't exist) - stop here
-        if (err.code !== 404 && err.response?.status !== 404) {
-          console.warn(`Cannot access parent ${currentParentId}:`, err.message);
-        }
-        break;
-      }
-    }
-
-    // Second pass: Batch fetch names for all parents we collected
-    if (parentChain.length > 0) {
-      const parentDetailsPromises = parentChain.map((parentId) =>
-        drive.files
-          .get({
-            fileId: parentId,
-            fields: "id, name, parents",
-          })
-          .catch((err) => {
-            if (err.code !== 404 && err.response?.status !== 404) {
-              console.warn(`Failed to fetch parent ${parentId}:`, err.message);
-            }
-            return null;
-          })
-      );
-
-      const parentDetails = await Promise.all(parentDetailsPromises);
-
-      // Build breadcrumb from root to current (reverse order)
-      const validParents = parentDetails
-        .filter(
-          (parent) => parent !== null && parent?.data?.id && parent?.data?.name
-        )
-        .reverse();
-
-      for (const parent of validParents) {
-        const parentItem = {
-          id: parent.data.id,
-          name: parent.data.name,
-        };
-        breadcrumb.unshift(parentItem);
-
-        // Cache individual parent breadcrumbs for future use
-        const parentBreadcrumbKey = `breadcrumb_${parent.data.id}`;
-        if (!getFromCache(parentBreadcrumbKey, breadcrumbCache)) {
-          // Only cache if not already cached
-          const parentBreadcrumb = breadcrumb.slice(
-            0,
-            breadcrumb.findIndex((b) => b.id === parent.data.id) + 1
-          );
-          setCache(parentBreadcrumbKey, parentBreadcrumb, breadcrumbCache);
-        }
-      }
-    }
-  } catch (err) {
-    console.error("Error building breadcrumb:", err.message);
-    // Return at least the current folder if breadcrumb building fails
-  }
-
-  // Cache this folder's complete breadcrumb
-  setCache(cacheKey, breadcrumb, breadcrumbCache);
-  return breadcrumb;
-}
-
 // ============= MAIN API ROUTE =============
 export async function POST(req) {
-  try {
-    const { folderId, skipCache = false } = await req.json();
+  let folderId, skipCache;
 
+  try {
+    const body = await req.json();
+    folderId = body.folderId;
+    skipCache = body.skipCache || false;
+  } catch (jsonError) {
+    return NextResponse.json(
+      { error: "Invalid request body. Expected JSON with folderId field." },
+      { status: 400 },
+    );
+  }
+
+  try {
     if (!folderId) {
       return NextResponse.json(
         { error: "Folder ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -259,49 +132,68 @@ export async function POST(req) {
                 "public, s-maxage=300, stale-while-revalidate=600",
               "X-Cache-Status": "HIT",
             },
-          }
+          },
         );
       }
     }
 
-    // Get reusable auth client
-    const authClient = await getAuthClient();
-    const drive = google.drive({ version: "v3", auth: authClient });
+    // Request deduplication: if request already in flight, wait for it
+    if (pendingRequests.has(folderId)) {
+      const existingRequest = await pendingRequests.get(folderId);
+      return NextResponse.json(existingRequest, {
+        headers: {
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+          "X-Cache-Status": "DEDUPED",
+        },
+      });
+    }
 
-    // Parallel fetch: folder info + files list
-    const [folderInfo, filesResponse] = await Promise.all([
-      drive.files.get({
-        fileId: folderId,
-        fields: "id, name, parents",
-      }),
-      drive.files.list({
-        q: `'${folderId}' in parents and trashed = false`,
-        fields:
-          "files(id, name, mimeType, webViewLink, webContentLink, size, modifiedTime)",
-        pageSize: 1000, // Max allowed by Google Drive API
-        orderBy: "name", // Sort files alphabetically
-      }),
-    ]);
+    // Create a promise for this request
+    const requestPromise = (async () => {
+      try {
+        // Get reusable auth client
+        const authClient = await getAuthClient();
+        const drive = google.drive({ version: "v3", auth: authClient });
 
-    // Build breadcrumb with optimized caching strategy
-    const breadcrumb = await buildBreadcrumbOptimized(
-      drive,
-      folderInfo.data.id,
-      folderInfo.data.name,
-      folderInfo.data.parents
-    );
+        // Parallel fetch: folder info + files list
+        const [folderInfo, filesResponse] = await Promise.all([
+          drive.files.get({
+            fileId: folderId,
+            fields: "id, name, parents",
+          }),
+          drive.files.list({
+            q: `'${folderId}' in parents and trashed = false`,
+            fields:
+              "files(id, name, mimeType, webViewLink, webContentLink, size, modifiedTime)",
+            pageSize: 1000, // Max allowed by Google Drive API
+            orderBy: "name", // Sort files alphabetically
+          }),
+        ]);
 
-    const result = {
-      files: filesResponse.data.files || [],
-      breadcrumb: breadcrumb,
-      currentFolder: {
-        id: folderInfo.data.id,
-        name: folderInfo.data.name,
-      },
-    };
+        const result = {
+          files: filesResponse.data.files || [],
+          parentFolderId: folderInfo.data.parents?.[0] || null,
+          currentFolder: {
+            id: folderInfo.data.id,
+            name: folderInfo.data.name,
+          },
+        };
 
-    // Cache the result
-    setCache(cacheKey, result);
+        // Cache the result
+        setCache(cacheKey, result);
+
+        return result;
+      } finally {
+        // Clean up pending request
+        pendingRequests.delete(folderId);
+      }
+    })();
+
+    // Store the pending request
+    pendingRequests.set(folderId, requestPromise);
+
+    // Await the result
+    const result = await requestPromise;
 
     return NextResponse.json(result, {
       headers: {
@@ -310,6 +202,11 @@ export async function POST(req) {
       },
     });
   } catch (err) {
+    // Clean up pending request on error
+    if (typeof folderId !== "undefined") {
+      pendingRequests.delete(folderId);
+    }
+
     console.error("Google Drive API Error:", err);
 
     let errorMessage = "Failed to fetch files from Google Drive";
@@ -347,7 +244,7 @@ export async function POST(req) {
         headers: {
           "Cache-Control": "no-cache, no-store, must-revalidate",
         },
-      }
+      },
     );
   }
 }

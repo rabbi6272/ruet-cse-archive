@@ -22,7 +22,7 @@ export function ResourceCardLinks({ links }) {
           <Link
             key={index}
             href={link.url || "#"}
-            className={`w-full px-4 py-2 text-center font-semibold transition-all duration-200 transform hover:scale-105 ${
+            className={`w-full px-4 py-2 text-center font-semibold transition-all duration-200 transform hover:scale-105 rounded-full ${
               link.url !== ""
                 ? "bg-blue-500 hover:bg-blue-700 text-white shadow-md hover:shadow-lg"
                 : "bg-gray-600 hover:bg-gray-700 text-gray-200 cursor-not-allowed"
@@ -47,7 +47,7 @@ export function ResourceCardLinks({ links }) {
           <Link
             key={index}
             href={link.url || "#"}
-            className={`w-full px-4 py-2 text-center font-semibold transition-all duration-200 transform hover:scale-105 ${
+            className={`w-full px-4 py-2 text-center font-semibold transition-all duration-200 transform hover:scale-105 rounded-full ${
               link.url !== ""
                 ? "bg-blue-500 hover:bg-blue-700 text-white shadow-md hover:shadow-lg"
                 : "bg-gray-600 hover:bg-gray-700 text-gray-200 cursor-not-allowed"

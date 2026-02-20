@@ -44,13 +44,13 @@ export default function DrivePage() {
 
       if (!rootFolderId || rootFolderId === "your-root-folder-id-here") {
         throw new Error(
-          "Please configure your Google Drive root folder ID in lib/drive-config.js"
+          "Please configure your Google Drive root folder ID in lib/drive-config.js",
         );
       }
 
       abortControllerRef.current = new AbortController();
 
-      const response = await fetch(`/api/drive/`, {
+      const response = await fetch(`/api/drive`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -75,7 +75,7 @@ export default function DrivePage() {
       // Filter only folders for the main drive page
       const folders =
         data.files?.filter(
-          (file) => file.mimeType === "application/vnd.google-apps.folder"
+          (file) => file.mimeType === "application/vnd.google-apps.folder",
         ) || [];
 
       setRootFolders(folders);

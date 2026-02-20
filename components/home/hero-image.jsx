@@ -1,5 +1,4 @@
 "use client";
-
 import { motion } from "framer-motion";
 
 // import Image from "next/image";
@@ -13,9 +12,11 @@ export function HeroImage() {
         initial={{ opacity: 0, scale: 0.5 }}
         whileInView={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1, delay: 3 }}
+        viewport={{ once: true, margin: "50px" }}
         src={"/images/slideshow/image0.jpg"}
         alt={`Slide`}
       />
+      {/* <Image src={image0} alt="hero-image" /> */}
     </div>
   );
 }

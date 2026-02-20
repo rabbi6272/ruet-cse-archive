@@ -16,6 +16,7 @@ import {
 import { motion } from "framer-motion";
 import { lato } from "@/app/ui/fonts";
 import Loading from "@/app/loading";
+import { DriveFilePreviewModal } from "@/components/drive/DriveFilePreviewModal";
 
 // Simple client-side cache to prevent re-fetching on back navigation
 const clientCache = new Map();
@@ -74,11 +75,14 @@ const FileIcon = memo(({ mimeType }) => {
         width={25}
         height={25}
         loading="lazy"
+        className="mr-1"
       />
     );
   }
 
-  return <i className={`${iconConfig.icon} ${iconConfig.color}`}></i>;
+  return (
+    <i className={`${iconConfig.icon} ${iconConfig.color} text-lg mr-1`}></i>
+  );
 });
 
 FileIcon.displayName = "FileIcon";
@@ -107,7 +111,7 @@ const FileItem = memo(({ file, index, onFolderClick, onPreview }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.03 }}
       viewport={{ once: true, margin: "50px" }}
-      className="px-2 py-4 lg:p-4 border-b border-gray-200 dark:border-gray-700 flex"
+      className="px-2 lg:px-4 py-4 lg:p-4 border-b border-gray-200 dark:border-gray-700 flex hover:bg-gray-200 dark:hover:bg-gray-800 rounded"
     >
       <div className="flex-1 flex items-center gap-1">
         <span className="text-gray-600 dark:text-gray-300 mr-1.5 lg:mr-2 xl:mr-3 text-lg">
@@ -154,31 +158,6 @@ const FileItem = memo(({ file, index, onFolderClick, onPreview }) => {
 
 FileItem.displayName = "FileItem";
 
-// Memoized breadcrumb item component
-const BreadcrumbItem = memo(({ folder, isLast, index }) => {
-  if (isLast) {
-    return (
-      <span className="text-sm lg:text-base font-medium text-gray-900 dark:text-gray-100 px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded">
-        <i className="fas fa-folder mr-1 text-blue-600 dark:text-blue-400"></i>
-        {folder.name}
-      </span>
-    );
-  }
-
-  return (
-    <Link
-      href={`/drive/${folder.id}`}
-      className="text-sm lg:text-base flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-      prefetch={true}
-    >
-      <i className="fas fa-folder mr-1"></i>
-      {folder.name}
-    </Link>
-  );
-});
-
-BreadcrumbItem.displayName = "BreadcrumbItem";
-
 export default function DrivePage({ params }) {
   const router = useRouter();
   const resolvedParams = use(params);
@@ -187,25 +166,19 @@ export default function DrivePage({ params }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [previewID, setPreviewId] = useState(null);
-  const [breadcrumb, setBreadcrumb] = useState([]);
+  const [parentFolderId, setParentFolderId] = useState(null);
   const [currentFolder, setCurrentFolder] = useState(null);
 
-  // Prevent multiple simultaneous fetches
-  const fetchInProgressRef = useRef(false);
+  // Abort controller to cancel in-flight requests
   const abortControllerRef = useRef(null);
 
   const fetchFiles = useCallback(async (folderId) => {
-    // Prevent duplicate fetches
-    if (fetchInProgressRef.current) {
-      return;
-    }
-
     try {
       // Cancel previous fetch if still in progress
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-      // fetchInProgressRef.current = true;
+
       setLoading(true);
       setError(null);
 
@@ -213,7 +186,7 @@ export default function DrivePage({ params }) {
       const cached = getCachedData(folderId);
       if (cached) {
         setFiles(cached.files || []);
-        setBreadcrumb(cached.breadcrumb || []);
+        setParentFolderId(cached.parentFolderId || null);
         setCurrentFolder(cached.currentFolder || null);
         setLoading(false);
         return;
@@ -222,7 +195,7 @@ export default function DrivePage({ params }) {
       // Create new abort controller for this request
       abortControllerRef.current = new AbortController();
 
-      const response = await fetch(`/api/drive/`, {
+      const response = await fetch(`/api/drive`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -244,18 +217,12 @@ export default function DrivePage({ params }) {
         throw new Error(data.error);
       }
 
-      const result = {
-        files: data.files || [],
-        breadcrumb: data.breadcrumb || [],
-        currentFolder: data.currentFolder || null,
-      };
-
-      setFiles(result.files);
-      setBreadcrumb(result.breadcrumb);
-      setCurrentFolder(result.currentFolder);
+      setFiles(data.files);
+      setParentFolderId(data.parentFolderId);
+      setCurrentFolder(data.currentFolder);
 
       // Cache the result client-side
-      setCachedData(folderId, result);
+      setCachedData(folderId, data);
     } catch (err) {
       // Ignore abort errors
       if (err.name === "AbortError") {
@@ -264,7 +231,6 @@ export default function DrivePage({ params }) {
       setError(err.message);
       console.error("Error fetching files:", err);
     } finally {
-      fetchInProgressRef.current = false;
       setLoading(false);
     }
   }, []);
@@ -340,9 +306,10 @@ export default function DrivePage({ params }) {
           <strong className="font-bold">Error: </strong>
           <span className="block sm:inline">{error}</span>
           <button
-            onClick={() =>
-              fetchFiles(resolvedParams.id, { force: true, skipCache: true })
-            }
+            onClick={() => {
+              setError(null);
+              fetchFiles(resolvedParams.id);
+            }}
             className="ml-4 underline hover:text-red-900 dark:hover:text-red-100 transition-colors"
           >
             Retry
@@ -351,7 +318,7 @@ export default function DrivePage({ params }) {
       </div>
     );
   }
-
+  console.log("Rendering DrivePage with files:", files);
   return (
     <>
       <br />
@@ -363,53 +330,27 @@ export default function DrivePage({ params }) {
       >
         <div className="bg-[#ffffff78] dark:bg-[#071a26] px-3 lg:px-6 xl:px-8 py-8 rounded-lg shadow-md">
           <div className="mx-auto">
-            {/* Breadcrumb Navigation */}
-            {breadcrumb && breadcrumb.length > 0 && (
-              <nav className="mb-6 p-1" aria-label="Breadcrumb">
-                <ol className="flex items-center flex-wrap gap-1 text-sm text-gray-600 dark:text-gray-400">
-                  {/* Home/Drive root */}
-                  <li key="breadcrumb-home" className="flex items-center">
-                    <Link
-                      href="/drive"
-                      className="text-sm lg:text-base flex items-center hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                      prefetch={true}
-                    >
-                      <i className="fas fa-home mr-1"></i>
-                      <span className="hidden sm:inline">Drive</span>
-                    </Link>
-                  </li>
-
-                  {/* Breadcrumb trail */}
-                  {breadcrumb.map((folder, index) => {
-                    if (!folder || !folder.id || !folder.name) {
-                      return null;
-                    }
-
-                    return (
-                      <li
-                        key={`breadcrumb-${folder.id}-${index}`}
-                        className="flex items-center"
-                      >
-                        <i className="fas fa-chevron-right mx-1 text-gray-400 text-xs"></i>
-                        <BreadcrumbItem
-                          folder={folder}
-                          isLast={index === breadcrumb.length - 1}
-                          index={index}
-                        />
-                      </li>
-                    );
-                  })}
-                </ol>
-              </nav>
+            {/* Back to Parent Folder Button */}
+            {parentFolderId && (
+              <div className="mb-2">
+                <Link
+                  href={`/drive/${parentFolderId}`}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
+                  prefetch={true}
+                >
+                  <i className="fas fa-arrow-left"></i>
+                  <span className="font-medium">Back</span>
+                </Link>
+              </div>
             )}
 
             {/* Folder Heading */}
-            <h1 className="text-xl text-center font-bold mb-6 text-gray-700 dark:text-gray-300">
+            <h1 className="text-xl lg:text-2xl text-center font-bold mb-6 text-gray-700 dark:text-gray-300">
               {currentFolder ? currentFolder.name : "Drive Files"}
             </h1>
 
             {/* File List */}
-            {files.length === 0 ? (
+            {!loading && files.length === 0 ? (
               <div className="text-center py-12">
                 <i className="fas fa-folder-open text-6xl text-gray-400 dark:text-gray-600 mb-4"></i>
                 <p className="text-xl text-gray-700 dark:text-gray-300">
@@ -460,26 +401,10 @@ export default function DrivePage({ params }) {
 
       {/* Preview Modal */}
       {previewID && (
-        <div
-          className="fixed top-0 left-0 w-full h-screen bg-gray-900 bg-opacity-75 flex items-center justify-center z-50"
-          onClick={handleClosePreview}
-        >
-          <button
-            onClick={handleClosePreview}
-            className="absolute top-4 lg:top-7 left-3 lg:left-9 size-10 bg-slate-800 rounded-full text-gray-300 text-2xl cursor-pointer hover:bg-slate-700 transition-colors z-10"
-            aria-label="Close preview"
-          >
-            <i className="fas fa-times"></i>
-          </button>
-          <iframe
-            src={`https://drive.google.com/file/d/${previewID}/preview`}
-            width="100%"
-            height="100%"
-            allow="autoplay"
-            className="rounded-lg shadow-md"
-            onClick={(e) => e.stopPropagation()}
-          ></iframe>
-        </div>
+        <DriveFilePreviewModal
+          previewID={previewID}
+          handleClosePreview={handleClosePreview}
+        />
       )}
     </>
   );
