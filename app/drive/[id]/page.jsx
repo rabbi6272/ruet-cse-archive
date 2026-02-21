@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import {
   useEffect,
   useState,
@@ -159,13 +158,13 @@ const FileItem = memo(({ file, index, onFolderClick, onPreview }) => {
 FileItem.displayName = "FileItem";
 
 export default function DrivePage({ params }) {
-  const router = useRouter();
   const resolvedParams = use(params);
 
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [previewID, setPreviewId] = useState(null);
+  const [selectedFolderId, setSelectedFolderId] = useState(resolvedParams.id);
   const [parentFolderId, setParentFolderId] = useState(null);
   const [currentFolder, setCurrentFolder] = useState(null);
 
@@ -236,8 +235,8 @@ export default function DrivePage({ params }) {
   }, []);
 
   useEffect(() => {
-    if (resolvedParams.id) {
-      fetchFiles(resolvedParams.id);
+    if (selectedFolderId) {
+      fetchFiles(selectedFolderId);
     }
 
     // Cleanup function to abort fetch on unmount and restore body scroll
@@ -248,15 +247,15 @@ export default function DrivePage({ params }) {
       // Ensure body scroll is restored when component unmounts
       document.body.style.overflow = "";
     };
-  }, [resolvedParams.id, fetchFiles]);
+  }, [selectedFolderId]);
 
   const handleFolderClick = useCallback(
     (folderId) => {
       // Optimistically start loading state
       setLoading(true);
-      router.push(`/drive/${folderId}`);
+      setSelectedFolderId(folderId);
     },
-    [router],
+    [selectedFolderId],
   );
 
   const handlePreview = useCallback((fileId) => {
@@ -318,7 +317,7 @@ export default function DrivePage({ params }) {
       </div>
     );
   }
-  console.log("Rendering DrivePage with files:", files);
+
   return (
     <>
       <br />
@@ -332,15 +331,14 @@ export default function DrivePage({ params }) {
           <div className="mx-auto">
             {/* Back to Parent Folder Button */}
             {parentFolderId && (
-              <div className="mb-2">
-                <Link
-                  href={`/drive/${parentFolderId}`}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"
-                  prefetch={true}
+              <div className="mb-2 cursor-pointer">
+                <span
+                  onClick={() => setSelectedFolderId(parentFolderId)}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors cursor-pointer"
                 >
                   <i className="fas fa-arrow-left"></i>
                   <span className="font-medium">Back</span>
-                </Link>
+                </span>
               </div>
             )}
 
