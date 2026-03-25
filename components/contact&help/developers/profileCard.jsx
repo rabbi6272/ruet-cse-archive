@@ -17,37 +17,17 @@ export function ProfileCard({
   linkedin,
   facebook,
   roll,
-  isDynamic = false
+  isDynamic = false,
 }) {
   const [isFlipped, setIsFlipped] = useState(false);
-  const [pointsData, setPointsData] = useState(null);
-
-  useEffect(() => {
-    if (roll) {
-      const pointsRef = ref(db, `solverPoints/${roll}`);
-      onValue(pointsRef, (snapshot) => {
-        const data = snapshot.val();
-        setPointsData(data);
-      });
-    }
-  }, [roll]);
 
   const handleCardClick = () => {
     setIsFlipped(!isFlipped);
   };
 
-  // Handle image source - if it's a string path, import the default image
-  const getImageSrc = () => {
-    if (typeof image === 'string' && image.includes('/public/images/developers/default.jpg')) {
-      // For dynamic developers with default image path
-      return require('@/public/images/developers/default.jpg');
-    }
-    return image;
-  };
-
   return (
     <div
-      className="group mx-auto relative h-[420px] w-[300px] rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl cursor-pointer"
+      className={`${nunito.className} group mx-auto relative h-[450px] w-full rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl cursor-pointer`}
       onClick={handleCardClick}
     >
       {/* Front Side */}
@@ -57,20 +37,9 @@ export function ProfileCard({
         }`}
       >
         <div className="relative h-[180px] w-[180px] rounded-full overflow-hidden border-4 border-white shadow-md">
-          <Image src={getImageSrc()} alt={name} fill className="object-cover" />
-          {isDynamic && (
-            <div className="absolute top-2 right-2">
-              <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-                New
-              </span>
-            </div>
-          )}
+          <Image src={image} alt={name} fill className="object-cover" />
         </div>
-        <h3
-          className={`${nunito.className} mt-4 text-xl font-semibold text-gray-800`}
-        >
-          {name}
-        </h3>
+        <h3 className={`mt-4 text-xl font-semibold text-gray-800`}>{name}</h3>
         <p className="mt-1 text-gray-600 flex items-center">
           <svg
             className="w-4 h-4 mr-1"
@@ -112,7 +81,6 @@ export function ProfileCard({
         )} */}
 
         <p className="mt-2 text-xs text-blue-500">Tap/Hover for social links</p>
-        
       </div>
 
       {/* Back Side - Social Links */}

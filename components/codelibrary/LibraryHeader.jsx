@@ -7,7 +7,7 @@ export function CodeLibraryHeader() {
             Code Snippts Gallary
           </span>
         </h1>
-        <p className="text-md font-normal text-gray-500 lg:text-xl dark:text-gray-400 max-w-3xl mx-auto">
+        <p className="text-md font-normal text-gray-500 lg:text-xl dark:text-gray-400 max-w-3xl md:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl  mx-auto">
           Browse and share useful code snippets. We do not showcase any kind of
           AI-generated content here. Feel free to use any code you like, but
           please give credit to the original author. Happy coding!

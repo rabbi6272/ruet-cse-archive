@@ -14,7 +14,7 @@ export function AnimatedCounter({ target, suffix = "", duration = 3000 }) {
           setIsVisible(true);
         }
       },
-      { threshold: 0.05 }
+      { threshold: 0.05 },
     );
 
     if (counterRef.current) {
@@ -36,9 +36,9 @@ export function AnimatedCounter({ target, suffix = "", duration = 3000 }) {
       const progress = Math.min(elapsed / duration, 1);
 
       // Easing function for smooth animation
-      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      const easeOutQuart = 1 - Math.pow(1 - progress, 2);
       const currentCount = Math.floor(
-        startCount + (target - startCount) * easeOutQuart
+        startCount + (target - startCount) * easeOutQuart,
       );
 
       setCount(currentCount);

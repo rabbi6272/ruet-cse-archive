@@ -16,7 +16,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { MainPage } from "./mainPage";
 
 export const metadata = {
-  metadataBase: new URL("https://csearchive.vercel.app"),
+  metadataBase: new URL("https://ruetcsearchive.app"),
   title: {
     default: "RUET CSE Archive - Complete Resource Hub for CSE Students",
     template: "%s | RUET CSE Archive",
@@ -105,8 +105,8 @@ export default function RootLayout({ children }) {
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="canonical" href="https://csearchive.vercel.app/" />
-        <link rel="alternate" href="https://ruet-cse-archive.vercel.app/" />
+        <link rel="canonical" href="https://ruetcsearchive.app/" />
+        <link rel="alternate" href="https://csearchive.vercel.app/" />
         <link rel="icon" href="/icon.png" />
         <link rel="apple-touch-icon" href="/icon.png" />
         <meta name="theme-color" content="#071a26" />
@@ -173,7 +173,6 @@ export default function RootLayout({ children }) {
             <GlobalPresenceTracker />
             <MainPage>{children}</MainPage>
             <FooterComponent />
-            
           </P2PChatProvider>
         </PageTitleProvider>
       </body>

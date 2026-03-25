@@ -106,7 +106,7 @@ export function FAQSection() {
     <div className="w-full px-4 mx-auto text-center">
       <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold">
         <span className="text-transparent bg-clip-text bg-gradient-to-r to-gray-700 from-gray-500 dark:to-neutral-400 dark:from-neutral-200">
-          But Why this?
+          Frequently Asked Questions
         </span>
       </h1>
       <p className="text-md font-normal text-gray-500 lg:text-xl dark:text-gray-400">

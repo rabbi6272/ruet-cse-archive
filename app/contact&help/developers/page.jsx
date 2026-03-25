@@ -1,15 +1,6 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import Link from "next/link";
 import { ProfileCard } from "@/components/contact&help/developers/profileCard";
-import {
-  listenToDeveloperUpdates,
-  mergeDeveloperData,
-  groupDevelopersByRole,
-} from "@/lib/developer-utils";
 
-import { avengero, lato, avegance } from "@/app/ui/fonts";
+import { avegance } from "@/app/ui/fonts";
 
 import rabbi2 from "@/public/images/developers/rabbi2.jpg";
 import bitto2 from "@/public/images/developers/bitto2.jpg";
@@ -22,13 +13,13 @@ import miraj from "@/public/images/developers/miraj.jpg";
 import def from "@/public/images/developers/default.jpg";
 import ahnaf from "@/public/images/developers/ahnaf.jpg";
 import shadman from "@/public/images/developers/shadman.jpg";
-// import nahid from "@/public/images/developers/nahid.jpg";
 import aqm from "@/public/images/developers/aqm.jpg";
 import ratul from "@/public/images/developers/ratul.jpg";
 import seam from "@/public/images/developers/seam.jpg";
 import mustaq from "@/public/images/developers/mustaq.jpg";
-
 import arnob from "@/public/images/developers/arnob.jpg";
+
+import { groupDevelopersByRole } from "@/lib/developer-utils";
 
 const staticDevelopers = [
   {
@@ -61,16 +52,7 @@ const staticDevelopers = [
     linkedin: "https://www.linkedin.com/in/morchhalin-alam-amio-bb35a8360",
     facebook: "https://www.facebook.com/share/1FP1VwSFvd/",
   },
-  {
-    name: "Sumon Majumder",
-    role: "Code Reviewer & Tester",
-    image: sumon,
-    roll: "2403129",
-    location: "Khulna, Bangladesh",
-    github: "https://github.com/spiderNerd007",
-    linkedin: "https://www.linkedin.com/in/sumon-majumder-6a6b81371",
-    facebook: "https://www.facebook.com/share/1Gc3FqZf1L/",
-  },
+
   // {
   //   name: "Sujoy Roy",
   //   role: "Media Team",
@@ -129,15 +111,6 @@ const staticDevelopers = [
     linkedin: "https://www.linkedin.com/in/shadman-ahmed-04688b210",
     facebook: "https://www.facebook.com/share/1BrJK4hiuJ/",
   },
-  // {
-  //   name: "Md. Khushbo Nahid",
-  //   role: "Code Reviewer & Tester",
-  //   image: def,
-  //   location: "Dhaka, Bangladesh",
-  //   github: "https://github.com/KN2004",
-  //   linkedin: "https://www.linkedin.com/in/khushbo-nahid-0067a136a/",
-  //   facebook: "https://www.facebook.com/mkhushbonahid",
-  // },
   {
     name: "Arnob Benedict Tudu",
     role: "Code Reviewer & Tester",
@@ -188,72 +161,11 @@ const staticDevelopers = [
 ];
 
 export default function Developers() {
-  const [allDevelopers, setAllDevelopers] = useState(staticDevelopers);
-  const [groupedDevelopers, setGroupedDevelopers] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Set up real-time listener for developer data
-  useEffect(() => {
-    setLoading(true);
-
-    // Listen to dynamic developer updates
-    const unsubscribe = listenToDeveloperUpdates((dynamicDevelopers) => {
-      try {
-        // Merge static and dynamic data
-        const mergedData = mergeDeveloperData(
-          staticDevelopers,
-          dynamicDevelopers
-        );
-        setAllDevelopers(mergedData);
-
-        // Group the merged data
-        const grouped = groupDevelopersByRole(mergedData);
-        setGroupedDevelopers(grouped);
-
-        setError(null);
-      } catch (err) {
-        console.error("Error processing developer data:", err);
-        setError("Failed to load dynamic developer data");
-        // Fall back to static data only
-        setAllDevelopers(staticDevelopers);
-        setGroupedDevelopers(groupDevelopersByRole(staticDevelopers));
-      } finally {
-        setLoading(false);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="p-4 md:p-8">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading development team...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // groupDevelopersByRole is a utility function that takes an array of developers and groups them by their roles. It returns an object where the keys are the roles and the values are arrays of developers who have that role.
+  const groupedDevelopers = groupDevelopersByRole(staticDevelopers);
 
   return (
-    <div className="p-4 md:p-8">
-      {/* Error Alert */}
-      {error && (
-        <div className="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded">
-          <div className="flex items-center">
-            <span className="text-yellow-500 mr-2">⚠️</span>
-            <span>
-              Some developer data may not be up to date. Showing available
-              information.
-            </span>
-          </div>
-        </div>
-      )}
-
+    <div className="p-4 md:p-8 min-h-dvh">
       {/* <div className="p-3 md:p-6 w-full bg-[#ffffffa4] dark:bg-slate-700 rounded-lg"> */}
       <h3
         className={
@@ -276,14 +188,14 @@ export default function Developers() {
             >
               Developers
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 lg:px-6">
               {groupedDevelopers["Frontend & Backend Developers"].map(
                 (developer) => (
                   <ProfileCard
                     key={developer.name + (developer.roll || "")}
                     {...developer}
                   />
-                )
+                ),
               )}
             </div>
           </div>
@@ -300,7 +212,7 @@ export default function Developers() {
             >
               Security
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 lg:px-6">
               {groupedDevelopers["Security"].map((developer) => (
                 <ProfileCard
                   key={developer.name + (developer.roll || "")}
@@ -322,14 +234,14 @@ export default function Developers() {
             >
               Code Reviewers & Testers
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 lg:px-6">
               {groupedDevelopers["Code Reviewers & Testers"].map(
                 (developer) => (
                   <ProfileCard
                     key={developer.name + (developer.roll || "")}
                     {...developer}
                   />
-                )
+                ),
               )}
             </div>
           </div>
@@ -346,7 +258,7 @@ export default function Developers() {
             >
               Resources Management
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 lg:px-6">
               {groupedDevelopers["Resource Management"].map((developer) => (
                 <ProfileCard
                   key={developer.name + (developer.roll || "")}
@@ -356,8 +268,6 @@ export default function Developers() {
             </div>
           </div>
         )}
-     
     </div>
-    // </div>
   );
 }
