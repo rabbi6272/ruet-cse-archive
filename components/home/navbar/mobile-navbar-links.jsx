@@ -31,7 +31,13 @@ const mobileNavItems = [
   },
   {
     label: "Apps",
-    href: "/contact&help/#",
+    subItems: [
+      {
+        name: "RUET CSE 24",
+        href: "https://ruetcse24-new.vercel.app/",
+        target: "_blank",
+      },
+    ],
   },
 ];
 
@@ -133,7 +139,7 @@ export function MobileNavbarLinks() {
                           >
                             {sub.name}
                           </Link>
-                        )
+                        ),
                       )}
                     </div>
                   </div>
