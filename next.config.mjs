@@ -1,18 +1,20 @@
-import withFlowbiteReact from "flowbite-react/plugin/nextjs";
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Fix Windows OneDrive symlink issues
   outputFileTracingIncludes: {},
   outputFileTracingExcludes: {},
 
+  images: {
+    remotePatterns: [
+      new URL(
+        "https://res.cloudinary.com/ddtd7avvo/image/upload/v1770146066/Users/**",
+      ),
+    ],
+  },
+
   // Disable symlinks to avoid Windows/OneDrive issues
   typescript: {
     ignoreBuildErrors: false,
-  },
-
-  eslint: {
-    ignoreDuringBuilds: false,
   },
 
   // SEO and Performance optimizations
@@ -21,31 +23,16 @@ const nextConfig = {
       {
         source: "/(.*)",
         headers: [
-          {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
-          },
-          {
-            key: "X-Frame-Options",
-            value: "DENY",
-          },
-          {
-            key: "X-XSS-Protection",
-            value: "1; mode=block",
-          },
-          {
-            key: "Referrer-Policy",
-            value: "origin-when-cross-origin",
-          },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-XSS-Protection", value: "1; mode=block" },
+          { key: "Referrer-Policy", value: "origin-when-cross-origin" },
         ],
       },
       {
         source: "/sitemap.xml",
         headers: [
-          {
-            key: "Content-Type",
-            value: "application/xml",
-          },
+          { key: "Content-Type", value: "application/xml" },
           {
             key: "Cache-Control",
             value: "public, max-age=86400, s-maxage=86400",
@@ -55,10 +42,7 @@ const nextConfig = {
       {
         source: "/robots.txt",
         headers: [
-          {
-            key: "Content-Type",
-            value: "text/plain",
-          },
+          { key: "Content-Type", value: "text/plain" },
           {
             key: "Cache-Control",
             value: "public, max-age=86400, s-maxage=86400",
@@ -71,16 +55,9 @@ const nextConfig = {
   // Enable compression
   compress: true,
 
-  // Optimize images
-  images: {
-    formats: ["image/webp", "image/avif"],
-    minimumCacheTTL: 60,
-  },
-
   // Generate static sitemap
   async redirects() {
     return [
-      // Redirect old URLs if needed
       {
         source: "/home",
         destination: "/",
@@ -96,4 +73,4 @@ const nextConfig = {
   allowedDevOrigins: ["192.168.56.1", "192.168.0.235"],
 };
 
-export default withFlowbiteReact(nextConfig);
+export default nextConfig;

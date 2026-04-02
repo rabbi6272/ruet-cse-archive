@@ -17,7 +17,7 @@ import { getUserGroup } from "@/lib/group-utils";
 import AuthUtils from "@/lib/auth-utils-secure";
 import toast, { Toaster } from "react-hot-toast";
 import NotificationCenter from "./NotificationCenter";
-import ActiveUsersIndicator from "@/components/ui/ActiveUsersIndicator";
+import ActiveUsersIndicator from "@/app/components/ui/ActiveUsersIndicator";
 import Link from "next/link";
 import hljs from "highlight.js";
 import "highlight.js/styles/monokai.css";
@@ -28,11 +28,12 @@ import {
   getUserNutrinosHistory,
 } from "@/lib/nutrinos-system";
 import { presenceTracker } from "@/lib/presence-tracker";
-import { useP2PChat } from "@/components/providers/P2PChatProvider";
+import { useP2PChat } from "@/app/components/providers/P2PChatProvider";
 import P2PChat from "./P2PChat";
 import GroupChat from "./GroupChat";
 import { notificationSound } from "@/lib/notificationSound";
-
+import Image from "next/image";
+import { CldImage } from "next-cloudinary";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -76,7 +77,7 @@ const Dashboard = () => {
       setUser(userData);
       loadUserSnippets(userData.roll);
       loadUserNutrinosData(userData.roll);
-    
+
       // Load pending chat requests count
       loadPendingChatRequestsCount(userData.roll);
       // Load unread messages count
@@ -103,8 +104,6 @@ const Dashboard = () => {
     }
   };
 
- 
-  
   // Load pending chat requests count
   const loadPendingChatRequestsCount = (rollNumber) => {
     try {
@@ -112,7 +111,7 @@ const Dashboard = () => {
       const incomingRequestsQuery = query(
         requestsRef,
         orderByChild("toRoll"),
-        equalTo(rollNumber)
+        equalTo(rollNumber),
       );
 
       onValue(incomingRequestsQuery, (snapshot) => {
@@ -148,7 +147,7 @@ const Dashboard = () => {
         const data = snapshot.val() || {};
         const totalUnread = Object.values(data).reduce(
           (total, count) => total + (count || 0),
-          0
+          0,
         );
 
         // Play sound notification if count increased (new message received)
@@ -178,19 +177,19 @@ const Dashboard = () => {
 
       const unreadRef = ref(
         db,
-        `groupUnreadCounts/${userGroup.id}/${rollNumber}`
+        `groupUnreadCounts/${userGroup.id}/${rollNumber}`,
       );
 
       onValue(unreadRef, (snapshot) => {
         const count = snapshot.val() || 0;
         console.log(
-          `[DASHBOARD] Group unread count changed: ${prevGroupUnreadCount} -> ${count}`
+          `[DASHBOARD] Group unread count changed: ${prevGroupUnreadCount} -> ${count}`,
         );
 
         // Play sound notification if count increased (new group message received)
         if (count > prevGroupUnreadCount && prevGroupUnreadCount !== 0) {
           console.log(
-            `[DASHBOARD] Playing notification sound for group message`
+            `[DASHBOARD] Playing notification sound for group message`,
           );
           notificationSound.playNotificationSound().catch(console.error);
         }
@@ -220,7 +219,7 @@ const Dashboard = () => {
       const userSnippetsQuery = query(
         snippetsRef,
         orderByChild("rollNumber"),
-        equalTo(rollNumber)
+        equalTo(rollNumber),
       );
 
       onValue(userSnippetsQuery, (snapshot) => {
@@ -229,7 +228,7 @@ const Dashboard = () => {
           ([id, data]) => ({
             id,
             ...data,
-          })
+          }),
         );
         // Sort by date (newest first)
         snippetsArray.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -292,7 +291,7 @@ const Dashboard = () => {
   const handleDeleteSnippet = async (snippetId) => {
     if (
       confirm(
-        "Are you sure you want to delete this snippet? You will lose 3 Nutrinos."
+        "Are you sure you want to delete this snippet? You will lose 3 Nutrinos.",
       )
     ) {
       try {
@@ -346,13 +345,15 @@ const Dashboard = () => {
   const totalPages = Math.ceil(snippets.length / ITEMS_PER_PAGE);
   const paginatedSnippets = snippets.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
+    currentPage * ITEMS_PER_PAGE,
   );
 
   if (!user) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <p className="text-lg">Loading user data...</p>
+        <p className="text-lg text-gray-600 dark:text-gray-200">
+          Loading user data...
+        </p>
       </div>
     );
   }
@@ -367,8 +368,21 @@ const Dashboard = () => {
             {/* Left Section - User Info */}
             <div className="flex items-start gap-4 flex-1">
               {/* Avatar */}
-              <div className="flex-shrink-0 h-16 w-16 lg:h-20 lg:w-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xl lg:text-3xl font-bold shadow-lg">
-                {user.name.charAt(0)}
+              <div className="flex-shrink-0 shadow-lg">
+                {user.profilePictureUrl ? (
+                  <CldImage
+                    width={95}
+                    height={95}
+                    src={user.profilePictureUrl}
+                    alt={user.roll}
+                    className="h-[95px] w-[95px] rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="h-[95px] w-[95px] rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xl lg:text-3xl font-bold ">
+                    {" "}
+                    {user.name.split(" ")[0].charAt(0)}
+                  </span>
+                )}
               </div>
 
               {/* User Details */}
@@ -420,7 +434,6 @@ const Dashboard = () => {
               {/* Mobile: Stack horizontally, Desktop: Stack vertically */}
               <div className="flex flex-col items-center ">
                 <NotificationCenter userRoll={user?.roll} />
-                
               </div>
             </div>
           </div>
@@ -523,7 +536,6 @@ const Dashboard = () => {
               Quick Actions
             </h3>
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-
               <Link
                 href="/user/create"
                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-lg shadow-md transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg transform hover:scale-105"
@@ -534,10 +546,6 @@ const Dashboard = () => {
                 </span>
                 <span className="sm:hidden text-sm font-medium">Add</span>
               </Link>
-
-              
-
-              
             </div>
           </div>
         </div>
@@ -809,7 +817,7 @@ const Dashboard = () => {
         <button
           onClick={async () => {
             console.log(
-              `[DASHBOARD] Opening group chat, current unread count: ${groupUnreadCount}`
+              `[DASHBOARD] Opening group chat, current unread count: ${groupUnreadCount}`,
             );
             setIsGroupChatOpen(true);
 
@@ -819,11 +827,11 @@ const Dashboard = () => {
                 const userGroup = getUserGroup(user.roll);
                 if (userGroup && groupUnreadCount > 0) {
                   console.log(
-                    `[DASHBOARD] Clearing unread count for group ${userGroup.id}`
+                    `[DASHBOARD] Clearing unread count for group ${userGroup.id}`,
                   );
                   const unreadRef = ref(
                     db,
-                    `groupUnreadCounts/${userGroup.id}/${user.roll}`
+                    `groupUnreadCounts/${userGroup.id}/${user.roll}`,
                   );
                   await update(ref(db, `groupUnreadCounts/${userGroup.id}`), {
                     [user.roll]: 0,

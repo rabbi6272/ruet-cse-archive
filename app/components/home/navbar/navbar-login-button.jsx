@@ -1,18 +1,11 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useNotificationCount } from "@/lib/useNotificationCount";
-import { NotificationBadge } from "@/components/ui/NotificationBadge";
+import { NotificationBadge } from "@/app/components/ui/NotificationBadge";
 import AuthUtils from "@/lib/auth-utils-secure";
 
-export function DashboardLink({
-  className = "",
-  badgeSize = "sm",
-  showText = true,
-  playSound = false,
-  updatePageTitle = false,
-  children,
-}) {
+export function LoginButton() {
   const [userData, setUserData] = useState(null);
   const [userRoll, setUserRoll] = useState(null);
 
@@ -43,21 +36,28 @@ export function DashboardLink({
 
   const { unreadCount, isLoading, error } = useNotificationCount(
     userRoll,
-    playSound,
-    updatePageTitle
+    true,
+    true,
   );
 
-  if (!userData) {
-    return null;
+  if (userData) {
+    return (
+      <Link
+        href="/user/dashboard"
+        className="relative text-center text-gray-200 bg-indigo-600 hover:bg-indigo-700 px-3 py-2 rounded-md text-sm font-medium transition-all duration-500"
+      >
+        Dashboard
+        {!isLoading && !error && <NotificationBadge count={unreadCount} />}
+      </Link>
+    );
+  } else {
+    return (
+      <Link
+        href="/user/login"
+        className="text-center text-gray-200 bg-indigo-600 hover:bg-indigo-700 px-3 py-2 rounded-md text-sm font-medium transition-all duration-500"
+      >
+        Login
+      </Link>
+    );
   }
-
-  return (
-    <Link href="/user/dashboard" className={`relative ${className}`}>
-      {children ||
-        (showText ? "Dashboard" : <i className="fas fa-tachometer-alt"></i>)}
-      {!isLoading && !error && (
-        <NotificationBadge count={unreadCount} size={badgeSize} />
-      )}
-    </Link>
-  );
 }

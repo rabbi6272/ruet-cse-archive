@@ -18,21 +18,21 @@ import {
 } from "firebase/database";
 import toast from "react-hot-toast";
 import { getUserGroup, isUserInGroup, getGroupName } from "@/lib/group-utils";
-import EmojiPanel from "@/components/ui/EmojiPanel";
-import MessageReactions from "@/components/ui/MessageReactions";
+import EmojiPanel from "@/app/components/ui/EmojiPanel";
+import MessageReactions from "@/app/components/ui/MessageReactions";
 import { PollCreationModal, PollEditModal, PollDisplay } from "./PollComponent";
 import AuthUtils from "@/lib/auth-utils-secure";
 
 // Link detection and preview utilities
 const SUPPORTED_PLATFORMS = {
-  YOUTUBE: 'youtube',
-  CODEFORCES: 'codeforces',
-  ATCODER: 'atcoder',
-  LEETCODE: 'leetcode',
-  GITHUB: 'github',
-  LINKEDIN: 'linkedin',
-  GOOGLE: 'google',
-  FACEBOOK: 'facebook'
+  YOUTUBE: "youtube",
+  CODEFORCES: "codeforces",
+  ATCODER: "atcoder",
+  LEETCODE: "leetcode",
+  GITHUB: "github",
+  LINKEDIN: "linkedin",
+  GOOGLE: "google",
+  FACEBOOK: "facebook",
 };
 
 // URL patterns for different platforms
@@ -40,83 +40,83 @@ const URL_PATTERNS = {
   [SUPPORTED_PLATFORMS.YOUTUBE]: [
     /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/i,
     /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?.*[&?]v=([a-zA-Z0-9_-]{11})/i,
-    /(?:https?:\/\/)?(?:m\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/i
+    /(?:https?:\/\/)?(?:m\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/i,
   ],
   [SUPPORTED_PLATFORMS.CODEFORCES]: [
     /(?:https?:\/\/)?(?:www\.)?codeforces\.com\/(problemset\/problem|contest|gym)\/[\w\/-]+/i,
     /(?:https?:\/\/)?(?:www\.)?codeforces\.com\/profile\/[\w-]+/i,
-    /(?:https?:\/\/)?(?:www\.)?codeforces\.com\/blog\/entry\/[\d]+/i
+    /(?:https?:\/\/)?(?:www\.)?codeforces\.com\/blog\/entry\/[\d]+/i,
   ],
   [SUPPORTED_PLATFORMS.ATCODER]: [
     /(?:https?:\/\/)?(?:www\.)?atcoder\.jp\/contests\/[\w-]+\/tasks\/[\w-]+/i,
     /(?:https?:\/\/)?(?:www\.)?atcoder\.jp\/contests\/[\w-]+/i,
-    /(?:https?:\/\/)?(?:www\.)?atcoder\.jp\/users\/[\w-]+/i
+    /(?:https?:\/\/)?(?:www\.)?atcoder\.jp\/users\/[\w-]+/i,
   ],
   [SUPPORTED_PLATFORMS.LEETCODE]: [
     /(?:https?:\/\/)?(?:www\.)?leetcode\.com\/problems\/[\w-]+/i,
     /(?:https?:\/\/)?(?:www\.)?leetcode\.com\/[\w-]+/i,
-    /(?:https?:\/\/)?(?:www\.)?leetcode\.com\/discuss\/[\w\/-]+/i
+    /(?:https?:\/\/)?(?:www\.)?leetcode\.com\/discuss\/[\w\/-]+/i,
   ],
   [SUPPORTED_PLATFORMS.GITHUB]: [
     /(?:https?:\/\/)?(?:www\.)?github\.com\/[\w.-]+\/[\w.-]+(?:\/.*)?/i,
-    /(?:https?:\/\/)?(?:www\.)?github\.com\/[\w.-]+(?:\/.*)?/i
+    /(?:https?:\/\/)?(?:www\.)?github\.com\/[\w.-]+(?:\/.*)?/i,
   ],
   [SUPPORTED_PLATFORMS.LINKEDIN]: [
     /(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[\w-]+/i,
     /(?:https?:\/\/)?(?:www\.)?linkedin\.com\/company\/[\w-]+/i,
     /(?:https?:\/\/)?(?:www\.)?linkedin\.com\/posts\/[\w-]+/i,
-    /(?:https?:\/\/)?(?:www\.)?linkedin\.com\/feed\/update\/[\w:-]+/i
+    /(?:https?:\/\/)?(?:www\.)?linkedin\.com\/feed\/update\/[\w:-]+/i,
   ],
   [SUPPORTED_PLATFORMS.GOOGLE]: [
     /(?:https?:\/\/)?(?:www\.)?(?:docs|drive|forms|sheets|slides)\.google\.com\/[\w\/\-\?=&]+/i,
-    /(?:https?:\/\/)?(?:www\.)?drive\.google\.com\/[\w\/\-\?=&]+/i
+    /(?:https?:\/\/)?(?:www\.)?drive\.google\.com\/[\w\/\-\?=&]+/i,
   ],
   [SUPPORTED_PLATFORMS.FACEBOOK]: [
     /(?:https?:\/\/)?(?:www\.)?facebook\.com\/[\w.-]+(?:\/.*)?/i,
     /(?:https?:\/\/)?(?:www\.)?fb\.com\/[\w.-]+/i,
-    /(?:https?:\/\/)?(?:www\.)?m\.facebook\.com\/[\w.-]+/i
-  ]
+    /(?:https?:\/\/)?(?:www\.)?m\.facebook\.com\/[\w.-]+/i,
+  ],
 };
 
 // Function to detect and parse links in text
 const detectLinks = (text) => {
   const links = [];
   const foundUrls = new Set(); // To avoid duplicates
-  
+
   // Check each platform's patterns
   Object.entries(URL_PATTERNS).forEach(([platform, patterns]) => {
-    patterns.forEach(pattern => {
+    patterns.forEach((pattern) => {
       // Use global flag to find all matches
-      const globalPattern = new RegExp(pattern.source, 'gi');
+      const globalPattern = new RegExp(pattern.source, "gi");
       let match;
-      
+
       while ((match = globalPattern.exec(text)) !== null) {
         const url = match[0];
         const normalizedUrl = url.toLowerCase();
-        
+
         // Avoid duplicate URLs
         if (!foundUrls.has(normalizedUrl)) {
           foundUrls.add(normalizedUrl);
-          
+
           // Extract video ID for YouTube
           let videoId = null;
           if (platform === SUPPORTED_PLATFORMS.YOUTUBE) {
             videoId = getYouTubeVideoId(url);
           }
-          
+
           const linkInfo = {
             platform,
             url: url,
             fullMatch: match[0],
-            videoId: videoId
+            videoId: videoId,
           };
-          
+
           links.push(linkInfo);
         }
       }
     });
   });
-  
+
   return links;
 };
 
@@ -125,9 +125,9 @@ const getYouTubeVideoId = (url) => {
   const patterns = [
     /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/i,
     /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?.*[&?]v=([a-zA-Z0-9_-]{11})/i,
-    /(?:https?:\/\/)?(?:m\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/i
+    /(?:https?:\/\/)?(?:m\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/i,
   ];
-  
+
   for (const pattern of patterns) {
     const match = url.match(pattern);
     if (match && match[1]) {
@@ -140,31 +140,31 @@ const getYouTubeVideoId = (url) => {
 // Function to get platform icon
 const getPlatformIcon = (platform) => {
   const icons = {
-    [SUPPORTED_PLATFORMS.YOUTUBE]: '🎥',
-    [SUPPORTED_PLATFORMS.CODEFORCES]: '💻',
-    [SUPPORTED_PLATFORMS.ATCODER]: '🏆',
-    [SUPPORTED_PLATFORMS.LEETCODE]: '🧩',
-    [SUPPORTED_PLATFORMS.GITHUB]: '🐙',
-    [SUPPORTED_PLATFORMS.LINKEDIN]: '💼',
-    [SUPPORTED_PLATFORMS.GOOGLE]: '📄',
-    [SUPPORTED_PLATFORMS.FACEBOOK]: '📘'
+    [SUPPORTED_PLATFORMS.YOUTUBE]: "🎥",
+    [SUPPORTED_PLATFORMS.CODEFORCES]: "💻",
+    [SUPPORTED_PLATFORMS.ATCODER]: "🏆",
+    [SUPPORTED_PLATFORMS.LEETCODE]: "🧩",
+    [SUPPORTED_PLATFORMS.GITHUB]: "🐙",
+    [SUPPORTED_PLATFORMS.LINKEDIN]: "💼",
+    [SUPPORTED_PLATFORMS.GOOGLE]: "📄",
+    [SUPPORTED_PLATFORMS.FACEBOOK]: "📘",
   };
-  return icons[platform] || '🔗';
+  return icons[platform] || "🔗";
 };
 
 // Function to get platform name
 const getPlatformName = (platform) => {
   const names = {
-    [SUPPORTED_PLATFORMS.YOUTUBE]: 'YouTube',
-    [SUPPORTED_PLATFORMS.CODEFORCES]: 'Codeforces',
-    [SUPPORTED_PLATFORMS.ATCODER]: 'AtCoder',
-    [SUPPORTED_PLATFORMS.LEETCODE]: 'LeetCode',
-    [SUPPORTED_PLATFORMS.GITHUB]: 'GitHub',
-    [SUPPORTED_PLATFORMS.LINKEDIN]: 'LinkedIn',
-    [SUPPORTED_PLATFORMS.GOOGLE]: 'Google',
-    [SUPPORTED_PLATFORMS.FACEBOOK]: 'Facebook'
+    [SUPPORTED_PLATFORMS.YOUTUBE]: "YouTube",
+    [SUPPORTED_PLATFORMS.CODEFORCES]: "Codeforces",
+    [SUPPORTED_PLATFORMS.ATCODER]: "AtCoder",
+    [SUPPORTED_PLATFORMS.LEETCODE]: "LeetCode",
+    [SUPPORTED_PLATFORMS.GITHUB]: "GitHub",
+    [SUPPORTED_PLATFORMS.LINKEDIN]: "LinkedIn",
+    [SUPPORTED_PLATFORMS.GOOGLE]: "Google",
+    [SUPPORTED_PLATFORMS.FACEBOOK]: "Facebook",
   };
-  return names[platform] || 'Link';
+  return names[platform] || "Link";
 };
 
 // Component for rendering YouTube video embed
@@ -184,29 +184,33 @@ const YouTubeEmbed = ({ videoId, isOwnMessage }) => {
   if (error) {
     return (
       <div className="mt-2 mb-2">
-        <div className={`border rounded-lg p-3 ${
-          isOwnMessage 
-            ? 'border-indigo-300 bg-indigo-700/30' 
-            : 'border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600'
-        }`}>
+        <div
+          className={`border rounded-lg p-3 ${
+            isOwnMessage
+              ? "border-indigo-300 bg-indigo-700/30"
+              : "border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600"
+          }`}
+        >
           <div className="flex items-center gap-2 mb-2">
             <span className="text-lg">🎥</span>
-            <span className={`text-sm font-medium ${
-              isOwnMessage 
-                ? 'text-indigo-100' 
-                : 'text-gray-700 dark:text-gray-300'
-            }`}>
+            <span
+              className={`text-sm font-medium ${
+                isOwnMessage
+                  ? "text-indigo-100"
+                  : "text-gray-700 dark:text-gray-300"
+              }`}
+            >
               YouTube Video (Error loading)
             </span>
           </div>
-          <a 
+          <a
             href={`https://www.youtube.com/watch?v=${videoId}`}
             target="_blank"
             rel="noopener noreferrer"
             className={`text-sm hover:underline ${
-              isOwnMessage 
-                ? 'text-indigo-200' 
-                : 'text-blue-600 dark:text-blue-400'
+              isOwnMessage
+                ? "text-indigo-200"
+                : "text-blue-600 dark:text-blue-400"
             }`}
           >
             Watch on YouTube
@@ -218,12 +222,17 @@ const YouTubeEmbed = ({ videoId, isOwnMessage }) => {
 
   return (
     <div className="mt-2 mb-2">
-      <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ paddingBottom: '56.25%' /* 16:9 aspect ratio */ }}>
+      <div
+        className="relative w-full bg-black rounded-lg overflow-hidden"
+        style={{ paddingBottom: "56.25%" /* 16:9 aspect ratio */ }}
+      >
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-200 dark:bg-gray-700 rounded-lg">
             <div className="flex flex-col items-center gap-2">
               <i className="fas fa-spinner fa-spin text-gray-500 text-lg"></i>
-              <span className="text-xs sm:text-sm text-gray-500">Loading video...</span>
+              <span className="text-xs sm:text-sm text-gray-500">
+                Loading video...
+              </span>
             </div>
           </div>
         )}
@@ -240,28 +249,30 @@ const YouTubeEmbed = ({ videoId, isOwnMessage }) => {
         />
       </div>
       <div className="mt-2 flex items-center justify-between">
-        <a 
+        <a
           href={`https://www.youtube.com/watch?v=${videoId}`}
           target="_blank"
           rel="noopener noreferrer"
           className={`text-xs hover:underline inline-flex items-center gap-1 ${
-            isOwnMessage 
-              ? 'text-indigo-200 hover:text-indigo-100' 
-              : 'text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300'
+            isOwnMessage
+              ? "text-indigo-200 hover:text-indigo-100"
+              : "text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
           }`}
         >
           <span className="hidden xs:inline">Watch on YouTube</span>
           <span className="xs:hidden">YouTube</span>
           <svg className="w-3 h-3" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z"/>
-            <path d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z"/>
+            <path d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z" />
+            <path d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z" />
           </svg>
         </a>
-        <span className={`text-xs ${
-          isOwnMessage 
-            ? 'text-indigo-200' 
-            : 'text-gray-500 dark:text-gray-400'
-        }`}>
+        <span
+          className={`text-xs ${
+            isOwnMessage
+              ? "text-indigo-200"
+              : "text-gray-500 dark:text-gray-400"
+          }`}
+        >
           🎥 YouTube Video
         </span>
       </div>
@@ -274,11 +285,11 @@ const LinkPreview = ({ link, isOwnMessage }) => {
   const platform = link.platform;
   const platformName = getPlatformName(platform);
   const platformIcon = getPlatformIcon(platform);
-  
+
   // Extract meaningful information from URL
   const getUrlInfo = (url, platform) => {
-    const cleanUrl = url.replace(/^https?:\/\/(www\.)?/, '');
-    
+    const cleanUrl = url.replace(/^https?:\/\/(www\.)?/, "");
+
     switch (platform) {
       case SUPPORTED_PLATFORMS.GITHUB:
         const githubMatch = url.match(/github\.com\/([\w.-]+)\/([\w.-]+)/);
@@ -289,16 +300,16 @@ const LinkPreview = ({ link, isOwnMessage }) => {
       case SUPPORTED_PLATFORMS.LEETCODE:
         const leetcodeMatch = url.match(/leetcode\.com\/problems\/([\w-]+)/);
         if (leetcodeMatch) {
-          return `Problem: ${leetcodeMatch[1].replace(/-/g, ' ')}`;
+          return `Problem: ${leetcodeMatch[1].replace(/-/g, " ")}`;
         }
         break;
       case SUPPORTED_PLATFORMS.CODEFORCES:
-        if (url.includes('/problemset/problem/')) {
+        if (url.includes("/problemset/problem/")) {
           const cfMatch = url.match(/\/problemset\/problem\/(\d+)\/([A-Z]\d*)/);
           if (cfMatch) {
             return `Problem ${cfMatch[1]}${cfMatch[2]}`;
           }
-        } else if (url.includes('/contest/')) {
+        } else if (url.includes("/contest/")) {
           const contestMatch = url.match(/\/contest\/(\d+)/);
           if (contestMatch) {
             return `Contest ${contestMatch[1]}`;
@@ -306,8 +317,10 @@ const LinkPreview = ({ link, isOwnMessage }) => {
         }
         break;
       case SUPPORTED_PLATFORMS.ATCODER:
-        if (url.includes('/contests/')) {
-          const atcoderMatch = url.match(/\/contests\/([\w-]+)(?:\/tasks\/([\w-]+))?/);
+        if (url.includes("/contests/")) {
+          const atcoderMatch = url.match(
+            /\/contests\/([\w-]+)(?:\/tasks\/([\w-]+))?/,
+          );
           if (atcoderMatch) {
             if (atcoderMatch[2]) {
               return `${atcoderMatch[1]} - ${atcoderMatch[2]}`;
@@ -318,12 +331,12 @@ const LinkPreview = ({ link, isOwnMessage }) => {
         }
         break;
       case SUPPORTED_PLATFORMS.LINKEDIN:
-        if (url.includes('/in/')) {
+        if (url.includes("/in/")) {
           const linkedinMatch = url.match(/\/in\/([\w-]+)/);
           if (linkedinMatch) {
             return `Profile: ${linkedinMatch[1]}`;
           }
-        } else if (url.includes('/company/')) {
+        } else if (url.includes("/company/")) {
           const companyMatch = url.match(/\/company\/([\w-]+)/);
           if (companyMatch) {
             return `Company: ${companyMatch[1]}`;
@@ -331,51 +344,59 @@ const LinkPreview = ({ link, isOwnMessage }) => {
         }
         break;
     }
-    
-    return cleanUrl.length > 50 ? cleanUrl.substring(0, 50) + '...' : cleanUrl;
+
+    return cleanUrl.length > 50 ? cleanUrl.substring(0, 50) + "..." : cleanUrl;
   };
-  
+
   const urlInfo = getUrlInfo(link.url, platform);
-  
+
   return (
     <div className="mt-2 mb-2">
-      <div className={`border rounded-lg p-3 transition-colors hover:bg-opacity-80 ${
-        isOwnMessage 
-          ? 'border-indigo-300 bg-indigo-700/30 hover:bg-indigo-700/40' 
-          : 'border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500'
-      }`}>
+      <div
+        className={`border rounded-lg p-3 transition-colors hover:bg-opacity-80 ${
+          isOwnMessage
+            ? "border-indigo-300 bg-indigo-700/30 hover:bg-indigo-700/40"
+            : "border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500"
+        }`}
+      >
         <div className="flex items-center gap-2 mb-2">
           <span className="text-lg">{platformIcon}</span>
-          <span className={`text-sm font-medium ${
-            isOwnMessage 
-              ? 'text-indigo-100' 
-              : 'text-gray-700 dark:text-gray-300'
-          }`}>
+          <span
+            className={`text-sm font-medium ${
+              isOwnMessage
+                ? "text-indigo-100"
+                : "text-gray-700 dark:text-gray-300"
+            }`}
+          >
             {platformName}
           </span>
         </div>
         <div className="space-y-1">
-          <p className={`text-sm font-medium ${
-            isOwnMessage 
-              ? 'text-indigo-100' 
-              : 'text-gray-800 dark:text-gray-200'
-          }`}>
+          <p
+            className={`text-sm font-medium ${
+              isOwnMessage
+                ? "text-indigo-100"
+                : "text-gray-800 dark:text-gray-200"
+            }`}
+          >
             {urlInfo}
           </p>
-          <a 
-            href={link.url.startsWith('http') ? link.url : `https://${link.url}`}
+          <a
+            href={
+              link.url.startsWith("http") ? link.url : `https://${link.url}`
+            }
             target="_blank"
             rel="noopener noreferrer"
             className={`text-xs break-all hover:underline inline-flex items-center gap-1 ${
-              isOwnMessage 
-                ? 'text-indigo-200 hover:text-indigo-100' 
-                : 'text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300'
+              isOwnMessage
+                ? "text-indigo-200 hover:text-indigo-100"
+                : "text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
             }`}
           >
             Open link
             <svg className="w-3 h-3" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z"/>
-              <path d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z"/>
+              <path d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z" />
+              <path d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z" />
             </svg>
           </a>
         </div>
@@ -384,7 +405,13 @@ const LinkPreview = ({ link, isOwnMessage }) => {
   );
 };
 
-const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange }) => {
+const GroupChat = ({
+  userRoll,
+  userName,
+  isOpen,
+  onClose,
+  onUnreadCountChange,
+}) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -400,17 +427,22 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
   const [showMemberList, setShowMemberList] = useState(false);
   const messagesEndRef = useRef(null);
   const messageInputRef = useRef(null);
-  const [swipeState, setSwipeState] = useState({ startX: 0, currentX: 0, messageId: null, swiping: false });
-  const [showEmojiPanel, setShowEmojiPanel] = useState(false);
-  
-  // Long press and emoji panel state for mobile
-  const [longPressState, setLongPressState] = useState({ 
-    timer: null, 
-    messageId: null, 
-    isLongPressing: false,
-    activeMessagePanel: null // Track which message has active emoji panel
+  const [swipeState, setSwipeState] = useState({
+    startX: 0,
+    currentX: 0,
+    messageId: null,
+    swiping: false,
   });
-  
+  const [showEmojiPanel, setShowEmojiPanel] = useState(false);
+
+  // Long press and emoji panel state for mobile
+  const [longPressState, setLongPressState] = useState({
+    timer: null,
+    messageId: null,
+    isLongPressing: false,
+    activeMessagePanel: null, // Track which message has active emoji panel
+  });
+
   // Mention system state
   const [showMentionDropdown, setShowMentionDropdown] = useState(false);
   const [mentionSearchText, setMentionSearchText] = useState("");
@@ -422,7 +454,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
   const [polls, setPolls] = useState([]);
   const [showPollModal, setShowPollModal] = useState(false);
   const [showPollHistory, setShowPollHistory] = useState(false);
-  
+
   // Reactions modal state
   const [showReactionsModal, setShowReactionsModal] = useState(false);
   const [reactionModalData, setReactionModalData] = useState(null);
@@ -442,30 +474,30 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
 
   // Convert name to proper case
   const toProperCase = (name) => {
-    if (!name || typeof name !== 'string') return name;
+    if (!name || typeof name !== "string") return name;
     return name
       .toLowerCase()
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   };
 
   // Get mention suggestions
   const getMentionSuggestions = (searchText = "") => {
     if (!userGroup) return [];
-    
+
     const suggestions = [
       {
-        id: 'everyone',
-        name: 'everyone',
-        displayName: 'Everyone',
-        roll: 'everyone',
-        isEveryone: true
-      }
+        id: "everyone",
+        name: "everyone",
+        displayName: "Everyone",
+        roll: "everyone",
+        isEveryone: true,
+      },
     ];
-    
+
     // Add all group members except current user
-    userGroup.participants.forEach(roll => {
+    userGroup.participants.forEach((roll) => {
       if (roll !== userRoll) {
         const name = userGroup.participantNames[roll] || roll;
         suggestions.push({
@@ -473,19 +505,20 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
           name: name.toLowerCase(),
           displayName: toProperCase(name),
           roll: roll,
-          isEveryone: false
+          isEveryone: false,
         });
       }
     });
-    
+
     // Filter based on search text
     if (searchText.trim()) {
-      return suggestions.filter(suggestion => 
-        suggestion.name.includes(searchText.toLowerCase()) || 
-        suggestion.roll.toLowerCase().includes(searchText.toLowerCase())
+      return suggestions.filter(
+        (suggestion) =>
+          suggestion.name.includes(searchText.toLowerCase()) ||
+          suggestion.roll.toLowerCase().includes(searchText.toLowerCase()),
       );
     }
-    
+
     return suggestions;
   };
 
@@ -493,21 +526,23 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
   const handleMentionInput = (inputValue, cursorPos) => {
     const beforeCursor = inputValue.substring(0, cursorPos);
     const afterCursor = inputValue.substring(cursorPos);
-    
+
     // Find the last @ symbol before cursor
-    const lastAtIndex = beforeCursor.lastIndexOf('@');
-    
+    const lastAtIndex = beforeCursor.lastIndexOf("@");
+
     if (lastAtIndex !== -1) {
       // Check if @ is at start or preceded by whitespace
-      const charBeforeAt = lastAtIndex > 0 ? beforeCursor[lastAtIndex - 1] : ' ';
-      const isAtValidPosition = charBeforeAt === ' ' || charBeforeAt === '\n' || lastAtIndex === 0;
-      
+      const charBeforeAt =
+        lastAtIndex > 0 ? beforeCursor[lastAtIndex - 1] : " ";
+      const isAtValidPosition =
+        charBeforeAt === " " || charBeforeAt === "\n" || lastAtIndex === 0;
+
       if (isAtValidPosition) {
         // Extract search text after @
         const searchText = beforeCursor.substring(lastAtIndex + 1);
-        
+
         // Check if search text contains spaces (if so, it's not a valid mention)
-        if (!searchText.includes(' ') && !afterCursor.startsWith(' ')) {
+        if (!searchText.includes(" ") && !afterCursor.startsWith(" ")) {
           const suggestions = getMentionSuggestions(searchText);
           setFilteredMentions(suggestions);
           setMentionSearchText(searchText);
@@ -518,7 +553,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
         }
       }
     }
-    
+
     // Hide dropdown if no valid mention context
     setShowMentionDropdown(false);
     setMentionSearchText("");
@@ -529,18 +564,22 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
   const insertMention = (mention) => {
     const input = messageInputRef.current;
     if (!input) return;
-    
+
     const beforeMention = newMessage.substring(0, mentionCursorPosition);
-    const afterMention = newMessage.substring(mentionCursorPosition + 1 + mentionSearchText.length);
-    
-    const mentionText = mention.isEveryone ? '@everyone' : `@${mention.displayName}`;
-    const newText = beforeMention + mentionText + ' ' + afterMention;
-    
+    const afterMention = newMessage.substring(
+      mentionCursorPosition + 1 + mentionSearchText.length,
+    );
+
+    const mentionText = mention.isEveryone
+      ? "@everyone"
+      : `@${mention.displayName}`;
+    const newText = beforeMention + mentionText + " " + afterMention;
+
     setNewMessage(newText);
     setShowMentionDropdown(false);
     setMentionSearchText("");
     setFilteredMentions([]);
-    
+
     // Focus input and set cursor after mention
     setTimeout(() => {
       const newCursorPos = beforeMention.length + mentionText.length + 1;
@@ -552,28 +591,28 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
   // Handle keyboard navigation in mention dropdown
   const handleMentionKeyDown = (e) => {
     if (!showMentionDropdown) return;
-    
+
     switch (e.key) {
-      case 'ArrowDown':
+      case "ArrowDown":
         e.preventDefault();
-        setSelectedMentionIndex(prev => 
-          prev < filteredMentions.length - 1 ? prev + 1 : 0
+        setSelectedMentionIndex((prev) =>
+          prev < filteredMentions.length - 1 ? prev + 1 : 0,
         );
         break;
-      case 'ArrowUp':
+      case "ArrowUp":
         e.preventDefault();
-        setSelectedMentionIndex(prev => 
-          prev > 0 ? prev - 1 : filteredMentions.length - 1
+        setSelectedMentionIndex((prev) =>
+          prev > 0 ? prev - 1 : filteredMentions.length - 1,
         );
         break;
-      case 'Enter':
-      case 'Tab':
+      case "Enter":
+      case "Tab":
         e.preventDefault();
         if (filteredMentions[selectedMentionIndex]) {
           insertMention(filteredMentions[selectedMentionIndex]);
         }
         break;
-      case 'Escape':
+      case "Escape":
         setShowMentionDropdown(false);
         setMentionSearchText("");
         setFilteredMentions([]);
@@ -584,42 +623,54 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
   // Parse mentions in message text for display
   const parseMentions = (text) => {
     if (!text || !userGroup) return text;
-    
+
     // Replace @everyone mentions
-    let parsedText = text.replace(/@everyone/g, '<span class="mention everyone">@everyone</span>');
-    
+    let parsedText = text.replace(
+      /@everyone/g,
+      '<span class="mention everyone">@everyone</span>',
+    );
+
     // Replace user mentions
-    userGroup.participants.forEach(roll => {
+    userGroup.participants.forEach((roll) => {
       if (roll !== userRoll) {
         const name = userGroup.participantNames[roll];
         if (name) {
           const displayName = toProperCase(name);
-          const mentionRegex = new RegExp(`@${displayName}\\b`, 'gi');
-          parsedText = parsedText.replace(mentionRegex, `<span class="mention user" data-roll="${roll}">@${displayName}</span>`);
+          const mentionRegex = new RegExp(`@${displayName}\\b`, "gi");
+          parsedText = parsedText.replace(
+            mentionRegex,
+            `<span class="mention user" data-roll="${roll}">@${displayName}</span>`,
+          );
         }
       }
     });
-    
+
     return parsedText;
   };
 
   // Safe update wrapper
   const safeUpdate = async (dbRef, updateData) => {
     try {
-      if (!updateData || typeof updateData !== 'object' || Object.keys(updateData).length === 0) {
+      if (
+        !updateData ||
+        typeof updateData !== "object" ||
+        Object.keys(updateData).length === 0
+      ) {
         console.warn("Invalid update data:", updateData);
         return;
       }
-      
+
       const filteredData = Object.fromEntries(
-        Object.entries(updateData).filter(([key, value]) => value !== null && value !== undefined)
+        Object.entries(updateData).filter(
+          ([key, value]) => value !== null && value !== undefined,
+        ),
       );
-      
+
       if (Object.keys(filteredData).length === 0) {
         console.warn("No valid data to update");
         return;
       }
-      
+
       await update(dbRef, filteredData);
     } catch (error) {
       console.error("Error in safeUpdate:", error);
@@ -639,7 +690,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
   useEffect(() => {
     if (userGroup && messages.length > 0) {
       const latestMessage = messages[messages.length - 1];
-      
+
       // Initial scroll when chat opens - use instant scroll to avoid animation
       if (!hasInitialScrolled.current) {
         scrollToBottom("auto"); // Use "auto" for instant positioning
@@ -647,10 +698,12 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
         hasInitialScrolled.current = true;
         return;
       }
-      
+
       // Only scroll if this is actually a new message (not just a reaction update)
-      if (!lastMessageRef.current || 
-          (latestMessage && latestMessage.id !== lastMessageRef.current.id)) {
+      if (
+        !lastMessageRef.current ||
+        (latestMessage && latestMessage.id !== lastMessageRef.current.id)
+      ) {
         // This is a new message, scroll to bottom
         scrollToBottom();
         lastMessageRef.current = latestMessage;
@@ -671,7 +724,10 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
     if (!userRoll || !isOpen || !userGroup) return;
 
     // Set user as online in group
-    const userPresenceRef = ref(db, `groupPresence/${userGroup.id}/${userRoll}`);
+    const userPresenceRef = ref(
+      db,
+      `groupPresence/${userGroup.id}/${userRoll}`,
+    );
     const presenceData = {
       online: true,
       lastSeen: serverTimestamp(),
@@ -685,7 +741,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
     const unsubscribePresence = onValue(presenceRef, (snapshot) => {
       const presenceData = snapshot.val() || {};
       const activeUsersMap = {};
-      
+
       Object.entries(presenceData).forEach(([roll, data]) => {
         if (roll !== userRoll && data) {
           activeUsersMap[roll] = {
@@ -695,7 +751,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
           };
         }
       });
-      
+
       setActiveUsers(activeUsersMap);
     });
 
@@ -728,7 +784,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
         ...message,
       }));
       setMessages(messagesList);
-      
+
       // Check if there are more messages
       if (Object.keys(data).length >= 20) {
         setShowOlderMessages(true);
@@ -747,11 +803,13 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
     const pollsRef = ref(db, `groupPolls/${userGroup.id}`);
     const unsubscribePolls = onValue(pollsRef, (snapshot) => {
       const data = snapshot.val() || {};
-      const pollsList = Object.entries(data).map(([id, poll]) => ({
-        id,
-        ...poll,
-      })).sort((a, b) => b.createdAt - a.createdAt);
-      
+      const pollsList = Object.entries(data)
+        .map(([id, poll]) => ({
+          id,
+          ...poll,
+        }))
+        .sort((a, b) => b.createdAt - a.createdAt);
+
       setPolls(pollsList);
     });
 
@@ -763,18 +821,24 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
     if (!userGroup || !userRoll) return;
 
     const typingRef = ref(db, `groupTyping/${userGroup.id}`);
-    
-    const unsubscribeTyping = onValue(typingRef, (snapshot) => {
-      const data = snapshot.val() || {};
-      setTypingStates(data);
-    }, (error) => {
-      console.error("Error listening to typing status:", error);
-    });
+
+    const unsubscribeTyping = onValue(
+      typingRef,
+      (snapshot) => {
+        const data = snapshot.val() || {};
+        setTypingStates(data);
+      },
+      (error) => {
+        console.error("Error listening to typing status:", error);
+      },
+    );
 
     return () => {
       unsubscribeTyping();
       if (userGroup?.id && userRoll) {
-        set(ref(db, `groupTyping/${userGroup.id}/${userRoll}`), null).catch(console.error);
+        set(ref(db, `groupTyping/${userGroup.id}/${userRoll}`), null).catch(
+          console.error,
+        );
       }
     };
   }, [userGroup, userRoll]);
@@ -784,18 +848,22 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
     if (!userRoll || !isOpen || !userGroup) return;
 
     const unreadRef = ref(db, `groupUnreadCounts/${userGroup.id}/${userRoll}`);
-    
-    const unsubscribeUnread = onValue(unreadRef, (snapshot) => {
-      const count = snapshot.val() || 0;
-      setUnreadCount(count);
-      
-      // Notify parent component about unread count change
-      if (onUnreadCountChange) {
-        onUnreadCountChange(count);
-      }
-    }, (error) => {
-      console.error("Error listening to unread count:", error);
-    });
+
+    const unsubscribeUnread = onValue(
+      unreadRef,
+      (snapshot) => {
+        const count = snapshot.val() || 0;
+        setUnreadCount(count);
+
+        // Notify parent component about unread count change
+        if (onUnreadCountChange) {
+          onUnreadCountChange(count);
+        }
+      },
+      (error) => {
+        console.error("Error listening to unread count:", error);
+      },
+    );
 
     return () => unsubscribeUnread();
   }, [userRoll, isOpen, userGroup]);
@@ -805,13 +873,17 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
     if (!userGroup || !userRoll) return;
 
     const readStatusRef = ref(db, `groupMessageReadStatus/${userGroup.id}`);
-    
-    const unsubscribeReadStatus = onValue(readStatusRef, (snapshot) => {
-      const data = snapshot.val() || {};
-      setMessageReadStatus(data);
-    }, (error) => {
-      console.error("Error listening to message read status:", error);
-    });
+
+    const unsubscribeReadStatus = onValue(
+      readStatusRef,
+      (snapshot) => {
+        const data = snapshot.val() || {};
+        setMessageReadStatus(data);
+      },
+      (error) => {
+        console.error("Error listening to message read status:", error);
+      },
+    );
 
     return () => unsubscribeReadStatus();
   }, [userGroup, userRoll]);
@@ -822,31 +894,38 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
 
     const markAsRead = async () => {
       try {
-        console.log(`[GROUP_CHAT] Marking messages as read for user ${userRoll} in group ${userGroup.id}`);
-        
+        console.log(
+          `[GROUP_CHAT] Marking messages as read for user ${userRoll} in group ${userGroup.id}`,
+        );
+
         // Clear unread count
-        const unreadRef = ref(db, `groupUnreadCounts/${userGroup.id}/${userRoll}`);
+        const unreadRef = ref(
+          db,
+          `groupUnreadCounts/${userGroup.id}/${userRoll}`,
+        );
         await set(unreadRef, 0);
         console.log(`[GROUP_CHAT] Cleared unread count in Firebase`);
 
         // Mark recent messages as read
         const readStatusRef = ref(db, `groupMessageReadStatus/${userGroup.id}`);
         const messagesRef = ref(db, `groupMessages/${userGroup.id}`);
-        
+
         const messagesSnapshot = await get(messagesRef);
         const messages = messagesSnapshot.val() || {};
-        
+
         const readUpdates = {};
-        Object.keys(messages).forEach(messageId => {
+        Object.keys(messages).forEach((messageId) => {
           readUpdates[`${messageId}/${userRoll}`] = {
             readAt: serverTimestamp(),
-            readBy: userRoll
+            readBy: userRoll,
           };
         });
 
         if (Object.keys(readUpdates).length > 0) {
           await safeUpdate(readStatusRef, readUpdates);
-          console.log(`[GROUP_CHAT] Marked ${Object.keys(readUpdates).length} messages as read`);
+          console.log(
+            `[GROUP_CHAT] Marked ${Object.keys(readUpdates).length} messages as read`,
+          );
         }
       } catch (error) {
         console.error("Error marking messages as read:", error);
@@ -862,11 +941,11 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
     if (!userGroup || !userRoll) return;
 
     const typingRef = ref(db, `groupTyping/${userGroup.id}/${userRoll}`);
-    
+
     set(typingRef, {
       isTyping: true,
       timestamp: serverTimestamp(),
-      userName: userName || "Unknown"
+      userName: userName || "Unknown",
     }).catch(console.error);
 
     if (typingTimeout) {
@@ -898,14 +977,15 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
     if (!userGroup || !typingStates) return [];
 
     return Object.entries(typingStates)
-      .filter(([roll, data]) => 
-        roll !== userRoll && 
-        data?.isTyping && 
-        Date.now() - new Date(data.timestamp).getTime() < 5000
+      .filter(
+        ([roll, data]) =>
+          roll !== userRoll &&
+          data?.isTyping &&
+          Date.now() - new Date(data.timestamp).getTime() < 5000,
       )
       .map(([roll, data]) => ({
         roll,
-        userName: data.userName || userGroup.participantNames[roll] || roll
+        userName: data.userName || userGroup.participantNames[roll] || roll,
       }));
   };
 
@@ -917,7 +997,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
       senderName: message.senderName,
       senderRoll: message.senderRoll,
     });
-    
+
     // Focus the input field after setting reply
     setTimeout(() => {
       if (messageInputRef.current) {
@@ -938,34 +1018,34 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
       startX: touch.clientX,
       currentX: touch.clientX,
       messageId: message.id,
-      swiping: false
+      swiping: false,
     });
   };
 
   const handleTouchMove = (e, message) => {
     if (swipeState.messageId !== message.id) return;
-    
+
     const touch = e.touches[0];
     const deltaX = touch.clientX - swipeState.startX;
-    
+
     if (deltaX > 0 && deltaX <= 100) {
-      setSwipeState(prev => ({
+      setSwipeState((prev) => ({
         ...prev,
         currentX: touch.clientX,
-        swiping: Math.abs(deltaX) > 10
+        swiping: Math.abs(deltaX) > 10,
       }));
     }
   };
 
   const handleTouchEnd = (e, message) => {
     if (swipeState.messageId !== message.id) return;
-    
+
     const deltaX = swipeState.currentX - swipeState.startX;
-    
+
     if (deltaX > 50) {
       handleReplyToMessage(message);
     }
-    
+
     setSwipeState({ startX: 0, currentX: 0, messageId: null, swiping: false });
   };
 
@@ -984,24 +1064,24 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
 
     const timer = setTimeout(() => {
       // Show emoji panel for this message
-      setLongPressState(prev => ({
+      setLongPressState((prev) => ({
         ...prev,
         isLongPressing: true,
-        activeMessagePanel: message.id
+        activeMessagePanel: message.id,
       }));
-      
+
       // Add haptic feedback if available
       if (navigator.vibrate) {
         navigator.vibrate(50);
       }
     }, 500); // 500ms long press duration
 
-    setLongPressState(prev => ({
+    setLongPressState((prev) => ({
       ...prev,
       timer,
       messageId: message.id,
       isLongPressing: false,
-      activeMessagePanel: null
+      activeMessagePanel: null,
     }));
   };
 
@@ -1013,12 +1093,12 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
 
     // If we weren't long pressing, reset state
     if (!longPressState.isLongPressing) {
-      setLongPressState(prev => ({
+      setLongPressState((prev) => ({
         ...prev,
         timer: null,
         messageId: null,
         isLongPressing: false,
-        activeMessagePanel: null
+        activeMessagePanel: null,
       }));
     }
   };
@@ -1029,27 +1109,27 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
       clearTimeout(longPressState.timer);
     }
 
-    setLongPressState(prev => ({
+    setLongPressState((prev) => ({
       ...prev,
       timer: null,
       messageId: null,
       isLongPressing: false,
-      activeMessagePanel: null
+      activeMessagePanel: null,
     }));
   };
 
   // Handle emoji panel state for specific message
   const handleEmojiPanelChange = (messageId, isOpen) => {
     if (isOpen) {
-      setLongPressState(prev => ({
+      setLongPressState((prev) => ({
         ...prev,
-        activeMessagePanel: messageId
+        activeMessagePanel: messageId,
       }));
     } else {
-      setLongPressState(prev => ({
+      setLongPressState((prev) => ({
         ...prev,
         activeMessagePanel: null,
-        isLongPressing: false
+        isLongPressing: false,
       }));
     }
   };
@@ -1063,16 +1143,16 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
       const text = newMessage;
       const newText = text.substring(0, start) + emoji + text.substring(end);
       setNewMessage(newText);
-      
+
       // Set cursor position after the emoji
       setTimeout(() => {
         input.selectionStart = input.selectionEnd = start + emoji.length;
         input.focus();
       }, 0);
     } else {
-      setNewMessage(prev => prev + emoji);
+      setNewMessage((prev) => prev + emoji);
     }
-    
+
     // Close emoji panel
     setShowEmojiPanel(false);
   };
@@ -1096,36 +1176,39 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
 
     try {
       const messagesRef = ref(db, `groupMessages/${userGroup.id}`);
-      
+
       // Extract mentions from message
       const mentionedUsers = [];
       let isEveryoneMentioned = false;
-      
+
       // Check for @everyone
-      if (messageText.includes('@everyone')) {
+      if (messageText.includes("@everyone")) {
         isEveryoneMentioned = true;
         // Add all group members except sender
-        userGroup.participants.forEach(roll => {
+        userGroup.participants.forEach((roll) => {
           if (roll !== userRoll) {
             mentionedUsers.push(roll);
           }
         });
       }
-      
+
       // Check for individual user mentions
-      userGroup.participants.forEach(roll => {
+      userGroup.participants.forEach((roll) => {
         if (roll !== userRoll) {
           const name = userGroup.participantNames[roll];
           if (name) {
             const displayName = toProperCase(name);
-            const mentionRegex = new RegExp(`@${displayName}\\b`, 'gi');
-            if (mentionRegex.test(messageText) && !mentionedUsers.includes(roll)) {
+            const mentionRegex = new RegExp(`@${displayName}\\b`, "gi");
+            if (
+              mentionRegex.test(messageText) &&
+              !mentionedUsers.includes(roll)
+            ) {
               mentionedUsers.push(roll);
             }
           }
         }
       });
-      
+
       const messageData = {
         text: messageText,
         senderRoll: userRoll,
@@ -1137,7 +1220,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
       if (mentionedUsers.length > 0) {
         messageData.mentions = {
           users: mentionedUsers,
-          isEveryone: isEveryoneMentioned
+          isEveryone: isEveryoneMentioned,
         };
       }
 
@@ -1154,28 +1237,37 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
       setReplyToMessage(null);
 
       // Update unread counts for all other group members (higher count for mentioned users)
-      console.log(`[GROUP_CHAT] Updating unread counts for ${userGroup.participants.length - 1} other members`);
+      console.log(
+        `[GROUP_CHAT] Updating unread counts for ${userGroup.participants.length - 1} other members`,
+      );
       for (const participantRoll of userGroup.participants) {
         if (participantRoll !== userRoll) {
-          const unreadRef = ref(db, `groupUnreadCounts/${userGroup.id}/${participantRoll}`);
+          const unreadRef = ref(
+            db,
+            `groupUnreadCounts/${userGroup.id}/${participantRoll}`,
+          );
           const currentSnapshot = await get(unreadRef);
           const currentCount = currentSnapshot.val() || 0;
-          
+
           // Give mentioned users extra notification weight
           const increment = mentionedUsers.includes(participantRoll) ? 2 : 1;
           const newCount = currentCount + increment;
           await set(unreadRef, newCount);
-          console.log(`[GROUP_CHAT] Updated unread count for ${participantRoll}: ${currentCount} -> ${newCount} (mentioned: ${mentionedUsers.includes(participantRoll)})`);
+          console.log(
+            `[GROUP_CHAT] Updated unread count for ${participantRoll}: ${currentCount} -> ${newCount} (mentioned: ${mentionedUsers.includes(participantRoll)})`,
+          );
         }
       }
 
       // Mark as read by sender
-      const readStatusRef = ref(db, `groupMessageReadStatus/${userGroup.id}/${newMessageRef.key}/${userRoll}`);
+      const readStatusRef = ref(
+        db,
+        `groupMessageReadStatus/${userGroup.id}/${newMessageRef.key}/${userRoll}`,
+      );
       await set(readStatusRef, {
         readAt: serverTimestamp(),
-        readBy: userRoll
+        readBy: userRoll,
       });
-
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error("Failed to send message");
@@ -1209,26 +1301,26 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
   // Get relative time
   const getRelativeTime = (timestamp) => {
     if (!timestamp) return "";
-    
+
     const now = new Date();
     const messageTime = new Date(timestamp);
     const diffInMinutes = Math.floor((now - messageTime) / (1000 * 60));
 
     if (diffInMinutes < 1) return "now";
     if (diffInMinutes < 60) return `${diffInMinutes}m`;
-    
+
     const diffInHours = Math.floor(diffInMinutes / 60);
     if (diffInHours < 24) return `${diffInHours}h`;
-    
+
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays < 7) return `${diffInDays}d`;
-    
+
     return messageTime.toLocaleDateString();
   };
 
   // Get online count
   const getOnlineCount = () => {
-    return Object.values(activeUsers).filter(user => user.online).length + 1; // +1 for current user
+    return Object.values(activeUsers).filter((user) => user.online).length + 1; // +1 for current user
   };
 
   // Poll functions
@@ -1238,7 +1330,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
     try {
       const pollsRef = ref(db, `groupPolls/${userGroup.id}`);
       const newPollRef = await push(pollsRef, pollData);
-      
+
       // Send a message about the poll creation
       const messagesRef = ref(db, `groupMessages/${userGroup.id}`);
       await push(messagesRef, {
@@ -1247,7 +1339,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
         senderName: "System",
         timestamp: serverTimestamp(),
         type: "poll_notification",
-        pollId: newPollRef.key
+        pollId: newPollRef.key,
       });
 
       toast.success("Poll created successfully!");
@@ -1271,20 +1363,21 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
       }
 
       // Remove user's previous votes
-      const updatedOptions = poll.options.map(option => ({
+      const updatedOptions = poll.options.map((option) => ({
         ...option,
-        votes: option.voters && option.voters[userRoll] 
-          ? Math.max(0, option.votes - 1) 
-          : option.votes,
+        votes:
+          option.voters && option.voters[userRoll]
+            ? Math.max(0, option.votes - 1)
+            : option.votes,
         voters: {
           ...option.voters,
-          [userRoll]: null
-        }
+          [userRoll]: null,
+        },
       }));
 
       // Add new votes
       let totalVotes = 0;
-      optionIndexes.forEach(index => {
+      optionIndexes.forEach((index) => {
         if (updatedOptions[index]) {
           updatedOptions[index].votes = (updatedOptions[index].votes || 0) + 1;
           updatedOptions[index].voters = {
@@ -1292,22 +1385,21 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
             [userRoll]: {
               votedAt: Date.now(),
               voterRoll: userRoll,
-              voterName: AuthUtils.getUserName()
-            }
+              voterName: AuthUtils.getUserName(),
+            },
           };
         }
       });
 
       // Calculate total votes
-      updatedOptions.forEach(option => {
+      updatedOptions.forEach((option) => {
         totalVotes += option.votes || 0;
       });
 
       await update(pollRef, {
         options: updatedOptions,
-        totalVotes
+        totalVotes,
       });
-
     } catch (error) {
       console.error("Error voting on poll:", error);
       throw error;
@@ -1322,18 +1414,18 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
       await update(pollRef, {
         isActive: false,
         closedAt: Date.now(),
-        closedBy: AuthUtils.getUserRoll()
+        closedBy: AuthUtils.getUserRoll(),
       });
 
       // Send a message about poll closure
       const messagesRef = ref(db, `groupMessages/${userGroup.id}`);
       await push(messagesRef, {
         text: `📊 ${AuthUtils.getUserName()} closed the poll`,
-        senderRoll: "system", 
+        senderRoll: "system",
         senderName: "System",
         timestamp: serverTimestamp(),
         type: "poll_notification",
-        pollId
+        pollId,
       });
 
       toast.success("Poll closed successfully!");
@@ -1366,16 +1458,21 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
       // Preserve existing votes when updating options
       const updatedOptions = updatedPollData.options.map((newOption, index) => {
         // Try to find a matching option from the current poll
-        const existingOption = currentPoll.options.find(opt => opt.text === newOption.text);
+        const existingOption = currentPoll.options.find(
+          (opt) => opt.text === newOption.text,
+        );
         return {
           text: newOption.text,
           votes: existingOption ? existingOption.votes : 0,
-          voters: existingOption ? existingOption.voters : {}
+          voters: existingOption ? existingOption.voters : {},
         };
       });
 
       // Recalculate total votes
-      const totalVotes = updatedOptions.reduce((sum, option) => sum + (option.votes || 0), 0);
+      const totalVotes = updatedOptions.reduce(
+        (sum, option) => sum + (option.votes || 0),
+        0,
+      );
 
       await update(pollRef, {
         question: updatedPollData.question,
@@ -1384,20 +1481,19 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
         isAnonymous: updatedPollData.isAnonymous,
         totalVotes,
         editedAt: Date.now(),
-        editedBy: AuthUtils.getUserRoll()
+        editedBy: AuthUtils.getUserRoll(),
       });
 
       // Send a message about poll edit
       const messagesRef = ref(db, `groupMessages/${userGroup.id}`);
       await push(messagesRef, {
         text: `📝 ${AuthUtils.getUserName()} updated the poll`,
-        senderRoll: "system", 
+        senderRoll: "system",
         senderName: "System",
         timestamp: serverTimestamp(),
         type: "poll_notification",
-        pollId
+        pollId,
       });
-
     } catch (error) {
       console.error("Error editing poll:", error);
       throw error;
@@ -1407,21 +1503,22 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
   // Get users who have seen a specific message
   const getMessageSeenBy = (messageId) => {
     if (!messageReadStatus[messageId] || !userGroup) return [];
-    
+
     const seenBy = [];
     const messageReads = messageReadStatus[messageId];
-    
-    userGroup.participants.forEach(roll => {
-      if (messageReads[roll] && roll !== userRoll) { // Exclude current user
+
+    userGroup.participants.forEach((roll) => {
+      if (messageReads[roll] && roll !== userRoll) {
+        // Exclude current user
         const memberName = userGroup.participantNames[roll];
         seenBy.push({
           roll,
           name: toProperCase(memberName) || roll,
-          readAt: messageReads[roll].readAt
+          readAt: messageReads[roll].readAt,
         });
       }
     });
-    
+
     // Sort by read time (most recent first)
     return seenBy.sort((a, b) => new Date(b.readAt) - new Date(a.readAt));
   };
@@ -1446,47 +1543,51 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
   if (!shouldRender || !userGroup) return null;
 
   return (
-    <div className={`fixed inset-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm z-[60] flex flex-col transition-all duration-300 ease-in-out transform ${
-      isAnimating ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
-    }`}>
+    <div
+      className={`fixed inset-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm z-[60] flex flex-col transition-all duration-300 ease-in-out transform ${
+        isAnimating
+          ? "opacity-100 translate-y-0 scale-100"
+          : "opacity-0 translate-y-4 scale-95"
+      }`}
+    >
       <style jsx>{`
         .group-scrollbar::-webkit-scrollbar {
           width: 8px;
         }
-        
+
         .group-scrollbar::-webkit-scrollbar-track {
           background: rgb(243 244 246);
           border-radius: 8px;
         }
-        
+
         .group-scrollbar::-webkit-scrollbar-thumb {
           background: rgb(156 163 175);
           border-radius: 8px;
           border: 2px solid rgb(243 244 246);
         }
-        
+
         .group-scrollbar::-webkit-scrollbar-thumb:hover {
           background: rgb(107 114 128);
         }
-        
+
         .dark .group-scrollbar::-webkit-scrollbar-track {
           background: rgb(31 41 55);
         }
-        
+
         .dark .group-scrollbar::-webkit-scrollbar-thumb {
           background: rgb(75 85 99);
           border: 2px solid rgb(31 41 55);
         }
-        
+
         .dark .group-scrollbar::-webkit-scrollbar-thumb:hover {
           background: rgb(107 114 128);
         }
-        
+
         .group-scrollbar {
           scrollbar-width: thin;
           scrollbar-color: rgb(156 163 175) rgb(243 244 246);
         }
-        
+
         .dark .group-scrollbar {
           scrollbar-color: rgb(75 85 99) rgb(31 41 55);
         }
@@ -1500,13 +1601,13 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
           text-decoration: none;
           cursor: default;
         }
-        
+
         .mention.everyone {
           background: rgba(147, 51, 234, 0.2);
           color: rgb(147, 51, 234);
           border: 1px solid rgba(147, 51, 234, 0.3);
         }
-        
+
         .mention.user {
           background: rgba(59, 130, 246, 0.2);
           color: rgb(59, 130, 246);
@@ -1519,27 +1620,27 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
           color: rgb(196, 181, 253);
           border: 1px solid rgba(168, 85, 247, 0.4);
         }
-        
+
         .dark .mention.user {
           background: rgba(96, 165, 250, 0.3);
           color: rgb(147, 197, 253);
           border: 1px solid rgba(96, 165, 250, 0.4);
         }
-        
+
         /* Mention styles inside own messages */
         .bg-indigo-600 .mention.everyone {
           background: rgba(168, 85, 247, 0.4);
           color: rgb(221, 214, 254);
           border: 1px solid rgba(168, 85, 247, 0.5);
         }
-        
+
         .bg-indigo-600 .mention.user {
           background: rgba(147, 197, 253, 0.4);
           color: rgb(219, 234, 254);
           border: 1px solid rgba(147, 197, 253, 0.5);
         }
       `}</style>
-      
+
       <div className="w-full h-full flex flex-col shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-3 sm:p-4 md:p-5 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
@@ -1549,7 +1650,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
               {unreadCount > 0 && (
                 <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 rounded-full flex items-center justify-center">
                   <span className="text-xs text-white font-bold">
-                    {unreadCount > 9 ? '9+' : unreadCount}
+                    {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 </div>
               )}
@@ -1559,7 +1660,8 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                 {userGroup.name}
               </h2>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                {userGroup.participants.length} members • {getOnlineCount()} online
+                {userGroup.participants.length} members • {getOnlineCount()}{" "}
+                online
               </p>
             </div>
           </div>
@@ -1610,7 +1712,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                     const bIsOnline = activeUsers[b]?.online || b === userRoll;
                     const aLastSeen = activeUsers[a]?.lastSeen;
                     const bLastSeen = activeUsers[b]?.lastSeen;
-                    
+
                     // Priority: 1. Active users, 2. Users with last seen, 3. Offline users
                     if (aIsOnline && !bIsOnline) return -1;
                     if (!aIsOnline && bIsOnline) return 1;
@@ -1620,69 +1722,70 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                       if (b === userRoll) return 1;
                       return 0;
                     }
-                    
+
                     // Both offline: prioritize those with last seen time
                     const aHasLastSeen = !!aLastSeen;
                     const bHasLastSeen = !!bLastSeen;
-                    
+
                     if (aHasLastSeen && !bHasLastSeen) return -1;
                     if (!aHasLastSeen && bHasLastSeen) return 1;
                     if (aHasLastSeen && bHasLastSeen) {
                       // Both have last seen: sort by most recent
                       return new Date(bLastSeen) - new Date(aLastSeen);
                     }
-                    
+
                     return 0; // Both completely offline
                   })
                   .map((roll) => {
-                  const memberName = userGroup.participantNames[roll];
-                  const isOnline = activeUsers[roll]?.online || false;
-                  const lastSeen = activeUsers[roll]?.lastSeen;
-                  const isCurrentUser = roll === userRoll;
-                  
-                  // Determine status text and color
-                  let statusText = "Offline";
-                  let statusColor = "text-gray-400";
-                  
-                  if (isCurrentUser) {
-                    statusText = "Online (You)";
-                    statusColor = "text-green-600 dark:text-green-400";
-                  } else if (isOnline) {
-                    statusText = "Active";
-                    statusColor = "text-green-600 dark:text-green-400";
-                  } else if (lastSeen) {
-                    const timeAgo = getRelativeTime(lastSeen);
-                    statusText = `Last seen ${timeAgo} ago`;
-                    statusColor = "text-amber-600 dark:text-amber-400";
-                  }
-                  
-                  return (
-                    <div
-                      key={roll}
-                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      <div className="relative">
-                        <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                          {toProperCase(memberName)?.charAt(0) || roll?.charAt(0)}
+                    const memberName = userGroup.participantNames[roll];
+                    const isOnline = activeUsers[roll]?.online || false;
+                    const lastSeen = activeUsers[roll]?.lastSeen;
+                    const isCurrentUser = roll === userRoll;
+
+                    // Determine status text and color
+                    let statusText = "Offline";
+                    let statusColor = "text-gray-400";
+
+                    if (isCurrentUser) {
+                      statusText = "Online (You)";
+                      statusColor = "text-green-600 dark:text-green-400";
+                    } else if (isOnline) {
+                      statusText = "Active";
+                      statusColor = "text-green-600 dark:text-green-400";
+                    } else if (lastSeen) {
+                      const timeAgo = getRelativeTime(lastSeen);
+                      statusText = `Last seen ${timeAgo} ago`;
+                      statusColor = "text-amber-600 dark:text-amber-400";
+                    }
+
+                    return (
+                      <div
+                        key={roll}
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <div className="relative">
+                          <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                            {toProperCase(memberName)?.charAt(0) ||
+                              roll?.charAt(0)}
+                          </div>
+                          {(isOnline || isCurrentUser) && (
+                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
+                          )}
                         </div>
-                        {(isOnline || isCurrentUser) && (
-                          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
-                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                            {toProperCase(memberName) || roll}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Roll: {roll}
+                            <span className={`ml-2 ${statusColor}`}>
+                              • {statusText}
+                            </span>
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                          {toProperCase(memberName) || roll}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Roll: {roll}
-                          <span className={`ml-2 ${statusColor}`}>
-                            • {statusText}
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             </div>
           </div>
@@ -1694,7 +1797,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
             <div className="p-3 sm:p-4 md:p-5">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  Poll History ({polls.filter(poll => !poll.isActive).length})
+                  Poll History ({polls.filter((poll) => !poll.isActive).length})
                 </h3>
                 <button
                   onClick={() => setShowPollHistory(false)}
@@ -1705,15 +1808,17 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                 </button>
               </div>
               <div className="space-y-3 max-h-96 overflow-y-auto">
-                {polls.filter(poll => !poll.isActive).length === 0 ? (
+                {polls.filter((poll) => !poll.isActive).length === 0 ? (
                   <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                     <i className="fas fa-poll text-2xl mb-2 opacity-50"></i>
                     <p className="text-sm">No poll history yet</p>
                   </div>
                 ) : (
                   polls
-                    .filter(poll => !poll.isActive)
-                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                    .filter((poll) => !poll.isActive)
+                    .sort(
+                      (a, b) => new Date(b.timestamp) - new Date(a.timestamp),
+                    )
                     .map((poll) => (
                       <PollDisplay
                         key={poll.id}
@@ -1753,14 +1858,16 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
           {messages.map((message) => {
             const isOwnMessage = message.senderRoll === userRoll;
             const swipeOffset = getSwipeOffset(message.id);
-            const senderName = toProperCase(userGroup.participantNames[message.senderRoll]) || message.senderName;
-            
+            const senderName =
+              toProperCase(userGroup.participantNames[message.senderRoll]) ||
+              message.senderName;
+
             // Check if current user is mentioned in this message
-            const isMentioned = message.mentions && (
-              message.mentions.users.includes(userRoll) || 
-              message.mentions.isEveryone
-            );
-            
+            const isMentioned =
+              message.mentions &&
+              (message.mentions.users.includes(userRoll) ||
+                message.mentions.isEveryone);
+
             return (
               <div
                 key={message.id}
@@ -1768,253 +1875,308 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
               >
                 {/* Reply icon during swipe */}
                 {swipeOffset > 10 && (
-                  <div 
-                    className={`absolute ${isOwnMessage ? 'left-0' : 'right-0'} top-1/2 transform -translate-y-1/2 transition-opacity duration-150 sm:hidden`}
+                  <div
+                    className={`absolute ${isOwnMessage ? "left-0" : "right-0"} top-1/2 transform -translate-y-1/2 transition-opacity duration-150 sm:hidden`}
                     style={{ opacity: Math.min(swipeOffset / 50, 1) }}
                   >
                     <div className="w-8 h-8 bg-gray-400 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                      <svg className="w-4 h-4 text-white" viewBox="0 0 16 16" fill="currentColor">
-                        <path d="M8.354 1.646a.5.5 0 0 1 0 .708L5.707 5H14.5a.5.5 0 0 1 0 1H5.707l2.647 2.646a.5.5 0 0 1-.708.708l-3.5-3.5a.5.5 0 0 1 0-.708l3.5-3.5a.5.5 0 0 1 .708 0z"/>
+                      <svg
+                        className="w-4 h-4 text-white"
+                        viewBox="0 0 16 16"
+                        fill="currentColor"
+                      >
+                        <path d="M8.354 1.646a.5.5 0 0 1 0 .708L5.707 5H14.5a.5.5 0 0 1 0 1H5.707l2.647 2.646a.5.5 0 0 1-.708.708l-3.5-3.5a.5.5 0 0 1 0-.708l3.5-3.5a.5.5 0 0 1 .708 0z" />
                       </svg>
                     </div>
                   </div>
                 )}
 
                 {/* Message Container with Action Buttons */}
-                <div className={`flex items-start gap-2 ${isOwnMessage ? "flex-row-reverse" : "flex-row"}`}>
-                  
+                <div
+                  className={`flex items-start gap-2 ${isOwnMessage ? "flex-row-reverse" : "flex-row"}`}
+                >
                   {/* Action Buttons Column */}
-                  <div className={`flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 ${isOwnMessage ? "items-end" : "items-start"}`}>
+                  <div
+                    className={`flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 ${isOwnMessage ? "items-end" : "items-start"}`}
+                  >
                     {/* Reply Button */}
                     <button
                       onClick={() => handleReplyToMessage(message)}
                       className="p-1.5 rounded-full bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-600 dark:text-gray-300 hover:scale-110 transition-all duration-200"
                       title="Reply"
                     >
-                      <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
-                        <path d="M8.354 1.646a.5.5 0 0 1 0 .708L5.707 5H14.5a.5.5 0 0 1 0 1H5.707l2.647 2.646a.5.5 0 0 1-.708.708l-3.5-3.5a.5.5 0 0 1 0-.708l3.5-3.5a.5.5 0 0 1 .708 0z"/>
+                      <svg
+                        className="w-4 h-4"
+                        viewBox="0 0 16 16"
+                        fill="currentColor"
+                      >
+                        <path d="M8.354 1.646a.5.5 0 0 1 0 .708L5.707 5H14.5a.5.5 0 0 1 0 1H5.707l2.647 2.646a.5.5 0 0 1-.708.708l-3.5-3.5a.5.5 0 0 1 0-.708l3.5-3.5a.5.5 0 0 1 .708 0z" />
                       </svg>
                     </button>
 
                     {/* React Button */}
                     <button
-                      onClick={() => handleEmojiPanelChange(message.id, !longPressState.activeMessagePanel)}
+                      onClick={() =>
+                        handleEmojiPanelChange(
+                          message.id,
+                          !longPressState.activeMessagePanel,
+                        )
+                      }
                       className="p-1.5 rounded-full bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-600 dark:text-gray-300 hover:scale-110 transition-all duration-200"
                       title="Add reaction"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
                     </button>
                   </div>
 
                   {/* Message Bubble */}
-                <div
-                  className={`max-w-[95%] sm:max-w-[90%] md:max-w-[85%] lg:max-w-[80%] px-3 py-2 rounded-2xl relative transition-transform duration-150 shadow-sm ${
-                    isOwnMessage
-                      ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
-                      : isMentioned
-                        ? "bg-yellow-100 dark:bg-yellow-900/30 text-gray-900 dark:text-gray-100 border-2 border-yellow-300 dark:border-yellow-600"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  }`}
-                  style={{
-                    transform: `translateX(${swipeOffset}px)`,
-                    touchAction: 'pan-y'
-                  }}
-                  onTouchStart={(e) => {
-                    // Don't handle if touch is on emoji panel
-                    if (e.target.closest('[data-emoji-panel="true"]')) {
-                      return;
-                    }
-                    handleTouchStart(e, message);
-                    handleLongPressStart(e, message);
-                  }}
-                  onTouchMove={(e) => {
-                    // Don't handle if touch is on emoji panel
-                    if (e.target.closest('[data-emoji-panel="true"]')) {
-                      return;
-                    }
-                    handleTouchMove(e, message);
-                    // Cancel long press on move
-                    if (longPressState.timer) {
-                      clearTimeout(longPressState.timer);
-                      setLongPressState(prev => ({ ...prev, timer: null }));
-                    }
-                  }}
-                  onTouchEnd={(e) => {
-                    // Don't handle if touch is on emoji panel
-                    if (e.target.closest('[data-emoji-panel="true"]')) {
-                      return;
-                    }
-                    handleTouchEnd(e, message);
-                    handleLongPressEnd(e, message);
-                  }}
-                  onTouchCancel={(e) => {
-                    // Don't handle if touch is on emoji panel
-                    if (e.target.closest('[data-emoji-panel="true"]')) {
-                      return;
-                    }
-                    handleLongPressCancel(e, message);
-                  }}
-                >
-                  {/* Mention indicator */}
-                  {!isOwnMessage && isMentioned && (
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
-                      <span className="text-xs text-white font-bold">@</span>
-                    </div>
-                  )}
-
-                  {/* Sender name for group chat - don't show "You" for own messages */}
-                  {!isOwnMessage && (
-                    <p className={`text-xs font-medium mb-0.5 ${
-                      isMentioned
-                        ? "text-yellow-700 dark:text-yellow-300"
-                        : "text-indigo-600 dark:text-indigo-400"
-                    }`}>
-                      {senderName}
-                    </p>
-                  )}
-
-                  {/* Reply context */}
-                  {message.replyTo && (
-                    <div className={`mb-1.5 p-1.5 rounded border-l-4 ${
-                      isOwnMessage 
-                        ? "bg-indigo-700/50 border-indigo-300" 
-                        : "bg-gray-300 dark:bg-gray-600 border-gray-500"
-                    }`}>
-                      <p className={`text-xs font-medium ${
-                        isOwnMessage ? "text-indigo-200" : "text-gray-600 dark:text-gray-300"
-                      }`}>
-                        {message.replyTo.senderRoll === userRoll ? "You" : toProperCase(message.replyTo.senderName)}
-                      </p>
-                      <p className={`text-xs mt-1 truncate ${
-                        isOwnMessage ? "text-indigo-100" : "text-gray-500 dark:text-gray-400"
-                      }`}>
-                        {message.replyTo.text}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Message text with mentions */}
-                  <div 
-                    className="text-sm sm:text-base break-words leading-relaxed whitespace-pre-wrap"
-                    dangerouslySetInnerHTML={{
-                      __html: parseMentions(message.text)
+                  <div
+                    className={`max-w-[95%] sm:max-w-[90%] md:max-w-[85%] lg:max-w-[80%] px-3 py-2 rounded-2xl relative transition-transform duration-150 shadow-sm ${
+                      isOwnMessage
+                        ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
+                        : isMentioned
+                          ? "bg-yellow-100 dark:bg-yellow-900/30 text-gray-900 dark:text-gray-100 border-2 border-yellow-300 dark:border-yellow-600"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    }`}
+                    style={{
+                      transform: `translateX(${swipeOffset}px)`,
+                      touchAction: "pan-y",
                     }}
-                    style={{ 
-                      userSelect: 'text', 
-                      WebkitUserSelect: 'text',
-                      wordBreak: 'break-word',
-                      overflowWrap: 'break-word',
-                      hyphens: 'auto'
+                    onTouchStart={(e) => {
+                      // Don't handle if touch is on emoji panel
+                      if (e.target.closest('[data-emoji-panel="true"]')) {
+                        return;
+                      }
+                      handleTouchStart(e, message);
+                      handleLongPressStart(e, message);
                     }}
-                  />
-                  
-                  {/* Link previews and embeds */}
-                  {(() => {
-                    const detectedLinks = detectLinks(message.text);
-                    if (detectedLinks.length === 0) return null;
-                    
-                    return detectedLinks.map((link, index) => {
-                      // Render YouTube embed
-                      if (link.platform === SUPPORTED_PLATFORMS.YOUTUBE && link.videoId) {
+                    onTouchMove={(e) => {
+                      // Don't handle if touch is on emoji panel
+                      if (e.target.closest('[data-emoji-panel="true"]')) {
+                        return;
+                      }
+                      handleTouchMove(e, message);
+                      // Cancel long press on move
+                      if (longPressState.timer) {
+                        clearTimeout(longPressState.timer);
+                        setLongPressState((prev) => ({ ...prev, timer: null }));
+                      }
+                    }}
+                    onTouchEnd={(e) => {
+                      // Don't handle if touch is on emoji panel
+                      if (e.target.closest('[data-emoji-panel="true"]')) {
+                        return;
+                      }
+                      handleTouchEnd(e, message);
+                      handleLongPressEnd(e, message);
+                    }}
+                    onTouchCancel={(e) => {
+                      // Don't handle if touch is on emoji panel
+                      if (e.target.closest('[data-emoji-panel="true"]')) {
+                        return;
+                      }
+                      handleLongPressCancel(e, message);
+                    }}
+                  >
+                    {/* Mention indicator */}
+                    {!isOwnMessage && isMentioned && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
+                        <span className="text-xs text-white font-bold">@</span>
+                      </div>
+                    )}
+
+                    {/* Sender name for group chat - don't show "You" for own messages */}
+                    {!isOwnMessage && (
+                      <p
+                        className={`text-xs font-medium mb-0.5 ${
+                          isMentioned
+                            ? "text-yellow-700 dark:text-yellow-300"
+                            : "text-indigo-600 dark:text-indigo-400"
+                        }`}
+                      >
+                        {senderName}
+                      </p>
+                    )}
+
+                    {/* Reply context */}
+                    {message.replyTo && (
+                      <div
+                        className={`mb-1.5 p-1.5 rounded border-l-4 ${
+                          isOwnMessage
+                            ? "bg-indigo-700/50 border-indigo-300"
+                            : "bg-gray-300 dark:bg-gray-600 border-gray-500"
+                        }`}
+                      >
+                        <p
+                          className={`text-xs font-medium ${
+                            isOwnMessage
+                              ? "text-indigo-200"
+                              : "text-gray-600 dark:text-gray-300"
+                          }`}
+                        >
+                          {message.replyTo.senderRoll === userRoll
+                            ? "You"
+                            : toProperCase(message.replyTo.senderName)}
+                        </p>
+                        <p
+                          className={`text-xs mt-1 truncate ${
+                            isOwnMessage
+                              ? "text-indigo-100"
+                              : "text-gray-500 dark:text-gray-400"
+                          }`}
+                        >
+                          {message.replyTo.text}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Message text with mentions */}
+                    <div
+                      className="text-sm sm:text-base break-words leading-relaxed whitespace-pre-wrap"
+                      dangerouslySetInnerHTML={{
+                        __html: parseMentions(message.text),
+                      }}
+                      style={{
+                        userSelect: "text",
+                        WebkitUserSelect: "text",
+                        wordBreak: "break-word",
+                        overflowWrap: "break-word",
+                        hyphens: "auto",
+                      }}
+                    />
+
+                    {/* Link previews and embeds */}
+                    {(() => {
+                      const detectedLinks = detectLinks(message.text);
+                      if (detectedLinks.length === 0) return null;
+
+                      return detectedLinks.map((link, index) => {
+                        // Render YouTube embed
+                        if (
+                          link.platform === SUPPORTED_PLATFORMS.YOUTUBE &&
+                          link.videoId
+                        ) {
+                          return (
+                            <YouTubeEmbed
+                              key={`youtube-${index}`}
+                              videoId={link.videoId}
+                              isOwnMessage={isOwnMessage}
+                            />
+                          );
+                        }
+
+                        // Render link preview for other supported platforms
                         return (
-                          <YouTubeEmbed 
-                            key={`youtube-${index}`}
-                            videoId={link.videoId} 
+                          <LinkPreview
+                            key={`link-${index}`}
+                            link={link}
                             isOwnMessage={isOwnMessage}
                           />
                         );
-                      }
-                      
-                      // Render link preview for other supported platforms
-                      return (
-                        <LinkPreview 
-                          key={`link-${index}`}
-                          link={link} 
-                          isOwnMessage={isOwnMessage}
-                        />
-                      );
-                    });
-                  })()}
-                  
-                  {/* Seen by display (Facebook-style) - inside message bubble */}
-                  {isOwnMessage && (() => {
-                    const seenBy = getMessageSeenBy(message.id);
-                    if (seenBy.length === 0) return null;
-                    
-                    return (
-                      <div className="flex items-center gap-1 mt-1 mb-1">
-                        {/* Show up to 3 profile initials */}
-                        <div className="flex -space-x-1">
-                          {seenBy.slice(0, 3).map((user, index) => (
-                            <div
-                              key={user.roll}
-                              className="w-3 h-3 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center text-white text-[7px] font-bold border border-white dark:border-indigo-600"
-                              style={{ zIndex: 3 - index }}
-                              title={`Seen by ${user.name}`}
-                            >
-                              {user.name.charAt(0)}
+                      });
+                    })()}
+
+                    {/* Seen by display (Facebook-style) - inside message bubble */}
+                    {isOwnMessage &&
+                      (() => {
+                        const seenBy = getMessageSeenBy(message.id);
+                        if (seenBy.length === 0) return null;
+
+                        return (
+                          <div className="flex items-center gap-1 mt-1 mb-1">
+                            {/* Show up to 3 profile initials */}
+                            <div className="flex -space-x-1">
+                              {seenBy.slice(0, 3).map((user, index) => (
+                                <div
+                                  key={user.roll}
+                                  className="w-3 h-3 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center text-white text-[7px] font-bold border border-white dark:border-indigo-600"
+                                  style={{ zIndex: 3 - index }}
+                                  title={`Seen by ${user.name}`}
+                                >
+                                  {user.name.charAt(0)}
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                        
-                        {/* Seen by text */}
-                        <span className={`text-[9px] ml-1 ${
-                          isOwnMessage 
-                            ? "text-indigo-200" 
-                            : "text-gray-500 dark:text-gray-400"
-                        }`}>
-                          {seenBy.length === 1 
-                            ? `Seen by ${seenBy[0].name}`
-                            : seenBy.length <= 3
-                              ? `Seen by ${seenBy.map(u => u.name).join(', ')}`
-                              : `Seen by ${seenBy.slice(0, 2).map(u => u.name).join(', ')} and ${seenBy.length - 2} others`
-                          }
-                        </span>
-                      </div>
-                    );
-                  })()}
 
-                  <p
-                    className={`text-xs mt-1 ${
-                      isOwnMessage
-                        ? "text-indigo-100"
-                        : "text-gray-500 dark:text-gray-400"
-                    }`}
-                  >
-                    {getRelativeTime(message.timestamp)}
-                  </p>
+                            {/* Seen by text */}
+                            <span
+                              className={`text-[9px] ml-1 ${
+                                isOwnMessage
+                                  ? "text-indigo-200"
+                                  : "text-gray-500 dark:text-gray-400"
+                              }`}
+                            >
+                              {seenBy.length === 1
+                                ? `Seen by ${seenBy[0].name}`
+                                : seenBy.length <= 3
+                                  ? `Seen by ${seenBy.map((u) => u.name).join(", ")}`
+                                  : `Seen by ${seenBy
+                                      .slice(0, 2)
+                                      .map((u) => u.name)
+                                      .join(
+                                        ", ",
+                                      )} and ${seenBy.length - 2} others`}
+                            </span>
+                          </div>
+                        );
+                      })()}
 
-                  {/* Message Reactions - positioned at bottom right corner of this message bubble */}
-                  <MessageReactions
-                    messageId={message.id}
-                    chatPath={`groupMessages/${userGroup.id}`}
-                    currentUserRoll={userRoll}
-                    isOwnMessage={isOwnMessage}
-                    showEmojiPanel={longPressState.activeMessagePanel === message.id}
-                    onShowEmojiPanelChange={(isOpen) => handleEmojiPanelChange(message.id, isOpen)}
-                    useExternalModal={true}
-                    onReactionModalOpen={handleReactionModalOpen}
-                  />
-                </div>
-                
+                    <p
+                      className={`text-xs mt-1 ${
+                        isOwnMessage
+                          ? "text-indigo-100"
+                          : "text-gray-500 dark:text-gray-400"
+                      }`}
+                    >
+                      {getRelativeTime(message.timestamp)}
+                    </p>
+
+                    {/* Message Reactions - positioned at bottom right corner of this message bubble */}
+                    <MessageReactions
+                      messageId={message.id}
+                      chatPath={`groupMessages/${userGroup.id}`}
+                      currentUserRoll={userRoll}
+                      isOwnMessage={isOwnMessage}
+                      showEmojiPanel={
+                        longPressState.activeMessagePanel === message.id
+                      }
+                      onShowEmojiPanelChange={(isOpen) =>
+                        handleEmojiPanelChange(message.id, isOpen)
+                      }
+                      useExternalModal={true}
+                      onReactionModalOpen={handleReactionModalOpen}
+                    />
+                  </div>
                 </div>
               </div>
             );
           })}
 
           {/* Active Polls */}
-          {polls.filter(poll => poll.isActive).map((poll) => (
-            <PollDisplay
-              key={poll.id}
-              poll={poll}
-              onVote={votePoll}
-              onClosePoll={closePoll}
-              onEditPoll={editPoll}
-              currentUserRoll={userRoll}
-            />
-          ))}
+          {polls
+            .filter((poll) => poll.isActive)
+            .map((poll) => (
+              <PollDisplay
+                key={poll.id}
+                poll={poll}
+                onVote={votePoll}
+                onClosePoll={closePoll}
+                onEditPoll={editPoll}
+                currentUserRoll={userRoll}
+              />
+            ))}
 
           {/* Typing indicator */}
           {getTypingUsers().length > 0 && (
@@ -2023,14 +2185,19 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                 <div className="flex items-center gap-3">
                   <div className="flex gap-1">
                     <div className="w-2 h-2 bg-gray-500 dark:bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-500 dark:bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-500 dark:bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div
+                      className="w-2 h-2 bg-gray-500 dark:bg-gray-400 rounded-full animate-bounce"
+                      style={{ animationDelay: "0.1s" }}
+                    ></div>
+                    <div
+                      className="w-2 h-2 bg-gray-500 dark:bg-gray-400 rounded-full animate-bounce"
+                      style={{ animationDelay: "0.2s" }}
+                    ></div>
                   </div>
                   <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                    {getTypingUsers().length === 1 
+                    {getTypingUsers().length === 1
                       ? `${getTypingUsers()[0].userName} is typing...`
-                      : `${getTypingUsers().length} people are typing...`
-                    }
+                      : `${getTypingUsers().length} people are typing...`}
                   </span>
                 </div>
               </div>
@@ -2048,14 +2215,21 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
               <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 border-l-4 border-indigo-500">
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
-                    Replying to {replyToMessage.senderRoll === userRoll ? "yourself" : toProperCase(replyToMessage.senderName)}
+                    Replying to{" "}
+                    {replyToMessage.senderRoll === userRoll
+                      ? "yourself"
+                      : toProperCase(replyToMessage.senderName)}
                   </p>
                   <button
                     onClick={cancelReply}
                     className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                   >
-                    <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
-                      <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+                    <svg
+                      className="w-4 h-4"
+                      viewBox="0 0 16 16"
+                      fill="currentColor"
+                    >
+                      <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z" />
                     </svg>
                   </button>
                 </div>
@@ -2065,7 +2239,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
               </div>
             </div>
           )}
-          
+
           <div className="p-3 sm:p-4 md:p-5">
             <div className="relative">
               {/* Mention Dropdown */}
@@ -2083,7 +2257,9 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                         onClick={() => insertMention(mention)}
                         onMouseEnter={() => setSelectedMentionIndex(index)}
                         className={`w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors ${
-                          index === selectedMentionIndex ? 'bg-gray-100 dark:bg-gray-700' : ''
+                          index === selectedMentionIndex
+                            ? "bg-gray-100 dark:bg-gray-700"
+                            : ""
                         }`}
                       >
                         {mention.isEveryone ? (
@@ -2097,7 +2273,9 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                         )}
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                            {mention.isEveryone ? 'Everyone' : mention.displayName}
+                            {mention.isEveryone
+                              ? "Everyone"
+                              : mention.displayName}
                           </p>
                           {!mention.isEveryone && (
                             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
@@ -2127,10 +2305,10 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                       const newValue = e.target.value;
                       const cursorPos = e.target.selectionStart;
                       setNewMessage(newValue);
-                      
+
                       // Handle mention detection
                       handleMentionInput(newValue, cursorPos);
-                      
+
                       if (newValue.trim()) {
                         handleTyping();
                       } else {
@@ -2152,7 +2330,8 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                       }, 150);
                     }}
                     onFocus={() => {
-                      const cursorPos = messageInputRef.current?.selectionStart || 0;
+                      const cursorPos =
+                        messageInputRef.current?.selectionStart || 0;
                       handleMentionInput(newMessage, cursorPos);
                     }}
                     onClick={(e) => {
@@ -2220,8 +2399,18 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                 onClick={() => setShowReactionsModal(false)}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
               >
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -2233,7 +2422,9 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
                   key={tab.key}
                   className="px-3 py-2 sm:px-4 sm:py-2.5 rounded-full text-sm font-medium transition-colors flex-shrink-0 flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
                 >
-                  {tab.key !== 'all' && <span className="text-base">{tab.key}</span>}
+                  {tab.key !== "all" && (
+                    <span className="text-base">{tab.key}</span>
+                  )}
                   <span className="text-sm">{tab.label}</span>
                 </button>
               ))}
@@ -2243,7 +2434,7 @@ const GroupChat = ({ userRoll, userName, isOpen, onClose, onUnreadCountChange })
             <div className="flex-1 overflow-y-auto">
               {(() => {
                 const allUsers = reactionModalData.getAllReactedUsers;
-                
+
                 if (allUsers.length === 0) {
                   return (
                     <div className="flex items-center justify-center h-32 p-8 text-center text-gray-500 dark:text-gray-400">

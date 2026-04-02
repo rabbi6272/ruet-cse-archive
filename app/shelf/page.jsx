@@ -1,5 +1,5 @@
-import { ShelfHeader } from "@/components/shelf/shelf-header";
-import { ShelfGrid } from "@/components/shelf/shelf-grid";
+import { ShelfHeader } from "@/app/components/shelf/shelf-header";
+import { ShelfGrid } from "@/app/components/shelf/shelf-grid";
 
 export const metadata = {
   title: "Digital Bookshelf || RUET CSE Archive",

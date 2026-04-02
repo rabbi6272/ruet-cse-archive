@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
-import { Navbar } from "@/components/home/navbar/navbar";
+import { Navbar } from "@/app/components/home/navbar/navbar";
 
 export function MainPage({ children }) {
   const [scrolled, setScrolled] = useState(false);
@@ -30,7 +30,7 @@ export function MainPage({ children }) {
         root: null,
         rootMargin: "0px",
         threshold: 0,
-      }
+      },
     );
 
     observer.observe(sentinelRef.current);

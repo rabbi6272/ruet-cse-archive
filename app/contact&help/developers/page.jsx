@@ -1,4 +1,4 @@
-import { ProfileCard } from "@/components/contact&help/developers/profileCard";
+import { ProfileCard } from "@/app/components/contact&help/developers/profileCard";
 
 import { avegance } from "@/app/ui/fonts";
 

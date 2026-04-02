@@ -7,7 +7,7 @@ import Link from "next/link";
 import hljs from "highlight.js";
 import "highlight.js/styles/monokai.css";
 import toast, { Toaster } from "react-hot-toast";
-import CommentSection from "@/components/codelibrary/CommentSection";
+import CommentSection from "@/app/components/codelibrary/CommentSection";
 
 export default function CodeSnapPage() {
   const { id } = useParams();
@@ -202,7 +202,7 @@ export default function CodeSnapPage() {
                 onClick={async () => {
                   try {
                     await navigator.clipboard.writeText(
-                      codeSnap.codeSnippet || codeSnap.code || ""
+                      codeSnap.codeSnippet || codeSnap.code || "",
                     );
                     toast.success("Code copied to clipboard!");
                   } catch (err) {

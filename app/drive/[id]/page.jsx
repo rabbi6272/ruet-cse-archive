@@ -15,7 +15,7 @@ import {
 import { motion } from "framer-motion";
 import { lato } from "@/app/ui/fonts";
 import Loading from "@/app/loading";
-import { DriveFilePreviewModal } from "@/components/drive/DriveFilePreviewModal";
+import { DriveFilePreviewModal } from "@/app/components/drive/DriveFilePreviewModal";
 
 // Simple client-side cache to prevent re-fetching on back navigation
 const clientCache = new Map();

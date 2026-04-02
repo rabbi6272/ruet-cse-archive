@@ -1,20 +1,18 @@
 @import "tailwindcss";
-@plugin "flowbite-react/plugin/tailwindcss";
-@source "../.flowbite-react/class-list.json";
 
-
-@theme{/* Hero image styling */
-  --animate-scale-up: scaleUp 1s ease-in-out ;
-@keyframes scaleUp {
-  from {
-    transform: scale(0.5);
-    opacity: 0;
+@theme {
+  /* Hero image styling */
+  --animate-scale-up: scaleUp 1s ease-in-out;
+  @keyframes scaleUp {
+    from {
+      transform: scale(0.5);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
   }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
 }
 
 ::-webkit-scrollbar-track {

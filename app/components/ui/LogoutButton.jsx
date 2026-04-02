@@ -2,21 +2,23 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
+import FirebaseAuthService from "@/lib/firebase-auth-service";
 import AuthUtils from "@/lib/auth-utils-secure";
 import toast from "react-hot-toast";
 
-const LogoutButton = ({ 
-  className = "", 
-  variant = "default", 
-  showIcon = true, 
-  children 
+const LogoutButton = ({
+  className = "",
+  variant = "default",
+  showIcon = true,
+  children,
 }) => {
   const router = useRouter();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     try {
+      await FirebaseAuthService.signOut();
       const success = AuthUtils.logout();
-      
+
       if (success) {
         toast.success("Logged out successfully!");
         // Redirect to login page
@@ -45,7 +47,8 @@ const LogoutButton = ({
     }
   };
 
-  const baseClasses = "px-4 py-2 rounded-lg border font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center gap-2";
+  const baseClasses =
+    "px-4 py-2 rounded-lg border font-medium transition-all duration-300 shadow-sm hover:shadow-md transform hover:scale-105 flex items-center gap-2";
 
   return (
     <button
@@ -53,9 +56,7 @@ const LogoutButton = ({
       className={`${baseClasses} ${getVariantClasses()} ${className}`}
       title="Logout"
     >
-      {showIcon && (
-        <i className="fas fa-sign-out-alt"></i>
-      )}
+      {showIcon && <i className="fas fa-sign-out-alt"></i>}
       {children || "Logout"}
     </button>
   );

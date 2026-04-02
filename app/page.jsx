@@ -1,7 +1,7 @@
-import { FAQSection } from "@/components/home/faq-section";
-import { FeaturesList } from "@/components/home/features-list";
-import { HeroImage } from "@/components/home/hero-image";
-import { HeroSection } from "@/components/home/hero-section";
+import { FAQSection } from "@/app/components/home/faq-section";
+import { FeaturesList } from "@/app/components/home/features-list";
+import { HeroImage } from "@/app/components/home/hero-image";
+import { HeroSection } from "@/app/components/home/hero-section";
 
 export const metadata = {
   title: "RUET CSE Archive - A Complete Resource Hub for RUET CSE Students",

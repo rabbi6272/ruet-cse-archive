@@ -3,25 +3,33 @@
     ".read": "auth != null",
     ".write": "auth != null",
 
+    "authRollBindings": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid && (!data.exists() || data.val() === newData.val())",
+        ".validate": "newData.isString() && newData.val().matches(/^[0-9]{7}$/)"
+      }
+    },
+
     "codeSnippets": {
       ".indexOn": ["rollNumber", "language", "date", "difficulty"],
       "$snippetId": {
-    ".read": true,
-    "likes": {
-      ".write": "auth != null"
-    },
-    "comments": {
-      ".write": "auth != null"
-    }
-  }
+        ".read": "auth != null",
+        "likes": {
+          ".write": "auth != null"
+        },
+        "comments": {
+          ".write": "auth != null"
+        }
+      }
     },
 
     "codeSnippetComments": {
       "$snippetId": {
         ".indexOn": ["timestamp", "author/roll"],
-        ".read": true,
+        ".read": "auth != null",
         "$commentId": {
-          ".write": true,
+          ".write": "auth != null",
           ".validate": "newData.hasChildren(['content', 'author', 'timestamp'])"
         }
       }
@@ -30,8 +38,8 @@
     "doubts": {
       ".indexOn": ["status", "timestamp", "userDetails/roll"],
       "$doubtId": {
-        ".read": true,
-        ".write": true,
+        ".read": "auth != null",
+        ".write": "auth != null",
         ".validate": "newData.hasChildren(['title', 'description', 'userDetails', 'timestamp'])"
       }
     },
@@ -39,16 +47,16 @@
     "resolvedDoubts": {
       ".indexOn": ["userSatisfied", "timestamp", "status"],
       "$doubtId": {
-        ".read": true,
-        ".write": true
+        ".read": "auth != null",
+        ".write": "auth != null"
       }
     },
 
     "notifications": {
       "$userRoll": {
         ".indexOn": ["read", "timestamp", "type"],
-        ".read": true,
-        ".write": true,
+        ".read": "auth != null && root.child('authRollBindings').child(auth.uid).val() === $userRoll",
+        ".write": "auth != null && root.child('authRollBindings').child(auth.uid).val() === $userRoll",
         "$notificationId": {
           ".validate": true
         }
@@ -58,63 +66,63 @@
     "userNutrinos": {
       "$userRoll": {
         ".indexOn": ["totalNutrinos", "lastUpdated"],
-        ".read": true,
-        ".write": true
+        ".read": "auth != null && root.child('authRollBindings').child(auth.uid).val() === $userRoll",
+        ".write": "auth != null && root.child('authRollBindings').child(auth.uid).val() === $userRoll"
       }
     },
 
     "solverPoints": {
       "$userRoll": {
         ".indexOn": ["totalPoints", "doubtsResolved"],
-        ".read": true,
-        ".write": true
+        ".read": "auth != null && root.child('authRollBindings').child(auth.uid).val() === $userRoll",
+        ".write": "auth != null && root.child('authRollBindings').child(auth.uid).val() === $userRoll"
       }
     },
 
     "reviewerNotifications": {
       ".indexOn": ["timestamp", "read", "type"],
       "$notificationId": {
-        ".read": true,
-        ".write": true
+        ".read": "auth != null",
+        ".write": "auth != null"
       }
     },
 
     "groupMessages": {
       "$groupId": {
         ".indexOn": ["timestamp", "senderRoll"],
-        ".read": true,
-        ".write": true
+        ".read": "auth != null",
+        ".write": "auth != null"
       }
     },
 
     "groupPolls": {
       "$groupId": {
         ".indexOn": ["timestamp", "isActive", "createdBy"],
-        ".read": true,
-        ".write": true
+        ".read": "auth != null",
+        ".write": "auth != null"
       }
     },
 
     "presence": {
       "$userRoll": {
-        ".read": true,
-        ".write": true,
+        ".read": "auth != null && root.child('authRollBindings').child(auth.uid).val() === $userRoll",
+        ".write": "auth != null && root.child('authRollBindings').child(auth.uid).val() === $userRoll",
         ".validate": "newData.hasChildren(['online', 'lastSeen'])"
       }
     },
 
     "activeUsers": {
       "$userRoll": {
-        ".read": true,
-        ".write": true
+        ".read": "auth != null && root.child('authRollBindings').child(auth.uid).val() === $userRoll",
+        ".write": "auth != null && root.child('authRollBindings').child(auth.uid).val() === $userRoll"
       }
     },
 
     "typingIndicators": {
       "$groupId": {
         "$userRoll": {
-          ".read": true,
-          ".write": true
+          ".read": "auth != null && root.child('authRollBindings').child(auth.uid).val() === $userRoll",
+          ".write": "auth != null && root.child('authRollBindings').child(auth.uid).val() === $userRoll"
         }
       }
     }

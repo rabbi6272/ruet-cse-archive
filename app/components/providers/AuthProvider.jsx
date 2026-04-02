@@ -1,8 +1,8 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from 'react';
-import FirebaseAuthService from '@/lib/firebase-auth-service';
-import AuthUtils from '@/lib/auth-utils-secure';
+import { createContext, useContext, useEffect, useState } from "react";
+import FirebaseAuthService from "@/lib/firebase-auth-service";
+import AuthUtils from "@/lib/auth-utils-secure";
 
 // Create authentication context
 const AuthContext = createContext({
@@ -10,7 +10,7 @@ const AuthContext = createContext({
   isAuthenticated: false,
   isLoading: true,
   signOut: async () => {},
-  refreshAuth: async () => {}
+  refreshAuth: async () => {},
 });
 
 // Authentication Provider Component
@@ -24,21 +24,13 @@ export function AuthProvider({ children }) {
     const initializeAuth = async () => {
       try {
         setIsLoading(true);
-        
-        // Initialize Firebase Auth Service
         await FirebaseAuthService.initialize();
-        
-        // Check current authentication status
-        const currentUser = FirebaseAuthService.getCurrentUser();
-        if (currentUser && currentUser.isFullyAuthenticated) {
-          setUser(currentUser);
-          setIsAuthenticated(true);
-        } else {
-          setUser(null);
-          setIsAuthenticated(false);
-        }
+
+        const currentUser = AuthUtils.getUserData();
+        setUser(currentUser);
+        setIsAuthenticated(Boolean(currentUser));
       } catch (error) {
-        console.error('Failed to initialize authentication:', error);
+        console.error("Failed to initialize authentication:", error);
         setUser(null);
         setIsAuthenticated(false);
       } finally {
@@ -49,27 +41,29 @@ export function AuthProvider({ children }) {
     initializeAuth();
   }, []);
 
-  // Periodic session validation
   useEffect(() => {
-    const validateSession = async () => {
+    const refreshFromStorage = () => {
       try {
-        const isValid = await FirebaseAuthService.validateSession();
-        if (!isValid && isAuthenticated) {
-          setUser(null);
-          setIsAuthenticated(false);
-        }
+        const currentUser = AuthUtils.getUserData();
+        setUser(currentUser);
+        setIsAuthenticated(Boolean(currentUser));
       } catch (error) {
-        console.error('Session validation error:', error);
+        console.error("Session refresh error:", error);
         setUser(null);
         setIsAuthenticated(false);
       }
     };
 
-    // Validate session every 5 minutes
-    const interval = setInterval(validateSession, 5 * 60 * 1000);
-    
-    return () => clearInterval(interval);
-  }, [isAuthenticated]);
+    const handleStorageChange = (event) => {
+      if (event.key === "user") {
+        refreshFromStorage();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
 
   const signOut = async () => {
     try {
@@ -77,14 +71,15 @@ export function AuthProvider({ children }) {
       setUser(null);
       setIsAuthenticated(false);
     } catch (error) {
-      console.error('Sign out error:', error);
+      console.error("Sign out error:", error);
     }
   };
 
   const refreshAuth = async () => {
     try {
-      const currentUser = FirebaseAuthService.getCurrentUser();
-      if (currentUser && currentUser.isFullyAuthenticated) {
+      await FirebaseAuthService.initialize();
+      const currentUser = AuthUtils.getUserData();
+      if (currentUser) {
         setUser(currentUser);
         setIsAuthenticated(true);
       } else {
@@ -92,7 +87,7 @@ export function AuthProvider({ children }) {
         setIsAuthenticated(false);
       }
     } catch (error) {
-      console.error('Refresh auth error:', error);
+      console.error("Refresh auth error:", error);
       setUser(null);
       setIsAuthenticated(false);
     }
@@ -103,13 +98,11 @@ export function AuthProvider({ children }) {
     isAuthenticated,
     isLoading,
     signOut,
-    refreshAuth
+    refreshAuth,
   };
 
   return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 }
 
@@ -117,7 +110,7 @@ export function AuthProvider({ children }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

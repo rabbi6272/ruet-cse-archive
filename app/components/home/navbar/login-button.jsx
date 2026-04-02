@@ -1,6 +1,6 @@
 "use client";
 
-import { NotificationBadge } from "@/components/ui/NotificationBadge";
+import { NotificationBadge } from "@/app/components/ui/NotificationBadge";
 import AuthUtils from "@/lib/auth-utils-secure";
 import { useNotificationCount } from "@/lib/useNotificationCount";
 import Link from "next/link";
@@ -38,7 +38,7 @@ export function LoginButton() {
   const { unreadCount, isLoading, error } = useNotificationCount(
     userRoll,
     true,
-    true
+    true,
   );
 
   if (userData) {

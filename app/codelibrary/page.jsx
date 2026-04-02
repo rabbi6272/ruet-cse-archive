@@ -1,5 +1,5 @@
-import { CodeLibraryHeader } from "@/components/codelibrary/LibraryHeader";
-import { CodeLibraryBody } from "@/components/codelibrary/CodeLibraryBody";
+import { CodeLibraryHeader } from "@/app/components/codelibrary/LibraryHeader";
+import { CodeLibraryBody } from "@/app/components/codelibrary/CodeLibraryBody";
 
 export const metadata = {
   title: "Code Library - Programming Solutions & Examples",

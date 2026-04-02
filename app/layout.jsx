@@ -1,12 +1,12 @@
 import "./globals.css";
 
-import { FooterComponent } from "@/components/home/footer";
-import { PageTitleProvider } from "@/components/providers/PageTitleProvider";
-import { P2PChatProvider } from "@/components/providers/P2PChatProvider";
-import GlobalPresenceTracker from "@/components/providers/GlobalPresenceTracker";
+import { FooterComponent } from "@/app/components/home/footer";
+import { PageTitleProvider } from "@/app/components/providers/PageTitleProvider";
+import { P2PChatProvider } from "@/app/components/providers/P2PChatProvider";
+import GlobalPresenceTracker from "@/app/components/providers/GlobalPresenceTracker";
 
-import NoSSR from "@/components/ui/NoSSR";
-import FirebaseObfuscationInit from "@/components/security/FirebaseObfuscationInit";
+import NoSSR from "@/app/components/ui/NoSSR";
+import FirebaseObfuscationInit from "@/app/components/security/FirebaseObfuscationInit";
 
 import { lato } from "./ui/fonts";
 import { Toaster } from "react-hot-toast";

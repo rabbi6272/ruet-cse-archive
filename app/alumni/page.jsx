@@ -1,16 +1,28 @@
-import { Leafletmap } from "@/components/alumni/leafletmap.jsx";
+import { Leafletmap } from "@/app/components/alumni/leafletmap.jsx";
 
 export const metadata = {
   title: "Alumni Network - Connect with RUET CSE Graduates",
-  description: "Connect with RUET CSE alumni worldwide. Explore career paths, get mentorship, and discover job opportunities from successful CSE graduates working in top tech companies.",
+  description:
+    "Connect with RUET CSE alumni worldwide. Explore career paths, get mentorship, and discover job opportunities from successful CSE graduates working in top tech companies.",
   keywords: [
-    "RUET CSE Alumni", "Alumni Network", "CSE Graduates", "Career Guidance", 
-    "Mentorship", "Job Opportunities", "Tech Companies", "Professional Network",
-    "RUET Alumni", "Computer Science Alumni", "Software Engineers", "Tech Careers"
+    "RUET CSE Alumni",
+    "Alumni Network",
+    "CSE Graduates",
+    "Career Guidance",
+    "Mentorship",
+    "Job Opportunities",
+    "Tech Companies",
+    "Professional Network",
+    "RUET Alumni",
+    "Computer Science Alumni",
+    "Software Engineers",
+    "Tech Careers",
   ],
   openGraph: {
-    title: "Alumni Network - Connect with RUET CSE Graduates | RUET CSE Archive",
-    description: "Connect with RUET CSE alumni worldwide. Explore career paths, get mentorship, and discover job opportunities from successful CSE graduates.",
+    title:
+      "Alumni Network - Connect with RUET CSE Graduates | RUET CSE Archive",
+    description:
+      "Connect with RUET CSE alumni worldwide. Explore career paths, get mentorship, and discover job opportunities from successful CSE graduates.",
     url: "https://csearchive.vercel.app/alumni",
     images: [
       {
@@ -23,8 +35,10 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Alumni Network - Connect with RUET CSE Graduates | RUET CSE Archive",
-    description: "Connect with RUET CSE alumni worldwide. Explore career paths, get mentorship, and discover job opportunities from successful CSE graduates.",
+    title:
+      "Alumni Network - Connect with RUET CSE Graduates | RUET CSE Archive",
+    description:
+      "Connect with RUET CSE alumni worldwide. Explore career paths, get mentorship, and discover job opportunities from successful CSE graduates.",
     images: ["/images/alumni-twitter-image.png"],
   },
   alternates: {

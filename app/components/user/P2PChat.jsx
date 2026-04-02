@@ -18,8 +18,8 @@ import {
 } from "firebase/database";
 import toast from "react-hot-toast";
 import { users } from "@/db/students_info";
-import EmojiPanel from "@/components/ui/EmojiPanel";
-import MessageReactions from "@/components/ui/MessageReactions";
+import EmojiPanel from "@/app/components/ui/EmojiPanel";
+import MessageReactions from "@/app/components/ui/MessageReactions";
 
 // Link detection and preview utilities
 const SUPPORTED_PLATFORMS = {
@@ -317,7 +317,7 @@ const LinkPreview = ({ link, isOwnMessage }) => {
       case SUPPORTED_PLATFORMS.ATCODER:
         if (url.includes("/contests/")) {
           const atcoderMatch = url.match(
-            /\/contests\/([\w-]+)(?:\/tasks\/([\w-]+))?/
+            /\/contests\/([\w-]+)(?:\/tasks\/([\w-]+))?/,
           );
           if (atcoderMatch) {
             if (atcoderMatch[2]) {
@@ -463,8 +463,8 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
       // Filter out null/undefined values
       const filteredData = Object.fromEntries(
         Object.entries(updateData).filter(
-          ([key, value]) => value !== null && value !== undefined
-        )
+          ([key, value]) => value !== null && value !== undefined,
+        ),
       );
 
       if (Object.keys(filteredData).length === 0) {
@@ -585,7 +585,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
     const incomingRequestsQuery = query(
       requestsRef,
       orderByChild("toRoll"),
-      equalTo(userRoll)
+      equalTo(userRoll),
     );
 
     const unsubscribeRequests = onValue(incomingRequestsQuery, (snapshot) => {
@@ -601,7 +601,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
     const userChatsQuery = query(
       chatsRef,
       orderByChild("status"),
-      equalTo("approved")
+      equalTo("approved"),
     );
 
     const unsubscribeChats = onValue(userChatsQuery, (snapshot) => {
@@ -610,10 +610,10 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
         .map(([id, chat]) => ({ id, ...chat }))
         .filter(
           (chat) =>
-            chat.participants.includes(userRoll) && chat.status === "approved"
+            chat.participants.includes(userRoll) && chat.status === "approved",
         )
         .sort(
-          (a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime)
+          (a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime),
         );
 
       // Check for and merge duplicate chats automatically
@@ -688,7 +688,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
       },
       (error) => {
         console.error("Error listening to typing status:", error);
-      }
+      },
     );
 
     // Clean up typing status when leaving chat
@@ -697,7 +697,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
       // Clear user's typing status when leaving chat
       if (selectedChat?.id && userRoll) {
         set(ref(db, `typing/${selectedChat.id}/${userRoll}`), null).catch(
-          console.error
+          console.error,
         );
       }
     };
@@ -717,7 +717,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
       },
       (error) => {
         console.error("Error listening to unread counts:", error);
-      }
+      },
     );
 
     return () => unsubscribeUnread();
@@ -737,7 +737,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
       },
       (error) => {
         console.error("Error listening to message read status:", error);
-      }
+      },
     );
 
     return () => unsubscribeReadStatus();
@@ -756,7 +756,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
         // Clear unread count for this chat
         const unreadRef = ref(
           db,
-          `unreadCounts/${userRoll}/${selectedChat.id}`
+          `unreadCounts/${userRoll}/${selectedChat.id}`,
         );
         await set(unreadRef, null);
 
@@ -844,7 +844,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
         ([roll, data]) =>
           roll !== userRoll &&
           data?.isTyping &&
-          Date.now() - new Date(data.timestamp).getTime() < 5000 // 5 seconds timeout
+          Date.now() - new Date(data.timestamp).getTime() < 5000, // 5 seconds timeout
       )
       .map(([roll, data]) => ({
         roll,
@@ -867,7 +867,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
   const getTotalUnreadCount = () => {
     return Object.values(unreadCounts).reduce(
       (total, count) => total + (count || 0),
-      0
+      0,
     );
   };
 
@@ -1105,7 +1105,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
 
       if (!userExists) {
         toast.error(
-          `User with roll number ${requestRoll} is not registered in the system`
+          `User with roll number ${requestRoll} is not registered in the system`,
         );
         setLoading(false);
         return;
@@ -1143,7 +1143,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
         (req) =>
           ((req.fromRoll === userRoll && req.toRoll === requestRoll) ||
             (req.fromRoll === requestRoll && req.toRoll === userRoll)) &&
-          req.status === "pending"
+          req.status === "pending",
       );
 
       if (duplicateRequest) {
@@ -1152,7 +1152,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
           duplicateRequest.toRoll === userRoll
         ) {
           toast.error(
-            "This user has already sent you a request! Check your requests tab."
+            "This user has already sent you a request! Check your requests tab.",
           );
         } else {
           toast.error("Request already sent to this user");
@@ -1175,7 +1175,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
       });
 
       toast.success(
-        `Chat request sent to ${toProperCase(targetUser?.name) || requestRoll}!`
+        `Chat request sent to ${toProperCase(targetUser?.name) || requestRoll}!`,
       );
       setRequestRoll("");
     } catch (error) {
@@ -1197,7 +1197,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
       // Use enhanced unique chat thread logic
       const existingChat = await ensureUniqueChatThread(
         request.fromRoll,
-        userRoll
+        userRoll,
       );
 
       if (existingChat && existingChat.status === "approved") {
@@ -1223,7 +1223,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
         });
 
         toast.success(
-          "Chat request accepted! All duplicate chats have been merged."
+          "Chat request accepted! All duplicate chats have been merged.",
         );
 
         // Switch to chats tab and automatically open the merged chat
@@ -1256,7 +1256,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
       // Initialize unread counts for both users
       await set(
         ref(db, `unreadCounts/${request.fromRoll}/${newChatRef.key}`),
-        0
+        0,
       );
       await set(ref(db, `unreadCounts/${userRoll}/${newChatRef.key}`), 0);
 
@@ -1282,7 +1282,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
       });
 
       toast.success(
-        `Chat request accepted! You can now message with ${request.fromName}`
+        `Chat request accepted! You can now message with ${request.fromName}`,
       );
 
       // Switch to chats tab and automatically open the new chat
@@ -1406,7 +1406,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
         // Check if the other user is currently viewing this chat
         const otherUserActiveRef = ref(
           db,
-          `activeChats/${otherParticipant.roll}`
+          `activeChats/${otherParticipant.roll}`,
         );
         const activeSnapshot = await get(otherUserActiveRef);
         const otherUserActiveChat = activeSnapshot.val();
@@ -1415,7 +1415,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
         if (otherUserActiveChat !== selectedChat.id) {
           const otherUserUnreadRef = ref(
             db,
-            `unreadCounts/${otherParticipant.roll}/${selectedChat.id}`
+            `unreadCounts/${otherParticipant.roll}/${selectedChat.id}`,
           );
           const currentUnreadSnapshot = await get(otherUserUnreadRef);
           const currentCount = currentUnreadSnapshot.val() || 0;
@@ -1426,7 +1426,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
       // Mark this message as read by sender immediately
       const readStatusRef = ref(
         db,
-        `messageReadStatus/${selectedChat.id}/${newMessageRef.key}/${userRoll}`
+        `messageReadStatus/${selectedChat.id}/${newMessageRef.key}/${userRoll}`,
       );
       await set(readStatusRef, {
         readAt: serverTimestamp(),
@@ -1478,7 +1478,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
           );
         })
         .sort(
-          (a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
+          (a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0),
         ); // Sort by creation time
 
       if (userChats.length === 0) {
@@ -1490,7 +1490,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
       }
 
       console.log(
-        `Found ${userChats.length} chat threads between ${userRoll1} and ${userRoll2}, merging to ensure uniqueness...`
+        `Found ${userChats.length} chat threads between ${userRoll1} and ${userRoll2}, merging to ensure uniqueness...`,
       );
 
       // Multiple chats exist - merge them into the oldest one
@@ -1581,7 +1581,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
 
           // Update active chat references if they were viewing this duplicate
           const activeSnapshot = await get(
-            ref(db, `activeChats/${participant}`)
+            ref(db, `activeChats/${participant}`),
           );
           if (activeSnapshot.val() === chat.id) {
             await set(ref(db, `activeChats/${participant}`), primaryChat.id);
@@ -1611,7 +1611,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
       });
 
       toast.success(
-        `Merged ${duplicatesToMerge.length + 1} chat threads into one!`
+        `Merged ${duplicatesToMerge.length + 1} chat threads into one!`,
       );
       return primaryChat;
     } catch (error) {
@@ -1815,8 +1815,8 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                   activeTab === "requests"
                     ? "text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400"
                     : chatRequests.length > 0
-                    ? "text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 bg-orange-50 dark:bg-orange-900/20"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                      ? "text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 bg-orange-50 dark:bg-orange-900/20"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                 }`}
               >
                 <span className="hidden xs:inline">
@@ -1932,7 +1932,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                                       <span
                                         className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0"
                                         title={`Last seen ${getLastSeenTime(
-                                          otherParticipant.roll
+                                          otherParticipant.roll,
                                         )} ago`}
                                       >
                                         •{" "}
@@ -2039,7 +2039,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                     {/* profile icon */}
                     <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base md:text-lg flex-shrink-0">
                       {toProperCase(
-                        getOtherParticipant(selectedChat).name
+                        getOtherParticipant(selectedChat).name,
                       )?.charAt(0) ||
                         getOtherParticipant(selectedChat).roll?.charAt(0)}
                     </div>
@@ -2047,11 +2047,11 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                       <div className="flex items-center gap-2">
                         <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base md:text-lg truncate">
                           {toProperCase(
-                            getOtherParticipant(selectedChat).name
+                            getOtherParticipant(selectedChat).name,
                           ) || getOtherParticipant(selectedChat).roll}
                         </h3>
                         {isUserOnline(
-                          getOtherParticipant(selectedChat).roll
+                          getOtherParticipant(selectedChat).roll,
                         ) && (
                           <div
                             className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full flex-shrink-0"
@@ -2062,19 +2062,19 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                       <p className="text-xs sm:text-sm md:text-base text-gray-500 dark:text-gray-400">
                         Roll: {getOtherParticipant(selectedChat).roll}
                         {isUserOnline(
-                          getOtherParticipant(selectedChat).roll
+                          getOtherParticipant(selectedChat).roll,
                         ) ? (
                           <span className="ml-2 text-green-600 dark:text-green-400">
                             • Online
                           </span>
                         ) : (
                           getLastSeenTime(
-                            getOtherParticipant(selectedChat).roll
+                            getOtherParticipant(selectedChat).roll,
                           ) && (
                             <span className="ml-2 text-gray-500 dark:text-gray-400">
                               • Last seen{" "}
                               {getLastSeenTime(
-                                getOtherParticipant(selectedChat).roll
+                                getOtherParticipant(selectedChat).roll,
                               )}{" "}
                               ago
                             </span>
@@ -2082,7 +2082,8 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                         )}
                         {getTypingUsers().some(
                           (user) =>
-                            user.roll === getOtherParticipant(selectedChat).roll
+                            user.roll ===
+                            getOtherParticipant(selectedChat).roll,
                         ) && (
                           <span className="ml-2 text-blue-600 dark:text-blue-400 text-xs sm:text-sm">
                             • typing...
@@ -2118,7 +2119,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                     const isOwnMessage = message.senderRoll === userRoll;
                     const messageStatus = getMessageStatus(
                       message.id,
-                      message.senderRoll
+                      message.senderRoll,
                     );
                     const swipeOffset = getSwipeOffset(message.id);
 
@@ -2182,7 +2183,7 @@ const P2PChat = ({ userRoll, userName, isOpen, onClose }) => {
                               onClick={() =>
                                 handleEmojiPanelChange(
                                   message.id,
-                                  !longPressState.activeMessagePanel
+                                  !longPressState.activeMessagePanel,
                                 )
                               }
                               className="p-1 grid place-items-center rounded-full bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-600 dark:text-gray-300 hover:scale-110 transition-all duration-200"

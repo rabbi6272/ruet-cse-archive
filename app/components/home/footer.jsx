@@ -6,7 +6,7 @@ import { inter } from "@/app/ui/fonts";
 export function FooterComponent() {
   return (
     <footer
-      data-testid="flowbite-footer"
+      data-testid="site-footer"
       className={`${inter.className} morphic-effect bg-morphic-light bg-[#ffffffe6] dark:bg-[#071a26] rounded-t-lg shadow-sm md:flex md:items-center md:justify-between w-full p-6 lg:px-14 lg:py-6 `}
     >
       <div className={`w-full `}>
@@ -35,7 +35,7 @@ export function FooterComponent() {
           >
             <div>
               <h2
-                data-testid="flowbite-footer-title"
+                data-testid="footer-title"
                 className={`mb-6 text-md tracking-wide font-semibold uppercase text-gray-600 dark:text-gray-200 `}
               >
                 about
@@ -67,7 +67,7 @@ export function FooterComponent() {
 
             <div>
               <h2
-                data-testid="flowbite-footer-title"
+                data-testid="footer-title"
                 className={`mb-6 text-md tracking-wide font-semibold uppercase text-gray-600 dark:text-gray-200 `}
               >
                 Follow us
@@ -95,7 +95,7 @@ export function FooterComponent() {
 
             <div>
               <h2
-                data-testid="flowbite-footer-title"
+                data-testid="footer-title"
                 className={`mb-6 text-md tracking-wide font-semibold uppercase text-gray-600 dark:text-gray-200 `}
               >
                 Legal
@@ -119,11 +119,11 @@ export function FooterComponent() {
           </div>
         </div>
         <br />
-         <br />
-          <br />
+        <br />
+        <br />
         <div className={`w-full text-center`}>
           <div
-            data-testid="flowbite-footer-copyright"
+            data-testid="footer-copyright"
             className={`text-sm text-gray-600 dark:text-gray-200 sm:text-center `}
           >
             © 2025
@@ -131,7 +131,7 @@ export function FooterComponent() {
               href="/contact&help/developers"
               className={`ml-1 hover:underline `}
             >
-              Avengers - CSE'24 
+              Avengers - CSE'24
             </Link>
           </div>
         </div>
