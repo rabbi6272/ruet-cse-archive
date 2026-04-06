@@ -2,10 +2,10 @@ import { Inter, Lato, Nunito } from "next/font/google";
 import localFont from "next/font/local";
 
 export const avengero = localFont({
-  src: "./AvengeroRegular.ttf",
+  src: "../public/fonts/AvengeroRegular.ttf",
 });
 export const avegance = localFont({
-  src: "./AvengeanceHeroicAvengerItalic.otf",
+  src: "../public/fonts/AvengeanceHeroicAvengerItalic.otf",
 });
 export const nunito = Nunito({
   subsets: ["latin"],

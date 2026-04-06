@@ -8,7 +8,7 @@ import GlobalPresenceTracker from "@/app/components/providers/GlobalPresenceTrac
 import NoSSR from "@/app/components/ui/NoSSR";
 import FirebaseObfuscationInit from "@/app/components/security/FirebaseObfuscationInit";
 
-import { lato } from "./ui/fonts";
+import { lato } from "./fonts";
 import { Toaster } from "react-hot-toast";
 
 import { Analytics } from "@vercel/analytics/next";

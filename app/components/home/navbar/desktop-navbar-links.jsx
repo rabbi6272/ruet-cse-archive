@@ -1,6 +1,6 @@
 import { LoginButton } from "./login-button";
 import Link from "next/link";
-import { inter } from "@/app/ui/fonts";
+import { inter } from "@/app/fonts";
 
 export function DesktopNavbarLinks() {
   return (

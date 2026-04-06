@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { inter } from "@/app/ui/fonts";
+import { inter } from "@/app/fonts";
 import { useNotificationCount } from "@/lib/useNotificationCount";
 import { NotificationBadge } from "@/app/components/ui/NotificationBadge";
 import AuthUtils from "@/lib/auth-utils-secure";

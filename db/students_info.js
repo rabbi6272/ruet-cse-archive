@@ -620,11 +620,6 @@ export const users = [
     password: "nQ6F7enamOQ7",
   },
   {
-    roll: "2403125",
-    name: "DEWAN ABID HASAN",
-    password: "CWtMKihVWMlZ",
-  },
-  {
     roll: "2403126",
     name: "AFRA TAHSIN ANIKA",
     password: "ZemlNHGZS1G4",
@@ -633,16 +628,6 @@ export const users = [
     roll: "2403127",
     name: "SHADMAN AHMED",
     password: "kUkmuA3Hx6Br",
-  },
-  {
-    roll: "2403128",
-    name: "KHUSHBO NAHID",
-    password: "F9NC931FbdTi",
-  },
-  {
-    roll: "2403129",
-    name: "SUMON MAJUMDER",
-    password: "w5AbID9zHvlC",
   },
   {
     roll: "2403130",

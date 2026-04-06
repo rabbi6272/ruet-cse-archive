@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { ref, get } from "firebase/database";
+import { fetchCodeSnippetServer } from "@/lib/codelibrary/server";
 
 export async function GET(request, { params }) {
   try {
@@ -9,33 +8,28 @@ export async function GET(request, { params }) {
     if (!id) {
       return NextResponse.json(
         { error: "Code snippet ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // Get the specific code snippet from Firebase
-    const snippetRef = ref(db, `codeSnippets/${id}`);
-    const snapshot = await get(snippetRef);
+    const snippetData = await fetchCodeSnippetServer(id);
 
-    if (!snapshot.exists()) {
+    if (!snippetData) {
       return NextResponse.json(
         { error: "Code snippet not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
-
-    const snippetData = snapshot.val();
 
     // Return the snippet data
     return NextResponse.json({
-      id,
       ...snippetData,
     });
   } catch (error) {
     console.error("Error fetching code snippet:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

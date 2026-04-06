@@ -10,8 +10,9 @@ import {
   equalTo,
   onValue,
   update,
-  remove,
 } from "firebase/database";
+import { doc, getDoc, onSnapshot, setDoc } from "firebase/firestore";
+import { CodelibraryDB, COLLECTION } from "@/utils/CodelibraryDB";
 import { getUserDisplayRole } from "@/lib/auth-utils";
 import { getUserGroup } from "@/lib/group-utils";
 import AuthUtils from "@/lib/auth-utils-secure";
@@ -27,7 +28,7 @@ import {
   awardSnippetNutrinos,
   getUserNutrinosHistory,
 } from "@/lib/nutrinos-system";
-import { presenceTracker } from "@/lib/presence-tracker";
+import { presenceTracker } from "@/lib/PresenceTracker";
 import { useP2PChat } from "@/app/components/providers/P2PChatProvider";
 import P2PChat from "./P2PChat";
 import GroupChat from "./GroupChat";
@@ -70,12 +71,14 @@ const Dashboard = () => {
 
   // Check authentication and load user data
   useEffect(() => {
+    let unsubscribeSnippets = null;
+
     if (!AuthUtils.isAuthenticated()) {
       router.push("/user/login");
     } else {
       const userData = AuthUtils.getUserData();
       setUser(userData);
-      loadUserSnippets(userData.roll);
+      unsubscribeSnippets = loadUserSnippets(userData.roll);
       loadUserNutrinosData(userData.roll);
 
       // Load pending chat requests count
@@ -89,6 +92,11 @@ const Dashboard = () => {
     }
 
     // Note: Presence tracking is now handled globally by GlobalPresenceTracker
+    return () => {
+      if (typeof unsubscribeSnippets === "function") {
+        unsubscribeSnippets();
+      }
+    };
   }, [router]);
 
   // Load user's Nutrinos data
@@ -211,25 +219,41 @@ const Dashboard = () => {
     });
   }, [snippets, editingId]);
 
+  const updateUserSnippetDocument = async (rollNumber, updater) => {
+    const rollDocRef = doc(CodelibraryDB, COLLECTION, rollNumber);
+    const snapshot = await getDoc(rollDocRef);
+    const currentSnippets =
+      snapshot.exists() && Array.isArray(snapshot.data().snippets)
+        ? snapshot.data().snippets
+        : [];
+
+    const nextSnippets = updater(currentSnippets);
+
+    await setDoc(
+      rollDocRef,
+      {
+        rollNumber,
+        snippets: nextSnippets,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true },
+    );
+  };
+
   // Load user's snippets from Firebase
   const loadUserSnippets = (rollNumber) => {
     setLoading(true);
     try {
-      const snippetsRef = ref(db, "codeSnippets");
-      const userSnippetsQuery = query(
-        snippetsRef,
-        orderByChild("rollNumber"),
-        equalTo(rollNumber),
-      );
+      const rollDocRef = doc(CodelibraryDB, COLLECTION, rollNumber);
 
-      onValue(userSnippetsQuery, (snapshot) => {
-        const snippetsData = snapshot.val() || {};
-        const snippetsArray = Object.entries(snippetsData).map(
-          ([id, data]) => ({
-            id,
-            ...data,
-          }),
-        );
+      return onSnapshot(rollDocRef, (snapshot) => {
+        const snippetsArray =
+          snapshot.exists() && Array.isArray(snapshot.data().snippets)
+            ? snapshot.data().snippets.map((snippet) => ({
+                ...snippet,
+                rollNumber,
+              }))
+            : [];
         // Sort by date (newest first)
         snippetsArray.sort((a, b) => new Date(b.date) - new Date(a.date));
         setSnippets(snippetsArray);
@@ -239,6 +263,7 @@ const Dashboard = () => {
       setError("Failed to load snippets. Please try again.");
       setLoading(false);
       console.error("Error loading snippets:", err);
+      return null;
     }
   };
 
@@ -264,13 +289,19 @@ const Dashboard = () => {
   // Save edited snippet
   const handleSaveEdit = async (snippetId) => {
     try {
-      const snippetRef = ref(db, `codeSnippets/${snippetId}`);
-      await update(snippetRef, {
-        title: editForm.title,
-        description: editForm.description,
-        codeSnippet: editForm.codeSnippet,
-        lastUpdated: new Date().toISOString(),
-      });
+      await updateUserSnippetDocument(user.roll, (currentSnippets) =>
+        currentSnippets.map((snippet) =>
+          snippet.id === snippetId
+            ? {
+                ...snippet,
+                title: editForm.title,
+                description: editForm.description,
+                codeSnippet: editForm.codeSnippet,
+                lastUpdated: new Date().toISOString(),
+              }
+            : snippet,
+        ),
+      );
       setEditingId(null);
 
       // Award Nutrinos for editing snippet
@@ -295,8 +326,9 @@ const Dashboard = () => {
       )
     ) {
       try {
-        const snippetRef = ref(db, `codeSnippets/${snippetId}`);
-        await remove(snippetRef);
+        await updateUserSnippetDocument(user.roll, (currentSnippets) =>
+          currentSnippets.filter((snippet) => snippet.id !== snippetId),
+        );
 
         // Award negative Nutrinos for deleting snippet
         await awardSnippetNutrinos.delete(user.roll, snippetId);

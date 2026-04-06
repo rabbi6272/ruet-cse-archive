@@ -5,7 +5,7 @@ import {
   useActiveUsersCount,
   useActiveUsers,
   formatTimeAgo,
-} from "@/lib/presence-tracker";
+} from "@/lib/PresenceTracker";
 
 const ActiveUsersIndicator = ({ showDetails = false, className = "" }) => {
   const [activeCount, setActiveCount] = useState(0);
@@ -102,8 +102,8 @@ const ActiveUsersIndicator = ({ showDetails = false, className = "" }) => {
               {activeCount === 0
                 ? "No one"
                 : activeCount === 1
-                ? "1 person"
-                : `${activeCount} people`}{" "}
+                  ? "1 person"
+                  : `${activeCount} people`}{" "}
               online
             </span>
             <span className="sm:hidden">

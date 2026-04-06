@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { inter } from "@/app/ui/fonts";
+import { inter } from "@/app/fonts";
 
 export function FooterComponent() {
   return (

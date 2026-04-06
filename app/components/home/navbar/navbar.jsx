@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 
-import { inter } from "@/app/ui/fonts";
+import { inter } from "@/app/fonts";
 
 import { MobileNavbarLinks } from "./mobile-navbar-links";
 import { DesktopNavbarLinks } from "./desktop-navbar-links";

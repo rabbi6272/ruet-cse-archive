@@ -11,19 +11,6 @@
       }
     },
 
-    "codeSnippets": {
-      ".indexOn": ["rollNumber", "language", "date", "difficulty"],
-      "$snippetId": {
-        ".read": "auth != null",
-        "likes": {
-          ".write": "auth != null"
-        },
-        "comments": {
-          ".write": "auth != null"
-        }
-      }
-    },
-
     "codeSnippetComments": {
       "$snippetId": {
         ".indexOn": ["timestamp", "author/roll"],

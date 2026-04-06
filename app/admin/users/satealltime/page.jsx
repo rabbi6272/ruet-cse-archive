@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { formatTimeAgo } from "@/lib/presence-tracker";
+import { formatTimeAgo } from "@/lib/PresenceTracker";
 import { ref, onValue } from "firebase/database";
 import { db } from "@/lib/firebase";
 
@@ -60,7 +60,7 @@ export default function UserActivityTracker() {
           roll,
           ...session,
           type: "session",
-        })
+        }),
       );
       setAllUserSessions(sessionsList);
     });
@@ -262,10 +262,10 @@ export default function UserActivityTracker() {
                                 session.status === "active"
                                   ? "bg-green-100 text-green-800"
                                   : session.status === "disconnected"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : session.status === "ended"
-                                  ? "bg-gray-100 text-gray-800"
-                                  : "bg-red-100 text-red-800"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : session.status === "ended"
+                                      ? "bg-gray-100 text-gray-800"
+                                      : "bg-red-100 text-red-800"
                               }`}
                             >
                               {session.status || "Unknown"}
@@ -277,7 +277,7 @@ export default function UserActivityTracker() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {formatSessionDuration(
                               session.startTime,
-                              session.endTime
+                              session.endTime,
                             )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

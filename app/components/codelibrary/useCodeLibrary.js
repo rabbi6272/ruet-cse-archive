@@ -1,20 +1,32 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { ref, onValue, update } from "firebase/database";
+
 import hljs from "highlight.js";
+
 import AuthUtils from "@/lib/auth-utils-secure";
-import { codelibraryDb } from "@/lib/codelibraryDB";
 
-import ProtectedFirebaseDB from "@/lib/protected-firebase-db"; // Only used for authenticated operations (likes)
+import {
+  collection,
+  doc,
+  documentId,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  startAfter,
+  updateDoc,
+} from "firebase/firestore";
+import { CodelibraryDB, COLLECTION } from "@/utils/CodelibraryDB";
 
+// State management for public code library
+// Reading: Public access for all users
+// Copying: Public access (no auth required)
+// Liking: Requires authentication
 export const useCodeLibrary = (initialSnippets = []) => {
-  // State management for public code library
-  // Reading: Public access for all users
-  // Copying: Public access (no auth required)
-  // Liking: Requires authentication
-  const [loadCount, setLoadCount] = useState(5); // Number of snippets to load initially
-  const [TotalSnippets, setTotalSnippets] = useState([]);
-  const [loadedSnippets, setLoadedSnippets] = useState([]);
+  const DOCS_PER_PAGE = 3;
+  const [loadCount, setLoadCount] = useState(initialSnippets.length || 0);
+  const [TotalSnippets, setTotalSnippets] = useState(initialSnippets);
+  const [loadedSnippets, setLoadedSnippets] = useState(initialSnippets);
   const [filteredSnippets, setFilteredSnippets] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [languageFilter, setLanguageFilter] = useState("");
@@ -23,112 +35,170 @@ export const useCodeLibrary = (initialSnippets = []) => {
   const [animateLike, setAnimateLike] = useState({});
   const [animateCopy, setAnimateCopy] = useState({});
   const [copiedStates, setCopiedStates] = useState({});
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
 
   const needsHighlightRef = useRef(false);
+  const isFetchingRef = useRef(false);
+  const lastVisibleDocRef = useRef(null);
 
-  //get all snippets from database
-  useEffect(() => {
-    const codesRef = ref(codelibraryDb, "codes/");
+  const flattenSnippetDocuments = (snapshots) => {
+    const snippets = [];
 
-    const unsubscribe = onValue(
-      codesRef,
-      (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          // Flatten and transform all snippets
-          const allSnippets = [];
-          Object.entries(data).forEach(([rollNumber, codes]) => {
-            Object.entries(codes).forEach(([codeId, snippet]) => {
-              allSnippets.push({
-                ...snippet,
-                rollNumber,
-                id: codeId,
-                isLiked: localStorage.getItem(`liked_${codeId}`) === "true",
-                likesCount: snippet.likesCount || 0,
-                copiesCount: snippet.copiesCount || 0,
-                language:
-                  snippet.language?.toLowerCase() === "js"
-                    ? "javascript"
-                    : snippet.language?.toLowerCase(),
-                // Ensure timestamp for sorting
-                timestamp: snippet.date ? new Date(snippet.date).getTime() : 0,
-              });
-            });
+    snapshots.docs.forEach((snippetDoc) => {
+      const data = snippetDoc.data();
+
+      if (Array.isArray(data.snippets)) {
+        data.snippets.forEach((snippet) => {
+          if (!snippet) return;
+          snippets.push({
+            ...snippet,
+            id: snippet.id,
+            rollNumber: snippet.rollNumber || snippetDoc.id,
+            isLiked: localStorage.getItem(`liked_${snippet.id}`) === "true",
+            likesCount: snippet.likesCount || 0,
+            copiesCount: snippet.copiesCount || 0,
+            language:
+              snippet.language?.toLowerCase() === "js"
+                ? "javascript"
+                : snippet.language?.toLowerCase(),
+            timestamp: snippet.date ? new Date(snippet.date).getTime() : 0,
           });
+        });
+        return;
+      }
 
-          // Sort by timestamp (newest first)
-          allSnippets.sort((a, b) => b.timestamp - a.timestamp);
+      snippets.push({
+        ...data,
+        id: snippetDoc.id,
+        rollNumber: data.rollNumber || snippetDoc.id,
+        isLiked: localStorage.getItem(`liked_${snippetDoc.id}`) === "true",
+        likesCount: data.likesCount || 0,
+        copiesCount: data.copiesCount || 0,
+        language:
+          data.language?.toLowerCase() === "js"
+            ? "javascript"
+            : data.language?.toLowerCase(),
+        timestamp: data.date ? new Date(data.date).getTime() : 0,
+      });
+    });
 
-          // Store ALL fetched snippets in TotalSnippets
-          setTotalSnippets(allSnippets);
+    return snippets.sort((left, right) => right.timestamp - left.timestamp);
+  };
 
-          // Store total count for reference
-          const totalCount = allSnippets.length;
+  const mergeUniqueById = (existingSnippets, incomingSnippets) => {
+    const knownIds = new Set(existingSnippets.map((snippet) => snippet.id));
+    const uniqueIncoming = incomingSnippets.filter(
+      (snippet) => !knownIds.has(snippet.id),
+    );
+    return [...existingSnippets, ...uniqueIncoming].sort(
+      (left, right) => right.timestamp - left.timestamp,
+    );
+  };
 
-          // Limit to requested count for display optimization
-          const limitedSnippets = allSnippets.slice(0, loadCount);
-          setHasMore(totalCount > loadCount);
-          setLoadedSnippets(limitedSnippets);
+  const fetchSnippetsPage = async ({ reset = false } = {}) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
 
-          console.log(
-            `✅ Fetched ${totalCount} total snippets, displaying ${limitedSnippets.length}`
-          );
-        } else {
-          setTotalSnippets([]);
-          setLoadedSnippets([]);
-          setHasMore(false);
-          console.log("No snippets found in codes/");
-        }
-      },
-      (error) => {
-        console.error("Firebase error:", error);
+    try {
+      if (reset) {
+        lastVisibleDocRef.current = null;
+      }
+
+      const snippetsRef = collection(CodelibraryDB, COLLECTION);
+      let snippetsQuery = query(
+        snippetsRef,
+        orderBy(documentId()),
+        limit(DOCS_PER_PAGE),
+      );
+
+      if (lastVisibleDocRef.current) {
+        snippetsQuery = query(
+          snippetsRef,
+          orderBy(documentId()),
+          startAfter(lastVisibleDocRef.current),
+          limit(DOCS_PER_PAGE),
+        );
+      }
+
+      const snapshots = await getDocs(snippetsQuery);
+      const pageSnippets = flattenSnippetDocuments(snapshots);
+      const lastDoc = snapshots.docs[snapshots.docs.length - 1] || null;
+
+      lastVisibleDocRef.current = lastDoc;
+      setHasMore(snapshots.docs.length === DOCS_PER_PAGE);
+
+      if (!pageSnippets.length && reset) {
         setTotalSnippets([]);
         setLoadedSnippets([]);
-        setHasMore(false);
+        setLoadCount(0);
+        return;
       }
-    );
 
-    return () => unsubscribe();
+      if (reset) {
+        setTotalSnippets(pageSnippets);
+        setLoadedSnippets(pageSnippets);
+        setLoadCount(pageSnippets.length);
+      } else {
+        setTotalSnippets((prevSnippets) => {
+          const nextSnippets = mergeUniqueById(prevSnippets, pageSnippets);
+          setLoadCount(nextSnippets.length);
+          return nextSnippets;
+        });
+
+        setLoadedSnippets((prevSnippets) =>
+          mergeUniqueById(prevSnippets, pageSnippets),
+        );
+      }
+    } catch (error) {
+      console.error("Firestore fetch error:", error);
+      if (reset) {
+        setTotalSnippets([]);
+        setLoadedSnippets([]);
+        setLoadCount(0);
+      }
+      setHasMore(false);
+    } finally {
+      isFetchingRef.current = false;
+    }
+  };
+
+  // Get first page from Firestore
+  useEffect(() => {
+    fetchSnippetsPage({ reset: true });
   }, []);
 
   function loadMore() {
-    if (!hasMore) return;
-    const newLoadCount = loadCount + 10;
-    setLoadCount(newLoadCount);
-
-    // Load more snippets from TotalSnippets
-    const limitedSnippets = TotalSnippets.slice(0, newLoadCount);
-    setLoadedSnippets(limitedSnippets);
-    setHasMore(TotalSnippets.length > newLoadCount);
+    if (!hasMore || isFetchingRef.current) return Promise.resolve();
+    return fetchSnippetsPage();
   }
 
   // Filter snippets
   useEffect(() => {
-    let result = [];
+    let result = [...loadedSnippets];
+
     if (searchTerm) {
-      result = TotalSnippets.filter(
+      const term = searchTerm.toLowerCase();
+      result = result.filter(
         (snippet) =>
-          snippet.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          "" ||
-          snippet.description
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          ""
+          snippet.title?.toLowerCase().includes(term) ||
+          snippet.description?.toLowerCase().includes(term),
       );
     }
+
     if (languageFilter) {
-      result = TotalSnippets.filter(
+      result = result.filter(
         (snippet) =>
-          snippet.language?.toLowerCase() === languageFilter.toLowerCase()
+          snippet.language?.toLowerCase() === languageFilter.toLowerCase(),
       );
     }
+
     if (authorFilter) {
-      result = TotalSnippets.filter(
+      result = result.filter(
         (snippet) =>
-          snippet.author?.toLowerCase() === authorFilter.toLowerCase()
+          snippet.author?.toLowerCase() === authorFilter.toLowerCase(),
       );
     }
+
     setFilteredSnippets(result);
   }, [searchTerm, languageFilter, authorFilter, loadedSnippets]);
 
@@ -172,22 +242,45 @@ export const useCodeLibrary = (initialSnippets = []) => {
         prevSnippets.map((snippet) =>
           snippet.id === id
             ? { ...snippet, copiesCount: (snippet.copiesCount || 0) + 1 }
-            : snippet
-        )
+            : snippet,
+        ),
+      );
+
+      setTotalSnippets((prevSnippets) =>
+        prevSnippets.map((snippet) =>
+          snippet.id === id
+            ? { ...snippet, copiesCount: (snippet.copiesCount || 0) + 1 }
+            : snippet,
+        ),
       );
 
       try {
-        // Use public Firebase database for copy count updates (public operation)
-        const { db } = await import("@/lib/firebase");
-        const snippetRef = ref(db, `codeSnippets/${id}`);
-        await update(snippetRef, {
-          copiesCount:
-            (loadedSnippets.find((s) => s.id === id).copiesCount || 0) + 1,
+        const snippet = loadedSnippets.find((item) => item.id === id);
+        if (!snippet) throw new Error("Snippet not found");
+
+        const snippetRef = doc(CodelibraryDB, COLLECTION, snippet.rollNumber);
+        const snapshots = await getDocs(collection(CodelibraryDB, COLLECTION));
+        const rollDoc = snapshots.docs.find(
+          (item) => item.id === snippet.rollNumber,
+        );
+
+        if (!rollDoc) throw new Error("Roll document not found");
+
+        const rollData = rollDoc.data();
+        const nextSnippets = (
+          Array.isArray(rollData.snippets) ? rollData.snippets : []
+        ).map((item) =>
+          item.id === id
+            ? { ...item, copiesCount: (item.copiesCount || 0) + 1 }
+            : item,
+        );
+
+        await updateDoc(snippetRef, {
+          snippets: nextSnippets,
+          updatedAt: new Date().toISOString(),
         });
-        console.log("✅ Copy count updated successfully");
       } catch (error) {
         console.error("Failed to update copy count:", error);
-        // Copy still works locally even if database update fails
       }
     } catch (err) {
       console.error("Failed to copy:", err);
@@ -199,42 +292,70 @@ export const useCodeLibrary = (initialSnippets = []) => {
     // Check if user is authenticated
     if (!AuthUtils.isAuthenticated()) {
       console.log("🔒 Login required for liking snippets");
-      // Optionally show a toast or redirect to login
       window.location.href = "/user/login";
       return;
     }
 
     const snippet = loadedSnippets.find((s) => s.id === id);
-    if (snippet.isLiked) return;
+    if (!snippet || snippet.isLiked) return;
 
     const newIsLiked = true;
     setAnimateLike((prev) => ({ ...prev, [id]: true }));
     setTimeout(() => setAnimateLike((prev) => ({ ...prev, [id]: false })), 500);
 
     setLoadedSnippets((prevSnippets) =>
-      prevSnippets.map((snippet) =>
-        snippet.id === id
+      prevSnippets.map((s) =>
+        s.id === id
           ? {
-              ...snippet,
-              likesCount: (snippet.likesCount || 0) + 1,
+              ...s,
+              likesCount: (s.likesCount || 0) + 1,
               isLiked: newIsLiked,
             }
-          : snippet
-      )
+          : s,
+      ),
+    );
+
+    setTotalSnippets((prevSnippets) =>
+      prevSnippets.map((s) =>
+        s.id === id
+          ? {
+              ...s,
+              likesCount: (s.likesCount || 0) + 1,
+              isLiked: newIsLiked,
+            }
+          : s,
+      ),
     );
 
     localStorage.setItem(`liked_${id}`, "true");
 
     try {
-      // Use ProtectedFirebaseDB for authenticated write operations
-      const database = await ProtectedFirebaseDB.getDatabase();
-      const snippetRef = ref(database, `codeSnippets/${id}`);
-      await update(snippetRef, {
-        likesCount: (snippet.likesCount || 0) + 1,
+      const snippet = loadedSnippets.find((item) => item.id === id);
+      if (!snippet) throw new Error("Snippet not found");
+
+      const rollDocRef = doc(CodelibraryDB, COLLECTION, snippet.rollNumber);
+      const snapshots = await getDocs(collection(CodelibraryDB, COLLECTION));
+      const rollDoc = snapshots.docs.find(
+        (item) => item.id === snippet.rollNumber,
+      );
+
+      if (!rollDoc) throw new Error("Roll document not found");
+
+      const rollData = rollDoc.data();
+      const nextSnippets = (
+        Array.isArray(rollData.snippets) ? rollData.snippets : []
+      ).map((item) =>
+        item.id === id
+          ? { ...item, likesCount: (item.likesCount || 0) + 1, isLiked: true }
+          : item,
+      );
+
+      await updateDoc(rollDocRef, {
+        snippets: nextSnippets,
+        updatedAt: new Date().toISOString(),
       });
     } catch (error) {
       console.error("Failed to update like count:", error);
-      // Revert the like if the update failed
       setLoadedSnippets((prevSnippets) =>
         prevSnippets.map((s) =>
           s.id === id
@@ -243,8 +364,19 @@ export const useCodeLibrary = (initialSnippets = []) => {
                 likesCount: (s.likesCount || 1) - 1,
                 isLiked: false,
               }
-            : s
-        )
+            : s,
+        ),
+      );
+      setTotalSnippets((prevSnippets) =>
+        prevSnippets.map((s) =>
+          s.id === id
+            ? {
+                ...s,
+                likesCount: (s.likesCount || 1) - 1,
+                isLiked: false,
+              }
+            : s,
+        ),
       );
       localStorage.removeItem(`liked_${id}`);
     }
@@ -282,6 +414,6 @@ export const useCodeLibrary = (initialSnippets = []) => {
     copyCode,
     toggleLike,
     toggleExpand,
-    loadMore, // Helper to load 10 more
+    loadMore, // Helper to load 5 more
   };
 };

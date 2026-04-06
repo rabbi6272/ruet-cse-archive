@@ -1,6 +1,6 @@
 import { ProfileCard } from "@/app/components/contact&help/developers/profileCard";
 
-import { avegance } from "@/app/ui/fonts";
+import { avegance } from "@/app/fonts";
 
 import rabbi2 from "@/public/images/developers/rabbi2.jpg";
 import bitto2 from "@/public/images/developers/bitto2.jpg";

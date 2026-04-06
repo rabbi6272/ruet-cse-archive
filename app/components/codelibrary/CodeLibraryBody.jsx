@@ -1,6 +1,6 @@
 "use client";
 import "highlight.js/styles/monokai.css";
-import { lato } from "@/app/ui/fonts";
+import { lato } from "@/app/fonts";
 
 // Import the components
 import { useCodeLibrary } from "./useCodeLibrary";
@@ -11,6 +11,8 @@ import Loading from "@/app/loading";
 import { useEffect, useRef, useState } from "react";
 
 export function CodeLibraryBody({ initialSnippets = [] }) {
+  const CLIENT_CHUNK_SIZE = 12;
+
   // Use the custom hook with initial data
   const {
     TotalSnippets,
@@ -34,36 +36,59 @@ export function CodeLibraryBody({ initialSnippets = [] }) {
 
   //infinite scroll
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(CLIENT_CHUNK_SIZE);
   const loadMoreRef = useRef(null);
+
+  const hasActiveFilters = Boolean(
+    searchTerm || languageFilter || authorFilter,
+  );
+  const activeSnippets = hasActiveFilters ? filteredSnippets : loadedSnippets;
+  const visibleSnippets = activeSnippets.slice(0, visibleCount);
+  const hasVisibleMore = activeSnippets.length > visibleCount;
+
   useEffect(() => {
-    if (!loadMoreRef.current || isLoadingMore || !hasMore) return;
+    setVisibleCount(CLIENT_CHUNK_SIZE);
+  }, [searchTerm, languageFilter, authorFilter]);
+
+  useEffect(() => {
+    if (!loadMoreRef.current || (!hasVisibleMore && !hasMore)) return;
 
     const observer = new IntersectionObserver(
-      (entries) => {
+      async (entries) => {
         const entry = entries[0];
 
-        let timeoutId;
-        if (entry.isIntersecting && hasMore && !isLoadingMore) {
-          timeoutId = setTimeout(() => {
-            setIsLoadingMore(true);
-            loadMore();
-            setTimeout(() => setIsLoadingMore(false), 1000);
-          }, 300);
+        if (!entry.isIntersecting || isLoadingMore) {
+          return;
+        }
+
+        if (hasVisibleMore) {
+          setVisibleCount((prev) => prev + CLIENT_CHUNK_SIZE);
+          return;
+        }
+
+        if (!hasMore) {
+          return;
+        }
+
+        setIsLoadingMore(true);
+        try {
+          await loadMore();
+        } finally {
+          setIsLoadingMore(false);
         }
       },
       {
         root: null,
-        rootMargin: "100px", // ← Start loading 100px before reaching bottom
+        rootMargin: "120px",
         threshold: 0,
-      }
+      },
     );
 
     observer.observe(loadMoreRef.current);
     return () => {
       observer.disconnect();
-      setIsLoadingMore(false);
     };
-  }, [hasMore, loadMore]);
+  }, [hasMore, hasVisibleMore, isLoadingMore, loadMore]);
 
   return (
     <div
@@ -85,46 +110,31 @@ export function CodeLibraryBody({ initialSnippets = [] }) {
 
           {/* Snippet Cards */}
           <div className="space-y-6">
-            {loadedSnippets.length > 0 || filteredSnippets.length > 0 ? (
-              // If there are filtered snippets from search box, show them
-              filteredSnippets.length > 0 ? (
-                filteredSnippets.map((snippet) => (
-                  <SnippetCard
-                    key={snippet.id}
-                    snippet={snippet}
-                    isExpanded={expandedSnippets[snippet.id]}
-                    onToggleExpand={toggleExpand}
-                    onToggleLike={toggleLike}
-                    onCopyCode={copyCode}
-                    copiedStates={copiedStates}
-                    animateLike={animateLike}
-                  />
-                ))
-              ) : (
-                // Otherwise, show the loaded snippets
-                loadedSnippets.map((snippet) => (
-                  <SnippetCard
-                    key={snippet.id}
-                    snippet={snippet}
-                    isExpanded={expandedSnippets[snippet.id]}
-                    onToggleExpand={toggleExpand}
-                    onToggleLike={toggleLike}
-                    onCopyCode={copyCode}
-                    copiedStates={copiedStates}
-                    animateLike={animateLike}
-                  />
-                ))
-              )
+            {activeSnippets.length > 0 ? (
+              visibleSnippets.map((snippet) => (
+                <SnippetCard
+                  key={snippet.id}
+                  snippet={snippet}
+                  isExpanded={expandedSnippets[snippet.id]}
+                  onToggleExpand={toggleExpand}
+                  onToggleLike={toggleLike}
+                  onCopyCode={copyCode}
+                  copiedStates={copiedStates}
+                  animateLike={animateLike}
+                />
+              ))
             ) : (
               <div>
                 <Loading />
               </div>
             )}
           </div>
-          {hasMore && (
+          {(hasVisibleMore || hasMore) && (
             <div ref={loadMoreRef} className="flex justify-center py-4">
               <div className="animate-pulse text-gray-500">
-                Loading more snippets...
+                {isLoadingMore
+                  ? "Loading more snippets..."
+                  : "Scroll for more snippets..."}
               </div>
             </div>
           )}

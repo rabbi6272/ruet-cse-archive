@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { ReCaptchaV3Provider, initializeAppCheck } from "firebase/app-check";
 
 const USER_STORAGE_CONFIG = {
   apiKey: "AIzaSyCxod-eup82Oy_Od04YLHs7iOQdFGBmEHU",
@@ -12,8 +13,15 @@ const USER_STORAGE_CONFIG = {
   measurementId: "G-B8107S52H7",
 };
 
+//6LcO7aYsAAAAAP-IPs5gALP0XxwlG-KqgLUsgb_k
+//recaptcha site key
+
 const UsersApp = initializeApp(USER_STORAGE_CONFIG, "UsersApp");
 const UsersDB = getFirestore(UsersApp);
+
+initializeAppCheck(UsersApp, {
+  provider: new ReCaptchaV3Provider("6LcO7aYsAAAAAP-IPs5gALP0XxwlG-KqgLUsgb_k"),
+});
 
 const USERS_COLLECTION = "users";
 

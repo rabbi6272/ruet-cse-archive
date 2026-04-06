@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { ref, onValue } from "firebase/database";
 
-import { nunito } from "@/app/ui/fonts";
+import { nunito } from "@/app/fonts";
 
 export function ProfileCard({
   name,

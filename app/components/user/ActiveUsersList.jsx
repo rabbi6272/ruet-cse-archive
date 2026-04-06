@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useActiveUsers, formatTimeAgo } from "@/lib/presence-tracker";
+import { useActiveUsers, formatTimeAgo } from "@/lib/PresenceTracker";
 
 const ActiveUsersList = ({ className = "" }) => {
   const [activeUsers, setActiveUsers] = useState([]);
@@ -19,8 +19,8 @@ const ActiveUsersList = ({ className = "" }) => {
         setError(null);
       });
     } catch (err) {
-      console.error('Error setting up active users tracking:', err);
-      setError('Failed to load active users');
+      console.error("Error setting up active users tracking:", err);
+      setError("Failed to load active users");
       setLoading(false);
     }
 
@@ -29,14 +29,16 @@ const ActiveUsersList = ({ className = "" }) => {
       try {
         if (unsubscribe) unsubscribe();
       } catch (err) {
-        console.error('Error cleaning up active users subscription:', err);
+        console.error("Error cleaning up active users subscription:", err);
       }
     };
   }, []);
 
   if (loading) {
     return (
-      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 ${className}`}>
+      <div
+        className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 ${className}`}
+      >
         <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 rounded-t-lg">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse"></div>
@@ -62,7 +64,9 @@ const ActiveUsersList = ({ className = "" }) => {
 
   if (error) {
     return (
-      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-red-200 dark:border-red-700 ${className}`}>
+      <div
+        className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-red-200 dark:border-red-700 ${className}`}
+      >
         <div className="px-4 py-3 border-b border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20 rounded-t-lg">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <i className="fas fa-exclamation-triangle text-red-500"></i>
@@ -71,7 +75,9 @@ const ActiveUsersList = ({ className = "" }) => {
         </div>
         <div className="p-6 text-center">
           <i className="fas fa-wifi text-3xl text-red-400 mb-3"></i>
-          <p className="text-red-600 dark:text-red-400 font-medium">Connection Error</p>
+          <p className="text-red-600 dark:text-red-400 font-medium">
+            Connection Error
+          </p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Unable to load active users at the moment
           </p>
@@ -81,7 +87,9 @@ const ActiveUsersList = ({ className = "" }) => {
   }
 
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 ${className}`}>
+    <div
+      className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 ${className}`}
+    >
       {/* Header */}
       <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 rounded-t-lg">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center justify-between">
@@ -92,10 +100,11 @@ const ActiveUsersList = ({ className = "" }) => {
             </div>
             <span>Active Users</span>
             <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
-              ({activeUsers.length} {activeUsers.length === 1 ? 'person' : 'people'} online)
+              ({activeUsers.length}{" "}
+              {activeUsers.length === 1 ? "person" : "people"} online)
             </span>
           </div>
-          
+
           {/* Real-time indicator */}
           <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
             <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
@@ -109,62 +118,63 @@ const ActiveUsersList = ({ className = "" }) => {
         {activeUsers.length > 0 ? (
           <div className="divide-y divide-gray-100 dark:divide-gray-700">
             {activeUsers.map((user) => (
-              <div 
-                key={user.roll} 
+              <div
+                key={user.roll}
                 className="px-4 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200"
               >
                 <div className="flex items-center gap-3">
-                        {/* Avatar with online indicator */}
-                        <div className="relative flex-shrink-0">
-                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
-                            {user.name.charAt(0).toUpperCase()}
-                          </div>
-                          {/* Online/Grace period indicator */}
-                          {user.isOnline ? (
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full">
-                              <div className="w-full h-full bg-green-500 rounded-full animate-pulse"></div>
-                            </div>
-                          ) : user.isInGracePeriod ? (
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-yellow-500 border-2 border-white dark:border-gray-800 rounded-full">
-                              <div className="w-full h-full bg-yellow-500 rounded-full animate-pulse"></div>
-                            </div>
-                          ) : (
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-gray-400 border-2 border-white dark:border-gray-800 rounded-full"></div>
-                          )}
-                        </div>                  {/* User info */}
+                  {/* Avatar with online indicator */}
+                  <div className="relative flex-shrink-0">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                    {/* Online/Grace period indicator */}
+                    {user.isOnline ? (
+                      <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full">
+                        <div className="w-full h-full bg-green-500 rounded-full animate-pulse"></div>
+                      </div>
+                    ) : user.isInGracePeriod ? (
+                      <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-yellow-500 border-2 border-white dark:border-gray-800 rounded-full">
+                        <div className="w-full h-full bg-yellow-500 rounded-full animate-pulse"></div>
+                      </div>
+                    ) : (
+                      <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-gray-400 border-2 border-white dark:border-gray-800 rounded-full"></div>
+                    )}
+                  </div>{" "}
+                  {/* User info */}
                   <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-                                {user.name}
-                              </p>
-                              {user.isOnline ? (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                  Online
-                                </span>
-                              ) : user.isInGracePeriod ? (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
-                                  Recently Active
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400">
-                                  Offline
-                                </span>
-                              )}
-                            </div>
-                            
-                            <div className="flex items-center gap-4 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                        {user.name}
+                      </p>
+                      {user.isOnline ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                          Online
+                        </span>
+                      ) : user.isInGracePeriod ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                          Recently Active
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400">
+                          Offline
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-4 mt-1 text-xs text-gray-500 dark:text-gray-400">
                       <span className="flex items-center gap-1">
                         <i className="fas fa-id-badge"></i>
                         Roll: {user.roll}
                       </span>
-                      
+
                       {user.timestamp && (
                         <span className="flex items-center gap-1">
                           <i className="fas fa-clock"></i>
                           Active {formatTimeAgo(user.timestamp)}
                         </span>
                       )}
-                      
+
                       {user.sessionId && (
                         <span className="flex items-center gap-1 text-blue-500 dark:text-blue-400">
                           <i className="fas fa-link"></i>
@@ -173,7 +183,6 @@ const ActiveUsersList = ({ className = "" }) => {
                       )}
                     </div>
                   </div>
-                  
                   {/* Connection status indicator */}
                   <div className="flex-shrink-0">
                     {user.isOnline ? (
@@ -236,7 +245,10 @@ const ActiveUsersList = ({ className = "" }) => {
               Last updated: {new Date().toLocaleTimeString()}
             </span>
             <span className="sm:hidden">
-              {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+              {new Date().toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
             </span>
           </span>
         </div>

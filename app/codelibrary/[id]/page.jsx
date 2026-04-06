@@ -1,8 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { db } from "@/lib/firebase";
-import { ref, get } from "firebase/database";
 import Link from "next/link";
 import hljs from "highlight.js";
 import "highlight.js/styles/monokai.css";
@@ -22,17 +20,13 @@ export default function CodeSnapPage() {
           throw new Error("Code snippet ID is required");
         }
 
-        // Get the specific code snippet from Firebase
-        const snippetRef = ref(db, `codeSnippets/${id}`);
-        const snapshot = await get(snippetRef);
-
-        if (!snapshot.exists()) {
+        const response = await fetch(`/api/codesnap/${id}`);
+        if (!response.ok) {
           throw new Error("Code snippet not found");
         }
 
-        const snippetData = snapshot.val();
+        const snippetData = await response.json();
         setCodeSnap({
-          id,
           ...snippetData,
         });
       } catch (err) {
