@@ -1,7 +1,6 @@
-import Dashboard from "@/app/components/user/Dashboard";
+import { Dashboard } from "./components/Dashboard";
 
-const Page = () => {
+export default function Page() {
   return <Dashboard />;
 };
 
-export default Page;

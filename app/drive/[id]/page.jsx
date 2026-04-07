@@ -13,7 +13,7 @@ import {
 } from "react";
 
 import { motion } from "framer-motion";
-import { lato } from "@/app/ui/fonts";
+import { lato } from "@/app/fonts";
 import Loading from "@/app/loading";
 import { DriveFilePreviewModal } from "@/app/components/drive/DriveFilePreviewModal";
 

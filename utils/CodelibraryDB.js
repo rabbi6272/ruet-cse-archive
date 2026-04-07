@@ -20,9 +20,14 @@ const firebaseConfig = {
 const CodelibraryApp = initializeApp(firebaseConfig, "codelibrary");
 const CodelibraryDB = getFirestore(CodelibraryApp);
 
-initializeAppCheck(CodelibraryApp, {
-  provider: new ReCaptchaV3Provider("6LdIZ6YsAAAAAGs1frbDxpApqgsSUALGCF5gTA0u"),
-});
+if (typeof window !== "undefined") {
+  initializeAppCheck(CodelibraryApp, {
+    provider: new ReCaptchaV3Provider(
+      "6LdIZ6YsAAAAAGs1frbDxpApqgsSUALGCF5gTA0u",
+    ),
+    isTokenAutoRefreshEnabled: true,
+  });
+}
 
 const COLLECTION = "codelibrary";
 

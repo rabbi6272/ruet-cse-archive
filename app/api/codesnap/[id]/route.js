@@ -1,5 +1,37 @@
 import { NextResponse } from "next/server";
-import { fetchCodeSnippetServer } from "@/lib/codelibrary/server";
+import { collection, getDocs } from "firebase/firestore";
+import { CodelibraryDB, COLLECTION } from "@/utils/CodelibraryDB";
+
+async function fetchCodeSnippetById(id) {
+  const snippetsRef = collection(CodelibraryDB, COLLECTION);
+  const snapshots = await getDocs(snippetsRef);
+
+  for (const snippetDoc of snapshots.docs) {
+    const data = snippetDoc.data();
+
+    if (Array.isArray(data.snippets)) {
+      const found = data.snippets.find((snippet) => snippet?.id === id);
+      if (found) {
+        return {
+          id: found.id,
+          rollNumber: found.rollNumber || snippetDoc.id,
+          ...found,
+        };
+      }
+      continue;
+    }
+
+    if (snippetDoc.id === id) {
+      return {
+        id: snippetDoc.id,
+        rollNumber: data.rollNumber || snippetDoc.id,
+        ...data,
+      };
+    }
+  }
+
+  return null;
+}
 
 export async function GET(request, { params }) {
   try {
@@ -12,7 +44,7 @@ export async function GET(request, { params }) {
       );
     }
 
-    const snippetData = await fetchCodeSnippetServer(id);
+    const snippetData = await fetchCodeSnippetById(id);
 
     if (!snippetData) {
       return NextResponse.json(

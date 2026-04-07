@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { addNutrinos } from "@/lib/nutrinos-system";
 import AuthUtils from "@/lib/auth-utils-secure";
-import { CodeSnippet } from "@/lib/helper/ultimate";
+import { CodeSnippetHelper } from "@/helpers/CodeSnippetHelper";
 
-export function AddCodeSnippetForm() {
+export function CreateCodeSnippetForm() {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [formData, setFormData] = useState({
@@ -101,7 +101,7 @@ export function AddCodeSnippetForm() {
     setSubmitting(true);
 
     try {
-      let cs = new CodeSnippet({
+      let cs = new CodeSnippetHelper({
         ...formData,
         comments: [],
         createdAt: new Date().toISOString(),
