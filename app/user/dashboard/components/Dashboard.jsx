@@ -11,9 +11,6 @@ import toast from "react-hot-toast";
 import hljs from "highlight.js";
 import "highlight.js/styles/monokai.css";
 
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { CodelibraryDB, COLLECTION } from "@/utils/CodelibraryDB";
-
 import { getUserDisplayRole } from "@/lib/auth-utils";
 import AuthUtils from "@/lib/auth-utils-secure";
 import {

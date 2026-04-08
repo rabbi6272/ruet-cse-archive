@@ -1,22 +1,15 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { db } from "@/lib/firebase";
-import {
-  ref,
-  push,
-  onValue,
-  off,
-  update,
-  remove,
-  query,
-  orderByChild,
-} from "firebase/database";
+import { ref, push, update, remove } from "firebase/database";
 import { users } from "@/db/students_info";
 import { formatDistanceToNow } from "date-fns";
 import { addNutrinos } from "@/lib/nutrinos-system";
 import toast from "react-hot-toast";
 import AuthUtils from "@/lib/auth-utils-secure";
-import { CommentsManager } from "@/lib/helper/ultimate";
+
+import { CommentHelper } from "@/helpers/CommentHelper";
+import { CldImage } from "next-cloudinary";
 
 function getNameFromRoll(roll) {
   const user = users.find((u) => u.roll === roll);
@@ -28,7 +21,19 @@ function getNameFromRoll(roll) {
     .join(" ");
 }
 
-const CommentSection = ({ snippet }) => {
+const CommentSection = ({
+  snippet,
+  snippetId: propSnippetId,
+  snippetAuthor: propSnippetAuthor,
+  snippetTitle: propSnippetTitle,
+  rollNumber: propRollNumber,
+}) => {
+  const snippetId =
+    propSnippetId || snippet?.snippetId || snippet?.id || snippet?.uid;
+  const snippetAuthor =
+    propSnippetAuthor || snippet?.rollNumber || snippet?.authorRoll;
+  const snippetTitle = propSnippetTitle || snippet?.title;
+  const snippetRollNumber = propRollNumber || snippet?.rollNumber;
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [replyingTo, setReplyingTo] = useState(null);
@@ -40,7 +45,6 @@ const CommentSection = ({ snippet }) => {
   const [mentionSuggestions, setMentionSuggestions] = useState([]);
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
-  const [cursorPosition, setCursorPosition] = useState(0);
   const [expandedReplies, setExpandedReplies] = useState({});
   const [activeMentionInput, setActiveMentionInput] = useState(null); // Track which input is active for mentions
   const [suggestionPosition, setSuggestionPosition] = useState({
@@ -56,40 +60,37 @@ const CommentSection = ({ snippet }) => {
   const replyInputRef = useRef(null);
   const maxRepliesPreview = 2;
 
+  const commentHelper = new CommentHelper();
+  const getCommentId = (comment) => comment?.uid || comment?.id;
+  const getReplyId = (reply) => reply?.uid || reply?.id;
+
   useEffect(() => {
-    // Check authentication status and get user data using secure auth utils
-    const checkAuth = () => {
-      if (AuthUtils.isAuthenticated()) {
-        const userData = AuthUtils.getUserData();
-        if (userData) {
-          setUser({
-            roll: userData.roll,
-            name: userData.name,
-          });
-        }
-      } else {
-        setUser(null);
+    if (AuthUtils.isAuthenticated()) {
+      const userData = AuthUtils.getUserData();
+      if (userData) {
+        setUser({
+          roll: userData.roll,
+          name: userData.name,
+        });
       }
-    };
-
-    checkAuth();
-
-    // Check authentication periodically in case user logs out in another tab
-    const authCheckInterval = setInterval(checkAuth, 30000); // Check every 30 seconds
-
-    return () => clearInterval(authCheckInterval);
+    } else {
+      setUser(null);
+    }
   }, []);
 
   // Fetch comments for this snippet
   useEffect(() => {
     const fetchComments = async () => {
-      const cm = new CommentsManager();
-      const data = await cm.read(user?.roll, snippet.snippetId);
-      console.log(data);
-      // setComments(data ? Object.values(data) : []);
+      if (!snippetId || !snippetRollNumber) {
+        setComments([]);
+        return;
+      }
+
+      const data = await commentHelper.read(snippetRollNumber, snippetId);
+      setComments(data || []);
     };
     fetchComments();
-  }, [snippet.snippetId]);
+  }, [snippetId, snippetRollNumber]);
 
   // Keyboard navigation for mention suggestions
   useEffect(() => {
@@ -99,12 +100,12 @@ const CommentSection = ({ snippet }) => {
       if (e.key === "ArrowDown") {
         e.preventDefault();
         setSelectedSuggestionIndex((prev) =>
-          prev < mentionSuggestions.length - 1 ? prev + 1 : 0
+          prev < mentionSuggestions.length - 1 ? prev + 1 : 0,
         );
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setSelectedSuggestionIndex((prev) =>
-          prev > 0 ? prev - 1 : mentionSuggestions.length - 1
+          prev > 0 ? prev - 1 : mentionSuggestions.length - 1,
         );
       } else if (e.key === "Enter") {
         e.preventDefault();
@@ -148,7 +149,8 @@ const CommentSection = ({ snippet }) => {
       const suggestions = users
         .filter(
           (user) =>
-            user.name.toLowerCase().includes(query) || user.roll.includes(query)
+            user.name.toLowerCase().includes(query) ||
+            user.roll.includes(query),
         )
         .slice(0, 5);
       setMentionSuggestions(suggestions);
@@ -198,6 +200,8 @@ const CommentSection = ({ snippet }) => {
   };
 
   const addComment = async () => {
+    if (!snippetId || !snippetRollNumber || !user || !newComment.trim()) return;
+
     setLoading(true);
     const commentObj = {
       authorRoll: user.roll,
@@ -205,11 +209,10 @@ const CommentSection = ({ snippet }) => {
       createdAt: new Date().toISOString(),
       replies: [],
       likes: 0,
-      likedBy: {},
       isEdited: false,
     };
-    const cm = new CommentsManager(commentObj);
-    await cm.push(snippetId + "/" + user.roll);
+    commentHelper.obj = commentObj;
+    await commentHelper.push(snippetRollNumber, snippetId);
     setNewComment("");
     setLoading(false);
     toast.success("Comment added successfully!");
@@ -232,19 +235,19 @@ const CommentSection = ({ snippet }) => {
       });
 
       // Find the comment author to notify
-      const comment = comments.find((c) => c.id === commentId);
+      const comment = comments.find((c) => getCommentId(c) === commentId);
 
       if (comment && user.roll !== comment.authorRoll) {
         await createNotification(
           comment.authorRoll,
           `${getNameFromRoll(
-            user.roll
+            user.roll,
           )} replied to your comment on ${getNameFromRoll(
-            snippetAuthor
+            snippetAuthor,
           )}'s code`,
           "reply",
           snippetId,
-          replyText.trim()
+          replyText.trim(),
         );
       }
 
@@ -269,13 +272,13 @@ const CommentSection = ({ snippet }) => {
               commentId,
               replyText: replyText.trim(),
               replier: user.roll,
-            }
+            },
           );
         }
       } catch (nutritosError) {
         console.error(
           "Failed to award Nutrinos points for reply:",
-          nutritosError
+          nutritosError,
         );
         // Don't break the flow, just log the error
       }
@@ -289,11 +292,11 @@ const CommentSection = ({ snippet }) => {
           await createNotification(
             mentionedRoll,
             `${getNameFromRoll(user.roll)} mentioned you in ${getNameFromRoll(
-              snippetAuthor
+              snippetAuthor,
             )}'s code`,
             "mention",
             snippetId,
-            replyText.trim()
+            replyText.trim(),
           );
 
           // Award Nutrinos points for mention in reply
@@ -307,12 +310,12 @@ const CommentSection = ({ snippet }) => {
                 commentId,
                 replyText: replyText.trim(),
                 mentioner: user.roll,
-              }
+              },
             );
           } catch (nutritosError) {
             console.error(
               "Failed to award Nutrinos points for mention in reply:",
-              nutritosError
+              nutritosError,
             );
           }
         }
@@ -349,7 +352,7 @@ const CommentSection = ({ snippet }) => {
       } catch (nutritosError) {
         console.error(
           "Failed to award Nutrinos points for comment edit:",
-          nutritosError
+          nutritosError,
         );
       }
 
@@ -383,7 +386,7 @@ const CommentSection = ({ snippet }) => {
       } catch (nutritosError) {
         console.error(
           "Failed to deduct Nutrinos points for comment deletion:",
-          nutritosError
+          nutritosError,
         );
       }
 
@@ -403,7 +406,7 @@ const CommentSection = ({ snippet }) => {
     try {
       const replyRef = ref(
         db,
-        `comments/${snippetId}/${commentId}/replies/${replyId}`
+        `comments/${snippetId}/${commentId}/replies/${replyId}`,
       );
       await update(replyRef, {
         text: editReplyText.trim(),
@@ -422,7 +425,7 @@ const CommentSection = ({ snippet }) => {
       } catch (nutritosError) {
         console.error(
           "Failed to award Nutrinos points for reply edit:",
-          nutritosError
+          nutritosError,
         );
       }
 
@@ -446,7 +449,7 @@ const CommentSection = ({ snippet }) => {
     try {
       const replyRef = ref(
         db,
-        `comments/${snippetId}/${commentId}/replies/${replyId}`
+        `comments/${snippetId}/${commentId}/replies/${replyId}`,
       );
       await remove(replyRef); // Properly remove the reply
 
@@ -460,7 +463,7 @@ const CommentSection = ({ snippet }) => {
       } catch (nutritosError) {
         console.error(
           "Failed to deduct Nutrinos points for reply deletion:",
-          nutritosError
+          nutritosError,
         );
       }
 
@@ -477,7 +480,7 @@ const CommentSection = ({ snippet }) => {
     message,
     type,
     relatedSnippetId,
-    commentText = null
+    commentText = null,
   ) => {
     try {
       // Don't create notification for self
@@ -515,7 +518,7 @@ const CommentSection = ({ snippet }) => {
   const toggleCommentLike = async (
     commentId,
     isReply = false,
-    parentCommentId = null
+    parentCommentId = null,
   ) => {
     if (!user) return;
 
@@ -528,9 +531,9 @@ const CommentSection = ({ snippet }) => {
     try {
       const item = isReply
         ? comments
-            .find((c) => c.id === parentCommentId)
-            ?.replies.find((r) => r.id === commentId)
-        : comments.find((c) => c.id === commentId);
+            .find((c) => getCommentId(c) === parentCommentId)
+            ?.replies.find((r) => getReplyId(r) === commentId)
+        : comments.find((c) => getCommentId(c) === commentId);
 
       if (!item) return;
 
@@ -557,7 +560,7 @@ const CommentSection = ({ snippet }) => {
     // Replace mentions with styled spans - updated regex to match the new mention format
     return text.replace(
       /@([^(]+)\((\d+)\)/g,
-      '<span className="text-blue-500 font-medium">@$1</span>'
+      '<span className="text-blue-500 font-medium">@$1</span>',
     );
   };
 
@@ -585,7 +588,7 @@ const CommentSection = ({ snippet }) => {
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-3 mb-3">
               <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                {getNameFromRoll(comments[0].authorRoll).charAt(0)}
+                {getNameFromRoll(user.roll).charAt(0)}
               </div>
               <div className="flex-1">
                 <div className="flex items-center space-x-2">
@@ -603,7 +606,7 @@ const CommentSection = ({ snippet }) => {
             </div>
 
             {/* Latest comment text or edit form */}
-            {editingComment === comments[0].id ? (
+            {editingComment === getCommentId(comments[0]) ? (
               <div className="mb-3">
                 <textarea
                   value={editCommentText}
@@ -613,7 +616,7 @@ const CommentSection = ({ snippet }) => {
                 />
                 <div className="flex items-center space-x-2 mt-2">
                   <button
-                    onClick={() => editComment(comments[0].id)}
+                    onClick={() => editComment(getCommentId(comments[0]))}
                     className="px-3 py-1 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
                     disabled={loading}
                   >
@@ -650,7 +653,7 @@ const CommentSection = ({ snippet }) => {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <button
-                  onClick={() => toggleCommentLike(comments[0].id)}
+                  onClick={() => toggleCommentLike(getCommentId(comments[0]))}
                   className={`flex items-center space-x-1 px-2 py-1 rounded-full transition-all duration-200 text-sm ${
                     comments[0].likedBy && comments[0].likedBy[user?.roll]
                       ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
@@ -671,7 +674,9 @@ const CommentSection = ({ snippet }) => {
                   <button
                     onClick={() =>
                       setReplyingTo(
-                        replyingTo === comments[0].id ? null : comments[0].id
+                        replyingTo === getCommentId(comments[0])
+                          ? null
+                          : getCommentId(comments[0]),
                       )
                     }
                     className="flex items-center space-x-1 px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 text-sm"
@@ -686,7 +691,7 @@ const CommentSection = ({ snippet }) => {
                   <>
                     <button
                       onClick={() => {
-                        setEditingComment(comments[0].id);
+                        setEditingComment(getCommentId(comments[0]));
                         setEditCommentText(comments[0].text);
                       }}
                       className="flex items-center space-x-1 px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:text-yellow-600 dark:hover:text-yellow-400 transition-all duration-200 text-sm"
@@ -696,7 +701,7 @@ const CommentSection = ({ snippet }) => {
                     </button>
 
                     <button
-                      onClick={() => deleteComment(comments[0].id)}
+                      onClick={() => deleteComment(getCommentId(comments[0]))}
                       className="flex items-center space-x-1 px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 text-sm"
                     >
                       <i className="fas fa-trash"></i>
@@ -725,17 +730,17 @@ const CommentSection = ({ snippet }) => {
                 <div className="border-l-2 border-blue-200 dark:border-blue-800 pl-4">
                   {comments[0].replies
                     .sort(
-                      (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+                      (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
                     )
                     .slice(
                       0,
-                      expandedReplies[comments[0].id]
+                      expandedReplies[getCommentId(comments[0])]
                         ? comments[0].replies.length
-                        : maxRepliesPreview
+                        : maxRepliesPreview,
                     )
                     .map((reply) => (
                       <div
-                        key={reply.id}
+                        key={getReplyId(reply)}
                         className="bg-white dark:bg-gray-700 rounded-lg p-3 mb-3 shadow-sm border border-gray-100 dark:border-gray-600"
                       >
                         <div className="flex items-start space-x-2">
@@ -755,7 +760,7 @@ const CommentSection = ({ snippet }) => {
                             </div>
 
                             {/* Reply text or edit form (preview section) */}
-                            {editingReply === reply.id ? (
+                            {editingReply === getReplyId(reply) ? (
                               <div className="mb-2">
                                 <textarea
                                   value={editReplyText}
@@ -768,7 +773,10 @@ const CommentSection = ({ snippet }) => {
                                 <div className="flex items-center space-x-2 mt-2">
                                   <button
                                     onClick={() =>
-                                      editReply(comments[0].id, reply.id)
+                                      editReply(
+                                        getCommentId(comments[0]),
+                                        getReplyId(reply),
+                                      )
                                     }
                                     className="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
                                     disabled={loading}
@@ -806,9 +814,9 @@ const CommentSection = ({ snippet }) => {
                               <button
                                 onClick={() =>
                                   toggleCommentLike(
-                                    reply.id,
+                                    getReplyId(reply),
                                     true,
-                                    comments[0].id
+                                    getCommentId(comments[0]),
                                   )
                                 }
                                 className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-all duration-200 ${
@@ -834,7 +842,7 @@ const CommentSection = ({ snippet }) => {
                                 <>
                                   <button
                                     onClick={() => {
-                                      setEditingReply(reply.id);
+                                      setEditingReply(getReplyId(reply));
                                       setEditReplyText(reply.text);
                                     }}
                                     className="flex items-center space-x-1 px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:text-yellow-600 dark:hover:text-yellow-400 transition-all duration-200"
@@ -845,7 +853,10 @@ const CommentSection = ({ snippet }) => {
 
                                   <button
                                     onClick={() =>
-                                      deleteReply(comments[0].id, reply.id)
+                                      deleteReply(
+                                        getCommentId(comments[0]),
+                                        getReplyId(reply),
+                                      )
                                     }
                                     className="flex items-center space-x-1 px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
                                   >
@@ -864,10 +875,12 @@ const CommentSection = ({ snippet }) => {
                   {comments[0].replies.length > maxRepliesPreview && (
                     <div className="text-center">
                       <button
-                        onClick={() => toggleExpandReplies(comments[0].id)}
+                        onClick={() =>
+                          toggleExpandReplies(getCommentId(comments[0]))
+                        }
                         className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors duration-200"
                       >
-                        {expandedReplies[comments[0].id]
+                        {expandedReplies[getCommentId(comments[0])]
                           ? `Hide ${
                               comments[0].replies.length - maxRepliesPreview
                             } replies`
@@ -880,7 +893,7 @@ const CommentSection = ({ snippet }) => {
             )}
 
             {/* Reply form for latest comment */}
-            {replyingTo === comments[0].id && user && (
+            {replyingTo === getCommentId(comments[0]) && user && (
               <div className="mt-4 ml-4 pl-4 border-l-2 border-blue-500 relative">
                 <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all duration-200">
                   <div className="flex space-x-3 p-3">
@@ -968,7 +981,7 @@ const CommentSection = ({ snippet }) => {
                       Cancel
                     </button>
                     <button
-                      onClick={() => addReply(comments[0].id)}
+                      onClick={() => addReply(getCommentId(comments[0]))}
                       disabled={!replyText.trim() || loading}
                       className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium"
                     >
@@ -1000,7 +1013,7 @@ const CommentSection = ({ snippet }) => {
                   const totalReplies = comments.reduce(
                     (sum, comment) =>
                       sum + (comment.replies ? comment.replies.length : 0),
-                    0
+                    0,
                   );
                   return (
                     totalReplies > 0 && (
@@ -1146,7 +1159,7 @@ const CommentSection = ({ snippet }) => {
           <div className="space-y-6">
             {comments.slice(1).map((comment) => (
               <div
-                key={comment.id}
+                key={getCommentId(comment)}
                 className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-200 dark:border-gray-700"
               >
                 {/* Comment header */}
@@ -1169,7 +1182,7 @@ const CommentSection = ({ snippet }) => {
                 </div>
 
                 {/* Comment text or edit form */}
-                {editingComment === comment.id ? (
+                {editingComment === getCommentId(comment) ? (
                   <div className="mb-4">
                     <textarea
                       value={editCommentText}
@@ -1179,7 +1192,7 @@ const CommentSection = ({ snippet }) => {
                     />
                     <div className="flex items-center space-x-2 mt-2">
                       <button
-                        onClick={() => editComment(comment.id)}
+                        onClick={() => editComment(getCommentId(comment))}
                         className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                         disabled={loading}
                       >
@@ -1216,7 +1229,7 @@ const CommentSection = ({ snippet }) => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <button
-                      onClick={() => toggleCommentLike(comment.id)}
+                      onClick={() => toggleCommentLike(getCommentId(comment))}
                       className={`flex items-center space-x-2 px-3 py-1 rounded-full transition-all duration-200 ${
                         comment.likedBy && comment.likedBy[user?.roll]
                           ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
@@ -1239,7 +1252,9 @@ const CommentSection = ({ snippet }) => {
                       <button
                         onClick={() =>
                           setReplyingTo(
-                            replyingTo === comment.id ? null : comment.id
+                            replyingTo === getCommentId(comment)
+                              ? null
+                              : getCommentId(comment),
                           )
                         }
                         className="flex items-center space-x-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200"
@@ -1254,7 +1269,7 @@ const CommentSection = ({ snippet }) => {
                       <>
                         <button
                           onClick={() => {
-                            setEditingComment(comment.id);
+                            setEditingComment(getCommentId(comment));
                             setEditCommentText(comment.text);
                           }}
                           className="flex items-center space-x-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:text-yellow-600 dark:hover:text-yellow-400 transition-all duration-200"
@@ -1264,7 +1279,7 @@ const CommentSection = ({ snippet }) => {
                         </button>
 
                         <button
-                          onClick={() => deleteComment(comment.id)}
+                          onClick={() => deleteComment(getCommentId(comment))}
                           className="flex items-center space-x-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
                         >
                           <i className="fas fa-trash"></i>
@@ -1283,7 +1298,7 @@ const CommentSection = ({ snippet }) => {
                 </div>
 
                 {/* Reply form */}
-                {replyingTo === comment.id && user && (
+                {replyingTo === getCommentId(comment) && user && (
                   <div className="mt-4 ml-4 pl-4 border-l-2 border-blue-500 relative">
                     <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all duration-200">
                       <div className="flex space-x-3 p-3">
@@ -1316,7 +1331,7 @@ const CommentSection = ({ snippet }) => {
                               top: `${suggestionPosition.top}px`,
                               left: `${Math.min(
                                 suggestionPosition.left,
-                                200
+                                200,
                               )}px`, // Prevent overflow
                               transform:
                                 suggestionPosition.left > 200
@@ -1345,7 +1360,7 @@ const CommentSection = ({ snippet }) => {
                                   >
                                     <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm">
                                       {getNameFromRoll(
-                                        suggestedUser.roll
+                                        suggestedUser.roll,
                                       ).charAt(0)}
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -1360,7 +1375,7 @@ const CommentSection = ({ snippet }) => {
                                       <i className="fas fa-at text-xs"></i>
                                     </div>
                                   </button>
-                                )
+                                ),
                               )}
                               <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
                                 <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -1380,7 +1395,7 @@ const CommentSection = ({ snippet }) => {
                           Cancel
                         </button>
                         <button
-                          onClick={() => addReply(comment.id)}
+                          onClick={() => addReply(getCommentId(comment))}
                           disabled={!replyText.trim() || loading}
                           className="px-4 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium"
                         >
@@ -1398,17 +1413,17 @@ const CommentSection = ({ snippet }) => {
                       {comment.replies
                         .sort(
                           (a, b) =>
-                            new Date(a.createdAt) - new Date(b.createdAt)
+                            new Date(a.createdAt) - new Date(b.createdAt),
                         )
                         .slice(
                           0,
-                          expandedReplies[comment.id]
+                          expandedReplies[getCommentId(comment)]
                             ? comment.replies.length
-                            : maxRepliesPreview
+                            : maxRepliesPreview,
                         )
                         .map((reply) => (
                           <div
-                            key={reply.id}
+                            key={getReplyId(reply)}
                             className="bg-white dark:bg-gray-700 rounded-lg p-4 mb-3 shadow-sm border border-gray-100 dark:border-gray-600"
                           >
                             <div className="flex items-start space-x-3">
@@ -1434,7 +1449,7 @@ const CommentSection = ({ snippet }) => {
                                 </div>
 
                                 {/* Reply text or edit form */}
-                                {editingReply === reply.id ? (
+                                {editingReply === getReplyId(reply) ? (
                                   <div className="mb-3">
                                     <textarea
                                       value={editReplyText}
@@ -1447,7 +1462,10 @@ const CommentSection = ({ snippet }) => {
                                     <div className="flex items-center space-x-2 mt-2">
                                       <button
                                         onClick={() =>
-                                          editReply(comment.id, reply.id)
+                                          editReply(
+                                            getCommentId(comment),
+                                            getReplyId(reply),
+                                          )
                                         }
                                         className="px-3 py-1 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-600 transition-colors"
                                         disabled={loading}
@@ -1485,9 +1503,9 @@ const CommentSection = ({ snippet }) => {
                                   <button
                                     onClick={() =>
                                       toggleCommentLike(
-                                        reply.id,
+                                        getReplyId(reply),
                                         true,
-                                        comment.id
+                                        getCommentId(comment),
                                       )
                                     }
                                     className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-all duration-200 ${
@@ -1514,7 +1532,7 @@ const CommentSection = ({ snippet }) => {
                                     <>
                                       <button
                                         onClick={() => {
-                                          setEditingReply(reply.id);
+                                          setEditingReply(getReplyId(reply));
                                           setEditReplyText(reply.text);
                                         }}
                                         className="flex items-center space-x-1 px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 hover:text-yellow-600 dark:hover:text-yellow-400 transition-all duration-200"
@@ -1527,7 +1545,10 @@ const CommentSection = ({ snippet }) => {
 
                                       <button
                                         onClick={() =>
-                                          deleteReply(comment.id, reply.id)
+                                          deleteReply(
+                                            getCommentId(comment),
+                                            getReplyId(reply),
+                                          )
                                         }
                                         className="flex items-center space-x-1 px-2 py-1 rounded-full text-xs bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
                                       >
@@ -1548,10 +1569,12 @@ const CommentSection = ({ snippet }) => {
                       {comment.replies.length > maxRepliesPreview && (
                         <div className="text-center">
                           <button
-                            onClick={() => toggleExpandReplies(comment.id)}
+                            onClick={() =>
+                              toggleExpandReplies(getCommentId(comment))
+                            }
                             className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors duration-200"
                           >
-                            {expandedReplies[comment.id]
+                            {expandedReplies[getCommentId(comment)]
                               ? `Hide ${
                                   comment.replies.length - maxRepliesPreview
                                 } replies`
