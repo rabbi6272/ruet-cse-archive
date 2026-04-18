@@ -13,9 +13,9 @@ async function fetchCodeSnippetById(id) {
       const found = data.snippets.find((snippet) => snippet?.id === id);
       if (found) {
         return {
+          ...found,
           id: found.id,
           rollNumber: found.rollNumber || snippetDoc.id,
-          ...found,
         };
       }
       continue;
@@ -23,9 +23,9 @@ async function fetchCodeSnippetById(id) {
 
     if (snippetDoc.id === id) {
       return {
+        ...data,
         id: snippetDoc.id,
         rollNumber: data.rollNumber || snippetDoc.id,
-        ...data,
       };
     }
   }

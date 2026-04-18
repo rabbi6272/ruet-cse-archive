@@ -238,7 +238,7 @@ export function CodeSnippetView({ codeSnap }) {
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(
-                        codeSnap.codeSnippet || codeSnap.code || ""
+                        codeSnap.codeSnippet || codeSnap.code || "",
                       );
                       toast.success("Code copied to clipboard!");
                     } catch (err) {
@@ -275,9 +275,11 @@ export function CodeSnippetView({ codeSnap }) {
           {/* Comments Section */}
           <section className="mt-8">
             <CommentSection
-              snippetId={codeSnap.id}
-              snippetAuthor={codeSnap.rollNumber}
-              snippetTitle={codeSnap.title}
+              snippet={{
+                id: codeSnap.id || codeSnap.snippetId || codeSnap.uid,
+                rollNumber: codeSnap.rollNumber,
+                title: codeSnap.title,
+              }}
             />
           </section>
         </div>

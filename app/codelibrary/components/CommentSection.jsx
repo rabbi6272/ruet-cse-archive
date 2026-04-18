@@ -1,13 +1,21 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+// @ts-check
+/** @typedef {import('./types').Snippet}  Snippet  */
+/** @typedef {import('./types').Comment}  Comment  */
+/** @typedef {import('./types').Reply}    Reply    */
+
+import { useState, useEffect, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { users } from "@/db/students_info";
 import { useComments, getNameFromRoll } from "./useComments";
-import type { Snippet, Comment, Reply } from "./types";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatTimeAgo(dateString: string): string {
+/**
+ * @param {string} dateString
+ * @returns {string}
+ */
+function formatTimeAgo(dateString) {
   try {
     return formatDistanceToNow(new Date(dateString), { addSuffix: true });
   } catch {
@@ -15,7 +23,12 @@ function formatTimeAgo(dateString: string): string {
   }
 }
 
-function renderText(text: string): string {
+/**
+ * Render @Name(roll) mentions as highlighted spans.
+ * @param {string} text
+ * @returns {string}
+ */
+function renderText(text) {
   return text.replace(
     /@([^(]+)\((\d+)\)/g,
     '<span class="text-blue-500 font-medium">@$1</span>',
@@ -24,12 +37,17 @@ function renderText(text: string): string {
 
 // ─── useMentionInput ──────────────────────────────────────────────────────────
 
-interface SuggestionPosition {
-  top: number;
-  left: number;
-}
+/**
+ * @typedef {Object} SuggestionPosition
+ * @property {number} top
+ * @property {number} left
+ */
 
-function detectMention(value: string): string | null {
+/**
+ * @param {string} value
+ * @returns {string|null}
+ */
+function detectMention(value) {
   const lastWord = value.split(" ").at(-1) ?? "";
   return lastWord.startsWith("@") && lastWord.length > 1
     ? lastWord.slice(1).toLowerCase()
@@ -37,22 +55,24 @@ function detectMention(value: string): string | null {
 }
 
 function useMentionInput() {
-  const [suggestions, setSuggestions] = useState<typeof users>([]);
+  const [suggestions, setSuggestions] = useState(
+    /** @type {typeof users} */ ([]),
+  );
   const [visible, setVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [position, setPosition] = useState<SuggestionPosition>({
-    top: 0,
-    left: 0,
-  });
-  const [activeInput, setActiveInput] = useState<"comment" | "reply" | null>(
-    null,
+  const [position, setPosition] = useState(
+    /** @type {SuggestionPosition} */ ({ top: 0, left: 0 }),
+  );
+  const [activeInput, setActiveInput] = useState(
+    /** @type {"comment"|"reply"|null} */ (null),
   );
 
-  function onTextChange(
-    value: string,
-    inputType: "comment" | "reply",
-    inputRef: React.RefObject<HTMLTextAreaElement>,
-  ) {
+  /**
+   * @param {string}                                         value
+   * @param {"comment"|"reply"}                             inputType
+   * @param {React.RefObject<HTMLTextAreaElement>}           inputRef
+   */
+  function onTextChange(value, inputType, inputRef) {
     setActiveInput(inputType);
     const q = detectMention(value);
     if (q !== null) {
@@ -76,7 +96,12 @@ function useMentionInput() {
     }
   }
 
-  function insertIntoText(currentText: string, u: (typeof users)[0]): string {
+  /**
+   * @param {string}            currentText
+   * @param {typeof users[0]}   u
+   * @returns {string}
+   */
+  function insertIntoText(currentText, u) {
     const words = currentText.split(" ");
     words[words.length - 1] = `@${u.name.replace(/\s+/g, "")}(${u.roll})`;
     return words.join(" ") + " ";
@@ -102,16 +127,17 @@ function useMentionInput() {
 
 // ─── MentionDropdown ──────────────────────────────────────────────────────────
 
-interface MentionDropdownProps {
-  suggestions: typeof users;
-  selectedIndex: number;
-  position: SuggestionPosition;
-  colorFrom: string;
-  colorTo: string;
-  borderColor: string;
-  onSelect: (u: (typeof users)[0]) => void;
-}
-
+/**
+ * @param {{
+ *   suggestions:    typeof users,
+ *   selectedIndex:  number,
+ *   position:       SuggestionPosition,
+ *   colorFrom:      string,
+ *   colorTo:        string,
+ *   borderColor:    string,
+ *   onSelect:       (u: typeof users[0]) => void,
+ * }} props
+ */
 function MentionDropdown({
   suggestions,
   selectedIndex,
@@ -120,7 +146,7 @@ function MentionDropdown({
   colorTo,
   borderColor,
   onSelect,
-}: MentionDropdownProps) {
+}) {
   return (
     <div
       className="absolute z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-2xl overflow-hidden min-w-[280px] max-w-[320px]"
@@ -175,20 +201,17 @@ function MentionDropdown({
 
 // ─── ReplyItem ────────────────────────────────────────────────────────────────
 
-interface ReplyItemProps {
-  reply: Reply;
-  comment: Comment;
-  user: { roll: string } | null;
-  loading: boolean;
-  onToggleLike: (id: string, isReply: boolean, parentId: string) => void;
-  onDelete: (commentId: string, replyId: string) => void;
-  onEdit: (
-    commentId: string,
-    replyId: string,
-    text: string,
-  ) => Promise<boolean>;
-}
-
+/**
+ * @param {{
+ *   reply:         Reply,
+ *   comment:       Comment,
+ *   user:          {roll: string}|null,
+ *   loading:       boolean,
+ *   onToggleLike:  (id: string, isReply: boolean, parentId: string) => void,
+ *   onDelete:      (commentId: string, replyId: string) => void,
+ *   onEdit:        (commentId: string, replyId: string, text: string) => Promise<boolean>,
+ * }} props
+ */
 function ReplyItem({
   reply,
   comment,
@@ -197,7 +220,7 @@ function ReplyItem({
   onToggleLike,
   onDelete,
   onEdit,
-}: ReplyItemProps) {
+}) {
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(reply.text);
 
@@ -308,11 +331,10 @@ function ReplyItem({
 
 const MAX_REPLIES_PREVIEW = 2;
 
-interface CommentSectionProps {
-  snippet: Snippet;
-}
-
-const CommentSection = ({ snippet }: CommentSectionProps) => {
+/**
+ * @param {{ snippet: Snippet }} props
+ */
+const CommentSection = ({ snippet }) => {
   const {
     comments,
     user,
@@ -326,34 +348,38 @@ const CommentSection = ({ snippet }: CommentSectionProps) => {
     toggleLike,
   } = useComments({
     snippetId: snippet.id,
-    rollNumber: snippet.rollNumber, // ← new: locates the Firestore doc
+    rollNumber: snippet.rollNumber,
     snippetTitle: snippet.title,
     snippetAuthorRoll: snippet.rollNumber,
   });
 
-  // ── UI state ────────────────────────────────────────────────────────────────
-
   const [newComment, setNewComment] = useState("");
   const [replyText, setReplyText] = useState("");
-  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyingTo, setReplyingTo] = useState(
+    /** @type {string|null} */ (null),
+  );
   const [showAllComments, setShowAllComments] = useState(false);
   const [showAddComment, setShowAddComment] = useState(false);
-  const [expandedReplies, setExpandedReplies] = useState<
-    Record<string, boolean>
-  >({});
-  const [editingComment, setEditingComment] = useState<string | null>(null);
+  const [expandedReplies, setExpandedReplies] = useState(
+    /** @type {Record<string,boolean>} */ ({}),
+  );
+  const [editingComment, setEditingComment] = useState(
+    /** @type {string|null} */ (null),
+  );
   const [editCommentText, setEditCommentText] = useState("");
 
-  const commentInputRef = useRef<HTMLTextAreaElement>(null);
-  const replyInputRef = useRef<HTMLTextAreaElement>(null);
-
-  // ── Mention system ──────────────────────────────────────────────────────────
+  const commentInputRef = useRef(
+    /** @type {HTMLTextAreaElement|null} */ (null),
+  );
+  const replyInputRef = useRef(/** @type {HTMLTextAreaElement|null} */ (null));
 
   const mention = useMentionInput();
 
+  // Keyboard nav for mention dropdown
   useEffect(() => {
     if (!mention.visible) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
+    /** @param {KeyboardEvent} e */
+    const handleKeyDown = (e) => {
       if (e.key === "ArrowDown") {
         e.preventDefault();
         mention.setSelectedIndex((p) =>
@@ -376,7 +402,8 @@ const CommentSection = ({ snippet }: CommentSectionProps) => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [mention.visible, mention.suggestions, mention.selectedIndex]);
 
-  function handleInsertMention(u: (typeof users)[0]) {
+  /** @param {typeof users[0]} u */
+  function handleInsertMention(u) {
     if (mention.activeInput === "reply") {
       setReplyText((prev) => mention.insertIntoText(prev, u));
       replyInputRef.current?.focus();
@@ -387,8 +414,6 @@ const CommentSection = ({ snippet }: CommentSectionProps) => {
     mention.close();
   }
 
-  // ── Action handlers ─────────────────────────────────────────────────────────
-
   async function handleAddComment() {
     const ok = await addComment(newComment);
     if (ok) {
@@ -397,7 +422,8 @@ const CommentSection = ({ snippet }: CommentSectionProps) => {
     }
   }
 
-  async function handleSaveCommentEdit(commentId: string) {
+  /** @param {string} commentId */
+  async function handleSaveCommentEdit(commentId) {
     const ok = await editComment(commentId, editCommentText);
     if (ok) {
       setEditingComment(null);
@@ -405,7 +431,8 @@ const CommentSection = ({ snippet }: CommentSectionProps) => {
     }
   }
 
-  async function handleAddReply(commentId: string) {
+  /** @param {string} commentId */
+  async function handleAddReply(commentId) {
     const ok = await addReply(commentId, replyText);
     if (ok) {
       setReplyText("");
@@ -413,7 +440,8 @@ const CommentSection = ({ snippet }: CommentSectionProps) => {
     }
   }
 
-  function toggleExpandReplies(commentId: string) {
+  /** @param {string} commentId */
+  function toggleExpandReplies(commentId) {
     setExpandedReplies((prev) => ({ ...prev, [commentId]: !prev[commentId] }));
   }
 
@@ -422,9 +450,10 @@ const CommentSection = ({ snippet }: CommentSectionProps) => {
     0,
   );
 
-  // ─── Reply input box (reused in both preview and expanded section) ──────────
+  // ─── Inner components (declared here to share outer scope state) ────────────
 
-  function ReplyInput({ commentId }: { commentId: string }) {
+  /** @param {{ commentId: string }} props */
+  function ReplyInput({ commentId }) {
     return (
       <div className="mt-4 ml-4 pl-4 border-l-2 border-blue-500 relative">
         <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 focus-within:ring-2 focus-within:ring-blue-500 transition-all">
@@ -475,9 +504,8 @@ const CommentSection = ({ snippet }: CommentSectionProps) => {
     );
   }
 
-  // ─── Replies list (reused in both sections) ─────────────────────────────────
-
-  function RepliesList({ comment }: { comment: Comment }) {
+  /** @param {{ comment: Comment }} props */
+  function RepliesList({ comment }) {
     if (comment.replies.length === 0) return null;
     const sorted = [...comment.replies].sort(
       (a, b) =>
@@ -486,7 +514,6 @@ const CommentSection = ({ snippet }: CommentSectionProps) => {
     const visible = expandedReplies[comment.id]
       ? sorted
       : sorted.slice(0, MAX_REPLIES_PREVIEW);
-
     return (
       <div className="mt-4 ml-4 space-y-3">
         <div className="border-l-2 border-blue-200 dark:border-blue-800 pl-4">
@@ -519,21 +546,14 @@ const CommentSection = ({ snippet }: CommentSectionProps) => {
     );
   }
 
-  // ─── Comment body (text or edit form) ──────────────────────────────────────
-
-  function CommentBody({
-    comment,
-    textSize = "sm",
-  }: {
-    comment: Comment;
-    textSize?: string;
-  }) {
+  /** @param {{ comment: Comment }} props */
+  function CommentBody({ comment }) {
     return editingComment === comment.id ? (
       <div className="mb-3">
         <textarea
           value={editCommentText}
           onChange={(e) => setEditCommentText(e.target.value)}
-          className={`w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-${textSize} resize-none focus:outline-none focus:ring-2 focus:ring-blue-500`}
+          className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
           rows={3}
         />
         <div className="flex items-center space-x-2 mt-2">
@@ -558,7 +578,7 @@ const CommentSection = ({ snippet }: CommentSectionProps) => {
     ) : (
       <div className="mb-3">
         <div
-          className={`text-gray-800 dark:text-gray-200 text-${textSize} leading-relaxed`}
+          className="text-gray-800 dark:text-gray-200 text-sm leading-relaxed"
           dangerouslySetInnerHTML={{ __html: renderText(comment.text) }}
         />
         {comment.isEdited && (
@@ -570,21 +590,13 @@ const CommentSection = ({ snippet }: CommentSectionProps) => {
     );
   }
 
-  // ─── Comment action buttons ─────────────────────────────────────────────────
-
-  function CommentActions({
-    comment,
-    size = "sm",
-  }: {
-    comment: Comment;
-    size?: string;
-  }) {
-    const px = size === "sm" ? "px-2" : "px-3";
+  /** @param {{ comment: Comment }} props */
+  function CommentActions({ comment }) {
     return (
       <div className="flex items-center space-x-3">
         <button
           onClick={() => toggleLike(comment.id)}
-          className={`flex items-center space-x-1 ${px} py-1 rounded-full transition-all duration-200 text-${size} ${
+          className={`flex items-center space-x-1 px-2 py-1 rounded-full transition-all duration-200 text-sm ${
             comment.likedBy?.[user?.roll ?? ""]
               ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
               : "bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-red-50 hover:text-red-500"
@@ -601,7 +613,7 @@ const CommentSection = ({ snippet }: CommentSectionProps) => {
             onClick={() =>
               setReplyingTo(replyingTo === comment.id ? null : comment.id)
             }
-            className={`flex items-center space-x-1 ${px} py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 text-${size}`}
+            className="flex items-center space-x-1 px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 text-sm"
           >
             <i className="fas fa-reply" />
             <span className="font-medium">Reply</span>
@@ -615,14 +627,14 @@ const CommentSection = ({ snippet }: CommentSectionProps) => {
                 setEditingComment(comment.id);
                 setEditCommentText(comment.text);
               }}
-              className={`flex items-center space-x-1 ${px} py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 hover:text-yellow-600 transition-all duration-200 text-${size}`}
+              className="flex items-center space-x-1 px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-yellow-50 hover:text-yellow-600 transition-all duration-200 text-sm"
             >
               <i className="fas fa-edit" />
               <span className="font-medium">Edit</span>
             </button>
             <button
               onClick={() => deleteComment(comment.id)}
-              className={`flex items-center space-x-1 ${px} py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all duration-200 text-${size}`}
+              className="flex items-center space-x-1 px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-red-50 hover:text-red-600 transition-all duration-200 text-sm"
             >
               <i className="fas fa-trash" />
               <span className="font-medium">Delete</span>
@@ -633,15 +645,14 @@ const CommentSection = ({ snippet }: CommentSectionProps) => {
     );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ─── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-      {/* ── Latest comment preview ─────────────────────────────────────────── */}
+      {/* Latest comment preview */}
       {comments.length > 0 && (
         <div className="mb-4">
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-            {/* Author */}
             <div className="flex items-center space-x-3 mb-3">
               <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
                 {getNameFromRoll(comments[0].authorRoll).charAt(0)}
@@ -683,7 +694,7 @@ const CommentSection = ({ snippet }: CommentSectionProps) => {
         </div>
       )}
 
-      {/* ── Add comment button / form ──────────────────────────────────────── */}
+      {/* Add comment button / form */}
       <div className="mb-4">
         {!showAddComment ? (
           <div className="flex items-center justify-between">
@@ -775,7 +786,7 @@ const CommentSection = ({ snippet }: CommentSectionProps) => {
         )}
       </div>
 
-      {/* ── All comments (expanded) ────────────────────────────────────────── */}
+      {/* All comments (expanded) */}
       {showAllComments && comments.length > 1 && (
         <div className="mt-6 space-y-6">
           <div className="flex items-center justify-between">
@@ -789,14 +800,12 @@ const CommentSection = ({ snippet }: CommentSectionProps) => {
               Hide
             </button>
           </div>
-
           <div className="space-y-6">
             {comments.slice(1).map((comment) => (
               <div
                 key={comment.id}
                 className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700"
               >
-                {/* Author */}
                 <div className="flex items-center space-x-3 mb-3">
                   <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
                     {getNameFromRoll(comment.authorRoll).charAt(0)}
@@ -816,7 +825,7 @@ const CommentSection = ({ snippet }: CommentSectionProps) => {
                 <CommentBody comment={comment} />
 
                 <div className="flex items-center justify-between">
-                  <CommentActions comment={comment} size="sm" />
+                  <CommentActions comment={comment} />
                   {comment.replies.length > 0 && (
                     <span className="text-xs text-gray-500 dark:text-gray-400">
                       {comment.replies.length}{" "}
@@ -835,7 +844,7 @@ const CommentSection = ({ snippet }: CommentSectionProps) => {
         </div>
       )}
 
-      {/* ── Login prompt ───────────────────────────────────────────────────── */}
+      {/* Login prompt */}
       {!user && !showAddComment && (
         <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-center border border-blue-200 dark:border-blue-800">
           <div className="text-2xl mb-2">
