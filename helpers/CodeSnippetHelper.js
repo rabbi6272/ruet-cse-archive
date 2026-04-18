@@ -7,10 +7,19 @@ import {
   getDocs,
   setDoc,
 } from "firebase/firestore";
+import {
+  decorateSnippet,
+  matchesSnippetId,
+  normalizeSnippets,
+} from "@/lib/codelibrary/snippetIdentity";
 
 export class CodeSnippetHelper {
   constructor(obj = {}) {
     this.obj = obj;
+  }
+
+  normalizeSnippets(snippets, rollNumber) {
+    return normalizeSnippets(snippets, rollNumber);
   }
 
   async push(rollNumber) {
@@ -60,22 +69,17 @@ export class CodeSnippetHelper {
         const data = snapshot.data();
 
         const snippets = this.normalizeSnippets(data.snippets, snapshot.id);
-        const snippet = snippets.find((item) => item?.id === snippetId);
+        const snippet = snippets.find((item) => matchesSnippetId(item, snippetId, snapshot.id));
 
         if (snippet) {
-          return {
-            id: snippet.id,
-            rollNumber: snapshot.id,
-            ...snippet,
-          };
+          return decorateSnippet(snippet, snapshot.id);
         }
 
-        if (snapshot.id === snippetId) {
-          return {
-            id: snapshot.id,
-            rollNumber: data.rollNumber || snapshot.id,
-            ...data,
-          };
+        if (matchesSnippetId(data, snippetId, snapshot.id) || snapshot.id === snippetId) {
+          return decorateSnippet(
+            { ...data, id: data.id || snapshot.id },
+            snapshot.id,
+          );
         }
       }
 
@@ -98,7 +102,7 @@ export class CodeSnippetHelper {
 
       console.log("Loaded snippets:", data);
 
-      return data.snippets;
+      return this.normalizeSnippets(data.snippets, rollNumber);
     } catch (error) {
       throw error;
     }
@@ -113,13 +117,12 @@ export class CodeSnippetHelper {
         throw new Error("Snippet document not found");
       }
 
-      const snippets = snapshot.data().snippets;
-      if (!Array.isArray(snippets)) {
-        throw new Error("Invalid snippets data");
-      }
+      const snippets = Array.isArray(snapshot.data().snippets)
+        ? snapshot.data().snippets
+        : [];
 
-      const snippetIndex = snippets.findIndex(
-        (item) => item?.id === updatedDoc.id,
+      const snippetIndex = snippets.findIndex((item) =>
+        matchesSnippetId(item, updatedDoc.id, rollNumber),
       );
 
       if (snippetIndex === -1) {
@@ -155,7 +158,7 @@ export class CodeSnippetHelper {
         }
 
         const nextSnippets = data.snippets.filter(
-          (item) => item?.id !== snippetId,
+          (item) => !matchesSnippetId(item, snippetId, snapshot.id),
         );
 
         if (nextSnippets.length === data.snippets.length) {

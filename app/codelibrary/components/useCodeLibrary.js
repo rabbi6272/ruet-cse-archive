@@ -18,6 +18,11 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { CodelibraryDB, COLLECTION } from "@/utils/CodelibraryDB";
+import {
+  decorateSnippet,
+  matchesSnippetId,
+  normalizeSnippets,
+} from "@/lib/codelibrary/snippetIdentity";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -49,16 +54,15 @@ function flattenDocs(snap) {
 
   snap.docs.forEach((snapDoc) => {
     const data = snapDoc.data();
-    const snippetsArr = Array.isArray(data.snippets) ? data.snippets : [data];
+    const snippetsArr = Array.isArray(data.snippets)
+      ? normalizeSnippets(data.snippets, snapDoc.id)
+      : [decorateSnippet(data, snapDoc.id)];
 
     snippetsArr.forEach((raw) => {
       if (!raw) return;
-      const id = raw.id ?? snapDoc.id;
       result.push({
         ...raw,
-        id,
-        rollNumber: raw.rollNumber ?? snapDoc.id,
-        isLiked: localStorage.getItem(`liked_${id}`) === "true",
+        isLiked: localStorage.getItem(`liked_${raw.id}`) === "true",
         likesCount: raw.likesCount ?? 0,
         copiesCount: raw.copiesCount ?? 0,
         language: normalizeLanguage(raw.language),
@@ -99,8 +103,8 @@ async function patchSnippetInFirestore(rollNumber, snippetId, updater) {
   if (!rollSnap.exists()) return;
 
   const data = rollSnap.data();
-  const nextSnippets = (Array.isArray(data.snippets) ? data.snippets : []).map(
-    (item) => (item.id === snippetId ? updater(item) : item)
+  const nextSnippets = (Array.isArray(data.snippets) ? data.snippets : []).map((item) =>
+    matchesSnippetId(item, snippetId, rollNumber) ? updater(item) : item
   );
 
   await updateDoc(rollRef, {

@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { collection, getDocs } from "firebase/firestore";
 import { CodelibraryDB, COLLECTION } from "@/utils/CodelibraryDB";
+import {
+  decorateSnippet,
+  matchesSnippetId,
+  normalizeSnippets,
+} from "@/lib/codelibrary/snippetIdentity";
 
 async function fetchCodeSnippetById(id) {
   const snippetsRef = collection(CodelibraryDB, COLLECTION);
@@ -10,23 +15,20 @@ async function fetchCodeSnippetById(id) {
     const data = snippetDoc.data();
 
     if (Array.isArray(data.snippets)) {
-      const found = data.snippets.find((snippet) => snippet?.id === id);
+      const found = normalizeSnippets(data.snippets, snippetDoc.id).find((snippet) =>
+        matchesSnippetId(snippet, id, snippetDoc.id),
+      );
       if (found) {
-        return {
-          ...found,
-          id: found.id,
-          rollNumber: found.rollNumber || snippetDoc.id,
-        };
+        return decorateSnippet(found, snippetDoc.id);
       }
       continue;
     }
 
-    if (snippetDoc.id === id) {
-      return {
-        ...data,
-        id: snippetDoc.id,
-        rollNumber: data.rollNumber || snippetDoc.id,
-      };
+    if (matchesSnippetId(data, id, snippetDoc.id) || snippetDoc.id === id) {
+      return decorateSnippet(
+        { ...data, id: data.id || snippetDoc.id },
+        snippetDoc.id,
+      );
     }
   }
 
