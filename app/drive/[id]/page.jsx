@@ -15,7 +15,7 @@ import {
 import { motion } from "framer-motion";
 import { lato } from "@/app/fonts";
 import Loading from "@/app/loading";
-import { DriveFilePreviewModal } from "@/app/components/drive/DriveFilePreviewModal";
+import { DriveFilePreviewModal } from "./DriveFilePreviewModal";
 
 // Simple client-side cache to prevent re-fetching on back navigation
 const clientCache = new Map();
@@ -137,14 +137,14 @@ const FileItem = memo(({ file, index, onFolderClick, onPreview }) => {
         <div className="flex items-center justify-between gap-2 lg:gap-4">
           <Link
             href={file.webContentLink}
-            className="flex-1 border-2 border-gray-600 cursor-pointer grid place-items-center text-gray-700 dark:text-gray-200 w-12 h-9 rounded-full"
+            className="flex-1 border-2 border-gray-600 cursor-pointer grid place-items-center text-gray-700 dark:text-gray-200 hover:border-blue-500 hover:text-blue-500 transition-colors duration-200 w-12 h-9 rounded-full"
             aria-label={`Download ${file.name}`}
           >
             <i className="fas fa-download text-sm"></i>
           </Link>
           <button
             onClick={handlePreview}
-            className="flex-1 border-2 border-gray-600 cursor-pointer grid place-items-center text-gray-700 dark:text-gray-200 w-12 h-9 rounded-full"
+            className="flex-1 border-2 border-gray-600 cursor-pointer grid place-items-center text-gray-700 dark:text-gray-200 hover:border-blue-500 hover:text-blue-500 transition-colors duration-200 w-12 h-9 rounded-full"
             aria-label={`Preview ${file.name}`}
           >
             <i className="fas fa-eye text-sm"></i>
