@@ -2,9 +2,8 @@ import { ProfileCard } from "@/app/components/contact&help/developers/profileCar
 
 import { avegance } from "@/app/fonts";
 
-import rabbi2 from "@/public/images/developers/rabbi2.jpg";
+import rabbi2 from "@/public/images/developers/rabbi3.jpg";
 import bitto2 from "@/public/images/developers/bitto2.jpg";
-import sumon from "@/public/images/developers/sumon.jpg";
 import nilay from "@/public/images/developers/nilay.jpg";
 import amio from "@/public/images/developers/amio.jpg";
 import sujoy from "@/public/images/developers/sujoy.jpg";
