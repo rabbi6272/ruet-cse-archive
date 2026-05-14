@@ -32,7 +32,7 @@ export function ProfileCard({
     >
       {/* Front Side */}
       <div
-        className={`absolute inset-0 flex flex-col items-center pt-6 px-4 bg-gradient-to-b from-blue-50 to-white transition-all duration-500 ${
+        className={`absolute inset-0 flex flex-col items-center pt-6 px-4 bg-linear-to-b from-blue-50 to-white transition-all duration-500 ${
           isFlipped ? "opacity-0" : "opacity-100 group-hover:opacity-0"
         }`}
       >
@@ -85,7 +85,7 @@ export function ProfileCard({
 
       {/* Back Side - Social Links */}
       <div
-        className={`absolute inset-0 bg-gradient-to-b from-blue-500 to-blue-700 flex flex-col justify-center items-center transition-all duration-500 ${
+        className={`absolute inset-0 bg-linear-to-b from-blue-500 to-blue-700 flex flex-col justify-center items-center transition-all duration-500 ${
           isFlipped ? "opacity-100" : "opacity-0 group-hover:opacity-100"
         }`}
       >

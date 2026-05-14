@@ -11,13 +11,13 @@ export function HeroSection() {
         delay={30}
         animateBy="letters"
         direction="bottom"
-        className="text-4xl md:text-5xl lg:text-6xl font-extrabold px-8 sm:px-0 mb-4 text-gray-600 dark:text-neutral-300"
+        className="text-4xl md:text-5xl lg:text-6xl font-extrabold px-8 sm:px-0 mb-4 text-gray-600 dark:text-neutral-200 drop-shadow-md"
       />
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1, delay: 1.5 }}
-        className="text-lg lg:text-xl lg:px-16 font-normal text-gray-500 dark:text-gray-400"
+        className="text-lg lg:text-xl lg:px-16 font-normal text-gray-500 dark:text-gray-500"
       >
         A comprehensive resource hub for RUET CSE students, providing access to
         notes, code libraries, academic materials, alumni network and study

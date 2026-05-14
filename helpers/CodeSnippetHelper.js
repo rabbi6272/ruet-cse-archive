@@ -1,4 +1,8 @@
-import { CodelibraryDB, COLLECTION } from "@/utils/CodelibraryDB";
+import {
+  CodelibraryDB,
+  COLLECTION,
+  ensureCodelibraryAuth,
+} from "@/utils/CodelibraryDB";
 import {
   collection,
   deleteDoc,
@@ -24,6 +28,8 @@ export class CodeSnippetHelper {
 
   async push(rollNumber) {
     try {
+      await ensureCodelibraryAuth();
+
       const snippetId =
         this.obj?.id ||
         this.obj?.uid ||
@@ -62,6 +68,8 @@ export class CodeSnippetHelper {
 
   async readById(snippetId) {
     try {
+      await ensureCodelibraryAuth();
+
       const collectionRef = collection(CodelibraryDB, COLLECTION);
       const snapshots = await getDocs(collectionRef);
 
@@ -91,6 +99,8 @@ export class CodeSnippetHelper {
 
   async readAllByRoll(rollNumber) {
     try {
+      await ensureCodelibraryAuth();
+
       const rollDocRef = doc(CodelibraryDB, COLLECTION, rollNumber);
       const snapshot = await getDoc(rollDocRef);
 
@@ -110,6 +120,8 @@ export class CodeSnippetHelper {
 
   async update(rollNumber, updatedDoc) {
     try {
+      await ensureCodelibraryAuth();
+
       const rollDocRef = doc(CodelibraryDB, COLLECTION, String(rollNumber));
       const snapshot = await getDoc(rollDocRef);
 
@@ -148,6 +160,8 @@ export class CodeSnippetHelper {
 
   async remove(snippetId) {
     try {
+      await ensureCodelibraryAuth();
+
       const collectionRef = collection(CodelibraryDB, COLLECTION);
       const snapshots = await getDocs(collectionRef);
 

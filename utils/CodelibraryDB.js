@@ -1,6 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth, signInAnonymously } from "firebase/auth";
 import { ReCaptchaV3Provider, initializeAppCheck } from "firebase/app-check";
 
 const firebaseConfig = {
@@ -19,6 +20,8 @@ const firebaseConfig = {
 // Initialize Firebase
 const CodelibraryApp = initializeApp(firebaseConfig, "codelibrary");
 const CodelibraryDB = getFirestore(CodelibraryApp);
+const CodelibraryAuth = getAuth(CodelibraryApp);
+let authPromise = null;
 
 if (typeof window !== "undefined") {
   initializeAppCheck(CodelibraryApp, {
@@ -31,4 +34,17 @@ if (typeof window !== "undefined") {
 
 const COLLECTION = "codelibrary";
 
-export { CodelibraryDB, COLLECTION };
+async function ensureCodelibraryAuth() {
+  if (typeof window === "undefined") return null;
+  if (CodelibraryAuth.currentUser) return CodelibraryAuth.currentUser;
+
+  authPromise ??= signInAnonymously(CodelibraryAuth)
+    .then((credential) => credential.user)
+    .finally(() => {
+      authPromise = null;
+    });
+
+  return authPromise;
+}
+
+export { CodelibraryAuth, CodelibraryDB, COLLECTION, ensureCodelibraryAuth };

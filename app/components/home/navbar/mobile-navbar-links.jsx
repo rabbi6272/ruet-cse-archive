@@ -34,7 +34,7 @@ const mobileNavItems = [
     subItems: [
       {
         name: "RUET CSE 24",
-        href: "https://ruetcse24-new.vercel.app/",
+        href: "https://students.ruetcsearchive.app/",
         target: "_blank",
       },
     ],

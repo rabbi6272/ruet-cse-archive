@@ -84,7 +84,7 @@ export function DesktopNavbarLinks() {
           </button>
           <div className="dropdown bg-[#ffffff]/90 dark:bg-[#071a26]/90 backdrop-blur-lg shadow-lg absolute left-0 mt-4 py-1 w-44 rounded-lg z-50">
             <Link
-              href="https://ruetcse24-new.vercel.app/"
+              href="https://students.ruetcsearchive.app/"
               target="_blank"
               className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-[#071a26]/90 hover:text-blue-600 dark:hover:text-blue-500"
             >

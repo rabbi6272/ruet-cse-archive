@@ -17,7 +17,11 @@ import {
   startAfter,
   updateDoc,
 } from "firebase/firestore";
-import { CodelibraryDB, COLLECTION } from "@/utils/CodelibraryDB";
+import {
+  CodelibraryDB,
+  COLLECTION,
+  ensureCodelibraryAuth,
+} from "@/utils/CodelibraryDB";
 import {
   decorateSnippet,
   matchesSnippetId,
@@ -98,6 +102,8 @@ function mergeById(existing, incoming) {
  * @returns {Promise<void>}
  */
 async function patchSnippetInFirestore(rollNumber, snippetId, updater) {
+  await ensureCodelibraryAuth();
+
   const rollRef = doc(CodelibraryDB, COLLECTION, rollNumber);
   const rollSnap = await getDoc(rollRef);
   if (!rollSnap.exists()) return;
@@ -167,6 +173,8 @@ export function useCodeLibrary(initialSnippets = []) {
     isFetchingRef.current = true;
 
     try {
+      await ensureCodelibraryAuth();
+
       if (reset) lastVisibleDocRef.current = null;
 
       const constraints = [
