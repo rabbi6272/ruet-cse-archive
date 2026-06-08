@@ -19,25 +19,79 @@ import Loading from "@/app/loading";
 import { DriveFilePreviewModal } from "./DriveFilePreviewModal";
 
 // Simple client-side cache to prevent re-fetching on back navigation
-const clientCache = new Map();
-const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+// ============= CLIENT-SIDE DRIVE CACHE =============
+// Safe to use in the browser — persistent per tab, single-user, no serverless concerns.
 
-function getCachedData(folderId) {
-  const cached = clientCache.get(folderId);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached.data;
-  }
-  clientCache.delete(folderId);
-  return null;
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+const MAX_CACHE_SIZE = 50;
+
+// Using a Map preserves insertion order, which we use for LRU eviction.
+const clientCache = new Map();
+
+/**
+ * Moves an existing key to the end of the Map (marks it as recently used).
+ * This is how LRU order is maintained without a separate data structure.
+ */
+function touchKey(key, value) {
+  clientCache.delete(key);
+  clientCache.set(key, value);
 }
 
-function setCachedData(folderId, data) {
-  // Prevent cache from growing too large
-  if (clientCache.size > 50) {
-    const firstKey = clientCache.keys().next().value;
-    clientCache.delete(firstKey);
+/**
+ * Returns cached data for a folderId if it exists and hasn't expired.
+ * Automatically removes expired entries on access (lazy expiry).
+ */
+function getCachedData(folderId) {
+  const entry = clientCache.get(folderId);
+
+  if (!entry) return null;
+
+  if (Date.now() - entry.timestamp >= CACHE_TTL) {
+    clientCache.delete(folderId); // lazy cleanup on stale access
+    return null;
   }
+
+  // Promote to most-recently-used by moving to end
+  touchKey(folderId, entry);
+  return entry.data;
+}
+
+/**
+ * Stores data in the cache for a folderId.
+ * Evicts the least recently used entry if the cache is at capacity.
+ */
+function setCachedData(folderId, data) {
+  // If key already exists, remove it first so it gets re-inserted at the end
+  if (clientCache.has(folderId)) {
+    clientCache.delete(folderId);
+  } else if (clientCache.size >= MAX_CACHE_SIZE) {
+    // Evict the LRU entry — first key in the Map
+    const lruKey = clientCache.keys().next().value;
+    clientCache.delete(lruKey);
+  }
+
   clientCache.set(folderId, { data, timestamp: Date.now() });
+}
+
+/**
+ * Manually invalidates the cache for a specific folder.
+ * Call this after a mutation (e.g. file upload, delete).
+ */
+function invalidateCache(folderId) {
+  clientCache.delete(folderId);
+}
+
+/**
+ * Removes all expired entries from the cache.
+ * Call this periodically (e.g. on route change) to prevent stale memory buildup.
+ */
+function pruneExpiredEntries() {
+  const now = Date.now();
+  for (const [key, entry] of clientCache.entries()) {
+    if (now - entry.timestamp >= CACHE_TTL) {
+      clientCache.delete(key);
+    }
+  }
 }
 
 // Memoized file icon component
