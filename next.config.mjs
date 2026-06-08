@@ -3,7 +3,6 @@ const nextConfig = {
   // Fix Windows OneDrive symlink issues
   outputFileTracingIncludes: {},
   outputFileTracingExcludes: {},
-
   images: {
     remotePatterns: [
       new URL(
@@ -70,7 +69,7 @@ const nextConfig = {
   trailingSlash: false,
 
   // Allow dev origins for cross-origin requests
-  allowedDevOrigins: ["192.168.56.1", "192.168.0.235"],
+  allowedDevOrigins: ["192.168.56.*", "192.168.0.*"],
 };
 
 export default nextConfig;

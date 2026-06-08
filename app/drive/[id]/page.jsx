@@ -20,7 +20,7 @@ import { DriveFilePreviewModal } from "./DriveFilePreviewModal";
 
 // Simple client-side cache to prevent re-fetching on back navigation
 const clientCache = new Map();
-const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
 function getCachedData(folderId) {
   const cached = clientCache.get(folderId);
@@ -116,14 +116,14 @@ const FileItem = memo(({ file, index, onFolderClick, onPreview }) => {
           {index + 1}.
         </span>
 
-        <div className="text-xl lg:text-2xl mr-0.5">
+        <div className="text-lg md:text-xl lg:text-2xl mr-0.5">
           <FileIcon mimeType={file.mimeType} />
         </div>
 
         <h3
           onClick={handleClick}
-          className="cursor-pointer hover:text-blue-600 dark:hover:text-blue-500
-          text-md text-gray-700 dark:text-gray-300 text-wrap truncate transition-colors"
+          className="pr-1 cursor-pointer hover:text-blue-600 dark:hover:text-blue-500
+          text-md lg:text-lg text-gray-700 dark:text-gray-300 text-wrap truncate transition-colors"
         >
           {file.name}
         </h3>
@@ -132,10 +132,10 @@ const FileItem = memo(({ file, index, onFolderClick, onPreview }) => {
       {file.webContentLink && (
         <Link
           href={file.webContentLink}
-          className="border border-gray-600 cursor-pointer grid place-items-center text-gray-700 dark:text-gray-200 hover:border-blue-500 hover:text-blue-500 transition-colors duration-200 w-12 h-9 rounded-full"
+          className="border border-gray-600 cursor-pointer grid place-items-center text-gray-700 dark:text-gray-200 hover:border-blue-500 hover:text-blue-500 transition-colors duration-200 w-10 md:w-12 h-7.5 md:h-9 rounded-full"
           aria-label={`Download ${file.name}`}
         >
-          <i className="fas fa-download text-sm"></i>
+          <i className="fas fa-download text-xs md:text-sm"></i>
         </Link>
       )}
     </motion.div>
@@ -330,7 +330,7 @@ export default function DrivePage({ params }) {
             )}
 
             {/* Folder Heading */}
-            <h1 className="text-xl lg:text-2xl text-center font-bold mb-6 text-gray-700 dark:text-gray-300">
+            <h1 className="text-2xl lg:text-3xl text-center font-bold mb-6 text-gray-700 dark:text-gray-300">
               {currentFolder ? currentFolder.name : "Drive Files"}
             </h1>
 

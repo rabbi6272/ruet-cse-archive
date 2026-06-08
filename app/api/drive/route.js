@@ -1,7 +1,9 @@
+import { NextResponse } from "next/server";
+
 import { google } from "googleapis";
+
 import path from "path";
 import fs from "fs";
-import { NextResponse } from "next/server";
 
 const clientCredentials = {
   type: "service_account",
@@ -20,7 +22,7 @@ const clientCredentials = {
 
 // ============= CACHING LAYER =============
 const cache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 const MAX_CACHE_SIZE = 100; // Prevent memory leaks
 
 // Request deduplication: prevents multiple simultaneous requests for same folder
@@ -66,7 +68,7 @@ function setCache(key, data) {
 // ============= AUTH CLIENT SINGLETON =============
 let authClientCache = null;
 let authClientTimestamp = 0;
-const AUTH_CACHE_TTL = 50 * 60 * 1000; // 50 minutes (tokens last 1 hour)
+const AUTH_CACHE_TTL = 60 * 60 * 1000; // 60 minutes (tokens last 1 hour)
 
 async function getAuthClient() {
   const now = Date.now();
