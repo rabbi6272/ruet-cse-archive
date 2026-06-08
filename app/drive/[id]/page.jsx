@@ -15,6 +15,7 @@ import {
 import { motion } from "framer-motion";
 import { lato } from "@/app/fonts";
 import Loading from "@/app/loading";
+
 import { DriveFilePreviewModal } from "./DriveFilePreviewModal";
 
 // Simple client-side cache to prevent re-fetching on back navigation
@@ -90,18 +91,16 @@ FileIcon.displayName = "FileIcon";
 const FileItem = memo(({ file, index, onFolderClick, onPreview }) => {
   const isFolder = file.mimeType.includes("folder");
 
-  const handleClick = useCallback(() => {
-    if (isFolder) {
-      onFolderClick(file.id);
-    }
-  }, [isFolder, file.id, onFolderClick]);
-
-  const handlePreview = useCallback(
+  const handleClick = useCallback(
     (e) => {
-      e.stopPropagation();
-      onPreview(file.id);
+      if (isFolder) {
+        onFolderClick(file.id);
+      } else {
+        e.stopPropagation();
+        onPreview(file.id);
+      }
     },
-    [file.id, onPreview],
+    [isFolder, file.id, onFolderClick],
   );
 
   return (
@@ -123,33 +122,21 @@ const FileItem = memo(({ file, index, onFolderClick, onPreview }) => {
 
         <h3
           onClick={handleClick}
-          className={`${
-            isFolder
-              ? "cursor-pointer hover:text-blue-600 dark:hover:text-blue-500"
-              : ""
-          } text-lg text-gray-700 dark:text-gray-300 text-wrap truncate transition-colors`}
+          className="cursor-pointer hover:text-blue-600 dark:hover:text-blue-500
+          text-md text-gray-700 dark:text-gray-300 text-wrap truncate transition-colors"
         >
           {file.name}
         </h3>
       </div>
 
       {file.webContentLink && (
-        <div className="flex items-center justify-between gap-2 lg:gap-4">
-          <Link
-            href={file.webContentLink}
-            className="flex-1 border-2 border-gray-600 cursor-pointer grid place-items-center text-gray-700 dark:text-gray-200 hover:border-blue-500 hover:text-blue-500 transition-colors duration-200 w-12 h-9 rounded-full"
-            aria-label={`Download ${file.name}`}
-          >
-            <i className="fas fa-download text-sm"></i>
-          </Link>
-          <button
-            onClick={handlePreview}
-            className="flex-1 border-2 border-gray-600 cursor-pointer grid place-items-center text-gray-700 dark:text-gray-200 hover:border-blue-500 hover:text-blue-500 transition-colors duration-200 w-12 h-9 rounded-full"
-            aria-label={`Preview ${file.name}`}
-          >
-            <i className="fas fa-eye text-sm"></i>
-          </button>
-        </div>
+        <Link
+          href={file.webContentLink}
+          className="border border-gray-600 cursor-pointer grid place-items-center text-gray-700 dark:text-gray-200 hover:border-blue-500 hover:text-blue-500 transition-colors duration-200 w-12 h-9 rounded-full"
+          aria-label={`Download ${file.name}`}
+        >
+          <i className="fas fa-download text-sm"></i>
+        </Link>
       )}
     </motion.div>
   );
