@@ -11,7 +11,7 @@ export function ResourceCard({ id, title, description, image, links }) {
         alt={title}
         sizes="(max-width: 768px) 290px, (max-width: 1024px) 300px, 330px"
         placeholder="blur"
-        priority={id <= 2} // Prioritize loading for first 2 cards
+        priority={id <= 2}
       />
       <div className="p-2 flex-1 flex flex-col justify-between">
         <div className="flex-1 p-1">

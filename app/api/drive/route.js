@@ -66,7 +66,7 @@ function getCachedDriveData(folderId) {
       };
     },
     [`drive_${folderId}`], // cache key — unique per folder
-    { revalidate: 600 }, // 10 minutes, same as your old CACHE_TTL
+    { revalidate: 2 * 3600 }, // 2 hours, same as your old CACHE_TTL
   )();
 }
 

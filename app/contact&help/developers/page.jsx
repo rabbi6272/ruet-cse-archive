@@ -28,7 +28,7 @@ const staticDevelopers = [
     image: rabbi2,
     roll: "2403172",
     github: "https://github.com/rabbi6272",
-    linkedin: "https://www.linkedin.com/in/fazle-rabbi-b48a722a2/",
+    linkedin: "https://www.linkedin.com/in/rabbi6272/",
     facebook: "https://www.facebook.com/frabbi6272",
   },
   {
