@@ -45,7 +45,13 @@ export function HeroSection() {
       }}
     >
       {/* App Icon with Gradient */}
-      
+      <div className="flex-shrink-0">
+        <img 
+          src="/images/semicolon.png" 
+          alt="Semicolon Logo"
+          className="w-[50px] rounded-lg object-contain shadow-lg "
+        />
+      </div>
 
       {/* App Info */}
       <div className="flex items-center gap-4">
