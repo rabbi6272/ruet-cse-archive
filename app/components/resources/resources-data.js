@@ -29,7 +29,7 @@ export const resourcesData = [
     description:
       "You've compiled your basics — now get ready for bugs that don't show errors! Dive into 'why won't this code run?!' energy.",
     image: image1,
-    links: [[{ label: "2 - 1", url: "" }], [{ label: "2 - 2", url: "" }]],
+    links: [[{ label: "2 - 1", url: "/drive/1zxDdCdFiquVKO86oOLXKxMsSCJalHld" }], [{ label: "2 - 2", url: "" }]],
   },
   {
     id: 3,
