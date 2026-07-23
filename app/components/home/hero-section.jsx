@@ -37,7 +37,7 @@ export function HeroSection() {
     
     {/* Main Button with Specified Box Shadow - Responsive */}
 <a
-  href="https://github.com/idcnys/semicolon/releases/download/apk-stable/semicolon-stable.apk"
+  href="https://github.com/idcnys/semicolon/releases/download/apk_latest/semicolon_2.0.3.apk"
   download
   className="relative flex items-center gap-4 px-4 sm:px-8 py-3 sm:py-4 bg-white dark:bg-neutral-900 rounded-xl border-2 border-neutral-200 dark:border-neutral-700 hover:border-transparent transition-all duration-300 w-full sm:w-auto"
   style={{
