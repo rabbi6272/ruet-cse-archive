@@ -3,6 +3,7 @@ import "./globals.css";
 import { FooterComponent } from "@/app/components/home/footer";
 import { PageTitleProvider } from "@/app/components/providers/PageTitleProvider";
 import { P2PChatProvider } from "@/app/components/providers/P2PChatProvider";
+import { Providers } from "@/app/components/providers/QueryClientProvider";
 import GlobalPresenceTracker from "@/app/components/providers/GlobalPresenceTracker";
 
 import NoSSR from "@/app/components/ui/NoSSR";
@@ -162,19 +163,21 @@ export default function RootLayout({ children }) {
         className={`${lato.className} antialiased bg-gray-200 dark:bg-[#071a26f1]`}
         suppressHydrationWarning={true}
       >
-        <PageTitleProvider>
-          <P2PChatProvider>
-            <SpeedInsights />
-            <Analytics />
-            <Toaster />
-            <NoSSR fallback={null}>
-              <FirebaseObfuscationInit />
-            </NoSSR>
-            <GlobalPresenceTracker />
-            <MainPage>{children}</MainPage>
-            <FooterComponent />
-          </P2PChatProvider>
-        </PageTitleProvider>
+        <Providers>
+          <PageTitleProvider>
+            <P2PChatProvider>
+              <SpeedInsights />
+              <Analytics />
+              <Toaster />
+              <NoSSR fallback={null}>
+                <FirebaseObfuscationInit />
+              </NoSSR>
+              <GlobalPresenceTracker />
+              <MainPage>{children}</MainPage>
+              <FooterComponent />
+            </P2PChatProvider>
+          </PageTitleProvider>
+        </Providers>
       </body>
     </html>
   );
