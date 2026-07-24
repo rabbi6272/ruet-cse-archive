@@ -1,100 +1,40 @@
 "use client";
 
+import { use, useCallback, useMemo, memo, useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  useEffect,
-  useState,
-  use,
-  useCallback,
-  useMemo,
-  memo,
-  useRef,
-} from "react";
 
 import { motion } from "framer-motion";
 import { lato } from "@/app/fonts";
 import Loading from "@/app/loading";
 
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
 import { DriveFilePreviewModal } from "./DriveFilePreviewModal";
 
-// Simple client-side cache to prevent re-fetching on back navigation
-// ============= CLIENT-SIDE DRIVE CACHE =============
-// Safe to use in the browser — persistent per tab, single-user, no serverless concerns.
+async function fetchDriveFiles(folderId) {
+  const response = await fetch(`/api/drive`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ folderId }),
+  });
 
-const CACHE_TTL = 60 * 60 * 1000; // 1 hour
-const MAX_CACHE_SIZE = 50;
-
-// Using a Map preserves insertion order, which we use for LRU eviction.
-const clientCache = new Map();
-
-/**
- * Moves an existing key to the end of the Map (marks it as recently used).
- * This is how LRU order is maintained without a separate data structure.
- */
-function touchKey(key, value) {
-  clientCache.delete(key);
-  clientCache.set(key, value);
-}
-
-/**
- * Returns cached data for a folderId if it exists and hasn't expired.
- * Automatically removes expired entries on access (lazy expiry).
- */
-function getCachedData(folderId) {
-  const entry = clientCache.get(folderId);
-
-  if (!entry) return null;
-
-  if (Date.now() - entry.timestamp >= CACHE_TTL) {
-    clientCache.delete(folderId); // lazy cleanup on stale access
-    return null;
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.error || `HTTP ${response.status}: ${response.statusText}`,
+    );
   }
 
-  // Promote to most-recently-used by moving to end
-  touchKey(folderId, entry);
-  return entry.data;
-}
+  const data = await response.json();
 
-/**
- * Stores data in the cache for a folderId.
- * Evicts the least recently used entry if the cache is at capacity.
- */
-function setCachedData(folderId, data) {
-  // If key already exists, remove it first so it gets re-inserted at the end
-  if (clientCache.has(folderId)) {
-    clientCache.delete(folderId);
-  } else if (clientCache.size >= MAX_CACHE_SIZE) {
-    // Evict the LRU entry — first key in the Map
-    const lruKey = clientCache.keys().next().value;
-    clientCache.delete(lruKey);
+  if (data.error) {
+    throw new Error(data.error);
   }
 
-  clientCache.set(folderId, { data, timestamp: Date.now() });
+  return data;
 }
 
-/**
- * Manually invalidates the cache for a specific folder.
- * Call this after a mutation (e.g. file upload, delete).
- */
-function invalidateCache(folderId) {
-  clientCache.delete(folderId);
-}
-
-/**
- * Removes all expired entries from the cache.
- * Call this periodically (e.g. on route change) to prevent stale memory buildup.
- */
-function pruneExpiredEntries() {
-  const now = Date.now();
-  for (const [key, entry] of clientCache.entries()) {
-    if (now - entry.timestamp >= CACHE_TTL) {
-      clientCache.delete(key);
-    }
-  }
-}
-
-// Memoized file icon component
 const FileIcon = memo(({ mimeType }) => {
   const iconConfig = useMemo(() => {
     if (mimeType.includes("image/png") || mimeType.includes("image/jpeg")) {
@@ -141,7 +81,6 @@ const FileIcon = memo(({ mimeType }) => {
 
 FileIcon.displayName = "FileIcon";
 
-// Memoized file item component
 const FileItem = memo(({ file, index, onFolderClick, onPreview }) => {
   const isFolder = file.mimeType.includes("folder");
 
@@ -154,7 +93,7 @@ const FileItem = memo(({ file, index, onFolderClick, onPreview }) => {
         onPreview(file.id);
       }
     },
-    [isFolder, file.id, onFolderClick],
+    [isFolder, file.id, onFolderClick, onPreview],
   );
 
   return (
@@ -200,121 +139,42 @@ FileItem.displayName = "FileItem";
 
 export default function DrivePage({ params }) {
   const resolvedParams = use(params);
+  const queryClient = useQueryClient();
 
-  const [files, setFiles] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [previewID, setPreviewId] = useState(null);
   const [selectedFolderId, setSelectedFolderId] = useState(resolvedParams.id);
-  const [parentFolderId, setParentFolderId] = useState(null);
-  const [currentFolder, setCurrentFolder] = useState(null);
 
-  // Abort controller to cancel in-flight requests
-  const abortControllerRef = useRef(null);
+  const {
+    data,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["drive", selectedFolderId],
+    queryFn: () => fetchDriveFiles(selectedFolderId),
+  });
 
-  const fetchFiles = useCallback(async (folderId) => {
-    try {
-      // Cancel previous fetch if still in progress
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+  const files = data?.files || [];
+  const parentFolderId = data?.parentFolderId || null;
+  const currentFolder = data?.currentFolder || null;
 
-      setLoading(true);
-      setError(null);
-
-      // Check client-side cache first
-      const cached = getCachedData(folderId);
-      if (cached) {
-        setFiles(cached.files || []);
-        setParentFolderId(cached.parentFolderId || null);
-        setCurrentFolder(cached.currentFolder || null);
-        setLoading(false);
-        return;
-      }
-
-      // Create new abort controller for this request
-      abortControllerRef.current = new AbortController();
-
-      const response = await fetch(`/api/drive`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ folderId }),
-        signal: abortControllerRef.current.signal,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage =
-          errorData.error || `HTTP ${response.status}: ${response.statusText}`;
-        throw new Error(errorMessage);
-      }
-
-      const data = await response.json();
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      setFiles(data.files);
-      setParentFolderId(data.parentFolderId);
-      setCurrentFolder(data.currentFolder);
-
-      // Cache the result client-side
-      setCachedData(folderId, data);
-    } catch (err) {
-      // Ignore abort errors
-      if (err.name === "AbortError") {
-        return;
-      }
-      setError(err.message);
-      console.error("Error fetching files:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (selectedFolderId) {
-      fetchFiles(selectedFolderId);
-    }
-
-    // Cleanup function to abort fetch on unmount and restore body scroll
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-      // Ensure body scroll is restored when component unmounts
-      document.body.style.overflow = "";
-    };
+  const handleFolderClick = useCallback((folderId) => {
+    setSelectedFolderId(folderId);
   }, [selectedFolderId]);
-
-  const handleFolderClick = useCallback(
-    (folderId) => {
-      // Optimistically start loading state
-      setLoading(true);
-      setSelectedFolderId(folderId);
-    },
-    [selectedFolderId],
-  );
 
   const handlePreview = useCallback((fileId) => {
     setPreviewId((prev) => (prev === fileId ? null : fileId));
-  }, []);
+  }, [previewID]);
 
   const handleClosePreview = useCallback(() => {
     setPreviewId(null);
-  }, []);
+  }, [previewID]);
 
-  // Separate folders and files for better UX
   const { folders, regularFiles } = useMemo(() => {
     const folders = files.filter((f) => f.mimeType.includes("folder"));
     const regularFiles = files.filter((f) => !f.mimeType.includes("folder"));
     return { folders, regularFiles };
   }, [files]);
 
-  // Add keyboard shortcut for closing preview (ESC key)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape" && previewID) {
@@ -324,7 +184,6 @@ export default function DrivePage({ params }) {
 
     if (previewID) {
       document.addEventListener("keydown", handleKeyDown);
-      // Prevent body scroll when preview is open
       const originalOverflow = document.body.style.overflow;
       document.body.style.overflow = "hidden";
 
@@ -335,7 +194,13 @@ export default function DrivePage({ params }) {
     }
   }, [previewID]);
 
-  if (loading) {
+  useEffect(() => {
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
+  if (isLoading) {
     return <Loading />;
   }
 
@@ -344,11 +209,10 @@ export default function DrivePage({ params }) {
       <div className="flex justify-center items-center min-h-screen">
         <div className="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-4 py-3 rounded max-w-md">
           <strong className="font-bold">Error: </strong>
-          <span className="block sm:inline">{error}</span>
+          <span className="block sm:inline">{error.message}</span>
           <button
             onClick={() => {
-              setError(null);
-              fetchFiles(resolvedParams.id);
+              queryClient.invalidateQueries({ queryKey: ["drive", selectedFolderId] });
             }}
             className="ml-4 underline hover:text-red-900 dark:hover:text-red-100 transition-colors"
           >
@@ -370,7 +234,6 @@ export default function DrivePage({ params }) {
       >
         <div className="bg-[#ffffff78] dark:bg-[#071a26] px-3 lg:px-6 xl:px-8 py-8 rounded-lg shadow-md">
           <div className="mx-auto">
-            {/* Back to Parent Folder Button */}
             {parentFolderId && (
               <div className="mb-2 cursor-pointer">
                 <span
@@ -383,13 +246,11 @@ export default function DrivePage({ params }) {
               </div>
             )}
 
-            {/* Folder Heading */}
             <h1 className="text-2xl lg:text-3xl text-center font-bold mb-6 text-gray-700 dark:text-gray-300">
               {currentFolder ? currentFolder.name : "Drive Files"}
             </h1>
 
-            {/* File List */}
-            {!loading && files.length === 0 ? (
+            {files.length === 0 ? (
               <div className="text-center py-12">
                 <i className="fas fa-folder-open text-6xl text-gray-400 dark:text-gray-600 mb-4"></i>
                 <p className="text-xl text-gray-700 dark:text-gray-300">
@@ -398,7 +259,6 @@ export default function DrivePage({ params }) {
               </div>
             ) : (
               <>
-                {/* File count indicator for large folders */}
                 {files.length > 50 && (
                   <div className="mb-4 text-sm text-gray-600 dark:text-gray-400 text-center">
                     Showing {files.length} items ({folders.length} folders,{" "}
@@ -407,7 +267,6 @@ export default function DrivePage({ params }) {
                 )}
 
                 <div className="flex flex-col">
-                  {/* Folders first */}
                   {folders.map((file, index) => (
                     <FileItem
                       key={file.id}
@@ -418,7 +277,6 @@ export default function DrivePage({ params }) {
                     />
                   ))}
 
-                  {/* Then files */}
                   {regularFiles.map((file, index) => (
                     <FileItem
                       key={file.id}
@@ -438,7 +296,6 @@ export default function DrivePage({ params }) {
       <br />
       <br />
 
-      {/* Preview Modal */}
       {previewID && (
         <DriveFilePreviewModal
           previewID={previewID}
