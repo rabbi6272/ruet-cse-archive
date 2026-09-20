@@ -1,9 +1,7 @@
 "use client";
-// @ts-check
-/** @typedef {import('./types').Snippet} Snippet */
 
 import { useState, useEffect, useRef } from "react";
-import hljs from "highlight.js";
+import type { Dispatch, SetStateAction } from "react";
 import AuthUtils from "@/lib/auth-utils-secure";
 import {
   collection,
@@ -17,6 +15,12 @@ import {
   startAfter,
   updateDoc,
 } from "firebase/firestore";
+import type {
+  DocumentData,
+  QueryConstraint,
+  QueryDocumentSnapshot,
+  QuerySnapshot,
+} from "firebase/firestore";
 import {
   CodelibraryDB,
   COLLECTION,
@@ -27,6 +31,11 @@ import {
   matchesSnippetId,
   normalizeSnippets,
 } from "@/lib/codelibrary/snippetIdentity";
+import type {
+  DecodedSnippet,
+  SnippetLike,
+} from "@/lib/codelibrary/snippetIdentity";
+import type { Comment, Snippet } from "./types";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -34,11 +43,7 @@ const DOCS_PER_PAGE = 3;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/**
- * @param {string} [lang]
- * @returns {string}
- */
-function normalizeLanguage(lang) {
+function normalizeLanguage(lang?: string): string {
   if (!lang) return "";
   const lower = lang.toLowerCase();
   return lower === "js" ? "javascript" : lower;
@@ -48,17 +53,13 @@ function normalizeLanguage(lang) {
  * Flatten Firestore snapshot docs into a flat Snippet[].
  * Each roll document holds a `snippets` array. Comments are embedded inside
  * each snippet object and preserved as-is.
- *
- * @param {import('firebase/firestore').QuerySnapshot} snap
- * @returns {Snippet[]}
  */
-function flattenDocs(snap) {
-  /** @type {Snippet[]} */
-  const result = [];
+function flattenDocs(snap: QuerySnapshot<DocumentData>): Snippet[] {
+  const result: Snippet[] = [];
 
   snap.docs.forEach((snapDoc) => {
     const data = snapDoc.data();
-    const snippetsArr = Array.isArray(data.snippets)
+    const snippetsArr: DecodedSnippet[] = Array.isArray(data.snippets)
       ? normalizeSnippets(data.snippets, snapDoc.id)
       : [decorateSnippet(data, snapDoc.id)];
 
@@ -71,7 +72,7 @@ function flattenDocs(snap) {
         copiesCount: raw.copiesCount ?? 0,
         language: normalizeLanguage(raw.language),
         timestamp: raw.date ? new Date(raw.date).getTime() : 0,
-        comments: raw.comments ?? [],
+        comments: (raw.comments as Comment[] | undefined) ?? [],
       });
     });
   });
@@ -81,27 +82,23 @@ function flattenDocs(snap) {
 
 /**
  * Merge two Snippet arrays by id, keeping newest-first order.
- * @param {Snippet[]} existing
- * @param {Snippet[]} incoming
- * @returns {Snippet[]}
  */
-function mergeById(existing, incoming) {
+function mergeById(existing: Snippet[], incoming: Snippet[]): Snippet[] {
   const seen = new Set(existing.map((s) => s.id));
   return [...existing, ...incoming.filter((s) => !seen.has(s.id))].sort(
-    (a, b) => b.timestamp - a.timestamp
+    (a, b) => b.timestamp - a.timestamp,
   );
 }
 
 /**
  * Read-modify-write a single snippet field inside its roll document.
  * Uses getDoc (1 read) not getDocs (full collection scan).
- *
- * @param {string} rollNumber
- * @param {string} snippetId
- * @param {(raw: any) => any} updater
- * @returns {Promise<void>}
  */
-async function patchSnippetInFirestore(rollNumber, snippetId, updater) {
+async function patchSnippetInFirestore(
+  rollNumber: string,
+  snippetId: string,
+  updater: (raw: SnippetLike) => SnippetLike,
+): Promise<void> {
   await ensureCodelibraryAuth();
 
   const rollRef = doc(CodelibraryDB, COLLECTION, rollNumber);
@@ -109,8 +106,9 @@ async function patchSnippetInFirestore(rollNumber, snippetId, updater) {
   if (!rollSnap.exists()) return;
 
   const data = rollSnap.data();
-  const nextSnippets = (Array.isArray(data.snippets) ? data.snippets : []).map((item) =>
-    matchesSnippetId(item, snippetId, rollNumber) ? updater(item) : item
+  const nextSnippets = (Array.isArray(data.snippets) ? data.snippets : []).map(
+    (item: SnippetLike) =>
+      matchesSnippetId(item, snippetId, rollNumber) ? updater(item) : item,
   );
 
   await updateDoc(rollRef, {
@@ -121,54 +119,46 @@ async function patchSnippetInFirestore(rollNumber, snippetId, updater) {
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-/**
- * @typedef {Object} UseCodeLibraryReturn
- * @property {Snippet[]}                                      snippets
- * @property {Snippet[]}                                      activeSnippets
- * @property {boolean}                                        hasActiveFilters
- * @property {string}                                         searchTerm
- * @property {string}                                         languageFilter
- * @property {string}                                         authorFilter
- * @property {Record<string, boolean>}                        expandedSnippets
- * @property {Record<string, boolean>}                        animateLike
- * @property {Record<string, boolean>}                        animateCopy
- * @property {Record<string, boolean>}                        copiedStates
- * @property {boolean}                                        hasMore
- * @property {(v: string) => void}                            setSearchTerm
- * @property {(v: string) => void}                            setLanguageFilter
- * @property {(v: string) => void}                            setAuthorFilter
- * @property {(id: string, code: string) => Promise<void>}   copyCode
- * @property {(id: string) => Promise<void>}                 toggleLike
- * @property {(id: string) => void}                          toggleExpand
- * @property {() => Promise<void>}                           loadMore
- */
+export type UseCodeLibraryReturn = {
+  snippets: Snippet[];
+  activeSnippets: Snippet[];
+  hasActiveFilters: boolean;
+  searchTerm: string;
+  languageFilter: string;
+  authorFilter: string;
+  expandedSnippets: Record<string, boolean>;
+  animateLike: Record<string, boolean>;
+  animateCopy: Record<string, boolean>;
+  copiedStates: Record<string, boolean>;
+  hasMore: boolean;
+  setSearchTerm: Dispatch<SetStateAction<string>>;
+  setLanguageFilter: Dispatch<SetStateAction<string>>;
+  setAuthorFilter: Dispatch<SetStateAction<string>>;
+  copyCode: (id: string, code: string) => Promise<void>;
+  toggleLike: (id: string) => Promise<void>;
+  toggleExpand: (id: string) => void;
+  loadMore: () => Promise<void>;
+};
 
-/**
- * @param {Snippet[]} [initialSnippets=[]]
- * @returns {UseCodeLibraryReturn}
- */
-export function useCodeLibrary(initialSnippets = []) {
-  const [snippets, setSnippets] = useState(initialSnippets);
+export function useCodeLibrary(
+  initialSnippets: Snippet[] = [],
+): UseCodeLibraryReturn {
+  const [snippets, setSnippets] = useState<Snippet[]>(initialSnippets);
   const [searchTerm, setSearchTerm] = useState("");
   const [languageFilter, setLanguageFilter] = useState("");
   const [authorFilter, setAuthorFilter] = useState("");
-  const [expandedSnippets, setExpandedSnippets] = useState(/** @type {Record<string,boolean>} */ ({}));
-  const [animateLike, setAnimateLike] = useState(/** @type {Record<string,boolean>} */ ({}));
-  const [animateCopy, setAnimateCopy] = useState(/** @type {Record<string,boolean>} */ ({}));
-  const [copiedStates, setCopiedStates] = useState(/** @type {Record<string,boolean>} */ ({}));
+  const [expandedSnippets, setExpandedSnippets] = useState<Record<string, boolean>>({});
+  const [animateLike, setAnimateLike] = useState<Record<string, boolean>>({});
+  const [animateCopy, setAnimateCopy] = useState<Record<string, boolean>>({});
+  const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
   const [hasMore, setHasMore] = useState(false);
 
   const isFetchingRef = useRef(false);
-  const lastVisibleDocRef = useRef(/** @type {any} */ (null));
-  const needsHighlightRef = useRef(false);
+  const lastVisibleDocRef = useRef<QueryDocumentSnapshot<DocumentData> | null>(null);
 
   // ── Pagination ──────────────────────────────────────────────────────────────
 
-  /**
-   * @param {boolean} [reset=false]
-   * @returns {Promise<void>}
-   */
-  async function fetchPage(reset = false) {
+  async function fetchPage(reset = false): Promise<void> {
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
 
@@ -177,14 +167,14 @@ export function useCodeLibrary(initialSnippets = []) {
 
       if (reset) lastVisibleDocRef.current = null;
 
-      const constraints = [
+      const constraints: QueryConstraint[] = [
         orderBy(documentId()),
         ...(lastVisibleDocRef.current ? [startAfter(lastVisibleDocRef.current)] : []),
         limit(DOCS_PER_PAGE),
       ];
 
       const snap = await getDocs(
-        query(collection(CodelibraryDB, COLLECTION), ...constraints)
+        query(collection(CodelibraryDB, COLLECTION), ...constraints),
       );
 
       const page = flattenDocs(snap);
@@ -200,10 +190,11 @@ export function useCodeLibrary(initialSnippets = []) {
     }
   }
 
-  useEffect(() => { fetchPage(true); }, []);
+  useEffect(() => {
+    fetchPage(true);
+  }, []);
 
-  /** @returns {Promise<void>} */
-  function loadMore() {
+  function loadMore(): Promise<void> {
     if (!hasMore || isFetchingRef.current) return Promise.resolve();
     return fetchPage();
   }
@@ -227,43 +218,15 @@ export function useCodeLibrary(initialSnippets = []) {
   const hasActiveFilters = Boolean(searchTerm || languageFilter || authorFilter);
   const activeSnippets = hasActiveFilters ? filteredSnippets : snippets;
 
-  // ── Syntax highlighting ─────────────────────────────────────────────────────
-
-  useEffect(() => {
-    needsHighlightRef.current = true;
-    const timer = setTimeout(() => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          if (!needsHighlightRef.current) return;
-          document.querySelectorAll("pre code").forEach((block) => {
-            block.removeAttribute("data-highlighted");
-            hljs.highlightElement(/** @type {HTMLElement} */ (block));
-          });
-          needsHighlightRef.current = false;
-        });
-      });
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [activeSnippets, expandedSnippets]);
-
   // ── Patch helper ────────────────────────────────────────────────────────────
 
-  /**
-   * @param {string}           id
-   * @param {Partial<Snippet>} patch
-   */
-  function patchSnippet(id, patch) {
+  function patchSnippet(id: string, patch: Partial<Snippet>): void {
     setSnippets((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
   }
 
   // ── Copy ────────────────────────────────────────────────────────────────────
 
-  /**
-   * @param {string} id
-   * @param {string} code
-   * @returns {Promise<void>}
-   */
-  const copyCode = async (id, code) => {
+  const copyCode = async (id: string, code: string): Promise<void> => {
     try {
       await navigator.clipboard.writeText(code);
 
@@ -277,7 +240,7 @@ export function useCodeLibrary(initialSnippets = []) {
       const snippet = snippets.find((s) => s.id === id);
       if (!snippet) return;
 
-      const newCount = snippet.copiesCount + 1;
+      const newCount = (snippet.copiesCount ?? 0) + 1;
       patchSnippet(id, { copiesCount: newCount });
       await patchSnippetInFirestore(snippet.rollNumber, id, (item) => ({
         ...item,
@@ -290,11 +253,7 @@ export function useCodeLibrary(initialSnippets = []) {
 
   // ── Like ────────────────────────────────────────────────────────────────────
 
-  /**
-   * @param {string} id
-   * @returns {Promise<void>}
-   */
-  const toggleLike = async (id) => {
+  const toggleLike = async (id: string): Promise<void> => {
     if (!AuthUtils.isAuthenticated()) {
       window.location.href = "/user/login";
       return;
@@ -306,7 +265,7 @@ export function useCodeLibrary(initialSnippets = []) {
     setAnimateLike((prev) => ({ ...prev, [id]: true }));
     setTimeout(() => setAnimateLike((prev) => ({ ...prev, [id]: false })), 500);
 
-    const newCount = snippet.likesCount + 1;
+    const newCount = (snippet.likesCount ?? 0) + 1;
     patchSnippet(id, { likesCount: newCount, isLiked: true });
     localStorage.setItem(`liked_${id}`, "true");
 
@@ -325,8 +284,7 @@ export function useCodeLibrary(initialSnippets = []) {
 
   // ── Expand / collapse ───────────────────────────────────────────────────────
 
-  /** @param {string} id */
-  const toggleExpand = (id) => {
+  const toggleExpand = (id: string): void => {
     setExpandedSnippets((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 

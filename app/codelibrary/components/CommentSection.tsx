@@ -1,21 +1,18 @@
 "use client";
-// @ts-check
-/** @typedef {import('./types').Snippet}  Snippet  */
-/** @typedef {import('./types').Comment}  Comment  */
-/** @typedef {import('./types').Reply}    Reply    */
 
 import { useState, useEffect, useRef } from "react";
+import type { RefObject } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { users } from "@/db/students_info";
 import { useComments, getNameFromRoll } from "./useComments";
+import type { AuthUser, Comment, Reply } from "./types";
+
+type UserEntry = (typeof users)[number];
+type ActiveInput = "comment" | "reply";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/**
- * @param {string} dateString
- * @returns {string}
- */
-function formatTimeAgo(dateString) {
+function formatTimeAgo(dateString: string): string {
   try {
     return formatDistanceToNow(new Date(dateString), { addSuffix: true });
   } catch {
@@ -24,12 +21,26 @@ function formatTimeAgo(dateString) {
 }
 
 /**
- * Render @Name(roll) mentions as highlighted spans.
- * @param {string} text
- * @returns {string}
+ * Escape HTML entities to prevent XSS.
  */
-function renderText(text) {
-  return text.replace(
+function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  };
+  return text.replace(/[&<>"']/g, (char) => map[char]);
+}
+
+/**
+ * Render @Name(roll) mentions as highlighted spans.
+ * Escapes HTML first to prevent XSS, then applies mention highlighting.
+ */
+function renderText(text: string): string {
+  const escaped = escapeHtml(text);
+  return escaped.replace(
     /@([^(]+)\((\d+)\)/g,
     '<span class="text-blue-500 font-medium">@$1</span>',
   );
@@ -37,17 +48,12 @@ function renderText(text) {
 
 // ─── useMentionInput ──────────────────────────────────────────────────────────
 
-/**
- * @typedef {Object} SuggestionPosition
- * @property {number} top
- * @property {number} left
- */
+type SuggestionPosition = {
+  top: number;
+  left: number;
+};
 
-/**
- * @param {string} value
- * @returns {string|null}
- */
-function detectMention(value) {
+function detectMention(value: string): string | null {
   const lastWord = value.split(" ").at(-1) ?? "";
   return lastWord.startsWith("@") && lastWord.length > 1
     ? lastWord.slice(1).toLowerCase()
@@ -55,24 +61,20 @@ function detectMention(value) {
 }
 
 function useMentionInput() {
-  const [suggestions, setSuggestions] = useState(
-    /** @type {typeof users} */ ([]),
-  );
+  const [suggestions, setSuggestions] = useState<UserEntry[]>([]);
   const [visible, setVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [position, setPosition] = useState(
-    /** @type {SuggestionPosition} */ ({ top: 0, left: 0 }),
-  );
-  const [activeInput, setActiveInput] = useState(
-    /** @type {"comment"|"reply"|null} */ (null),
-  );
+  const [position, setPosition] = useState<SuggestionPosition>({
+    top: 0,
+    left: 0,
+  });
+  const [activeInput, setActiveInput] = useState<ActiveInput | null>(null);
 
-  /**
-   * @param {string}                                         value
-   * @param {"comment"|"reply"}                             inputType
-   * @param {React.RefObject<HTMLTextAreaElement>}           inputRef
-   */
-  function onTextChange(value, inputType, inputRef) {
+  function onTextChange(
+    value: string,
+    inputType: ActiveInput,
+    inputRef: RefObject<HTMLTextAreaElement | null>,
+  ): void {
     setActiveInput(inputType);
     const q = detectMention(value);
     if (q !== null) {
@@ -96,18 +98,13 @@ function useMentionInput() {
     }
   }
 
-  /**
-   * @param {string}            currentText
-   * @param {typeof users[0]}   u
-   * @returns {string}
-   */
-  function insertIntoText(currentText, u) {
+  function insertIntoText(currentText: string, u: UserEntry): string {
     const words = currentText.split(" ");
     words[words.length - 1] = `@${u.name.replace(/\s+/g, "")}(${u.roll})`;
     return words.join(" ") + " ";
   }
 
-  function close() {
+  function close(): void {
     setVisible(false);
     setActiveInput(null);
   }
@@ -127,17 +124,6 @@ function useMentionInput() {
 
 // ─── MentionDropdown ──────────────────────────────────────────────────────────
 
-/**
- * @param {{
- *   suggestions:    typeof users,
- *   selectedIndex:  number,
- *   position:       SuggestionPosition,
- *   colorFrom:      string,
- *   colorTo:        string,
- *   borderColor:    string,
- *   onSelect:       (u: typeof users[0]) => void,
- * }} props
- */
 function MentionDropdown({
   suggestions,
   selectedIndex,
@@ -146,6 +132,14 @@ function MentionDropdown({
   colorTo,
   borderColor,
   onSelect,
+}: {
+  suggestions: UserEntry[];
+  selectedIndex: number;
+  position: SuggestionPosition;
+  colorFrom: string;
+  colorTo: string;
+  borderColor: string;
+  onSelect: (u: UserEntry) => void;
 }) {
   return (
     <div
@@ -201,17 +195,6 @@ function MentionDropdown({
 
 // ─── ReplyItem ────────────────────────────────────────────────────────────────
 
-/**
- * @param {{
- *   reply:         Reply,
- *   comment:       Comment,
- *   user:          {roll: string}|null,
- *   loading:       boolean,
- *   onToggleLike:  (id: string, isReply: boolean, parentId: string) => void,
- *   onDelete:      (commentId: string, replyId: string) => void,
- *   onEdit:        (commentId: string, replyId: string, text: string) => Promise<boolean>,
- * }} props
- */
 function ReplyItem({
   reply,
   comment,
@@ -220,6 +203,14 @@ function ReplyItem({
   onToggleLike,
   onDelete,
   onEdit,
+}: {
+  reply: Reply;
+  comment: Comment;
+  user: AuthUser | null;
+  loading: boolean;
+  onToggleLike: (id: string, isReply: boolean, parentId: string) => void;
+  onDelete: (commentId: string, replyId: string) => void;
+  onEdit: (commentId: string, replyId: string, text: string) => Promise<boolean>;
 }) {
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(reply.text);
@@ -331,10 +322,15 @@ function ReplyItem({
 
 const MAX_REPLIES_PREVIEW = 2;
 
-/**
- * @param {{ snippet: Snippet }} props
- */
-const CommentSection = ({ snippet }) => {
+type CommentSectionProps = {
+  snippet: {
+    id: string;
+    rollNumber?: string;
+    title?: string;
+  };
+};
+
+const CommentSection = ({ snippet }: CommentSectionProps) => {
   const {
     comments,
     user,
@@ -348,38 +344,29 @@ const CommentSection = ({ snippet }) => {
     toggleLike,
   } = useComments({
     snippetId: snippet.id,
-    rollNumber: snippet.rollNumber,
-    snippetTitle: snippet.title,
-    snippetAuthorRoll: snippet.rollNumber,
+    rollNumber: snippet.rollNumber ?? "",
+    snippetTitle: snippet.title ?? "",
+    snippetAuthorRoll: snippet.rollNumber ?? "",
   });
 
   const [newComment, setNewComment] = useState("");
   const [replyText, setReplyText] = useState("");
-  const [replyingTo, setReplyingTo] = useState(
-    /** @type {string|null} */ (null),
-  );
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [showAllComments, setShowAllComments] = useState(false);
   const [showAddComment, setShowAddComment] = useState(false);
-  const [expandedReplies, setExpandedReplies] = useState(
-    /** @type {Record<string,boolean>} */ ({}),
-  );
-  const [editingComment, setEditingComment] = useState(
-    /** @type {string|null} */ (null),
-  );
+  const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({});
+  const [editingComment, setEditingComment] = useState<string | null>(null);
   const [editCommentText, setEditCommentText] = useState("");
 
-  const commentInputRef = useRef(
-    /** @type {HTMLTextAreaElement|null} */ (null),
-  );
-  const replyInputRef = useRef(/** @type {HTMLTextAreaElement|null} */ (null));
+  const commentInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const replyInputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const mention = useMentionInput();
 
   // Keyboard nav for mention dropdown
   useEffect(() => {
     if (!mention.visible) return;
-    /** @param {KeyboardEvent} e */
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowDown") {
         e.preventDefault();
         mention.setSelectedIndex((p) =>
@@ -402,8 +389,7 @@ const CommentSection = ({ snippet }) => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [mention.visible, mention.suggestions, mention.selectedIndex]);
 
-  /** @param {typeof users[0]} u */
-  function handleInsertMention(u) {
+  function handleInsertMention(u: UserEntry): void {
     if (mention.activeInput === "reply") {
       setReplyText((prev) => mention.insertIntoText(prev, u));
       replyInputRef.current?.focus();
@@ -422,8 +408,7 @@ const CommentSection = ({ snippet }) => {
     }
   }
 
-  /** @param {string} commentId */
-  async function handleSaveCommentEdit(commentId) {
+  async function handleSaveCommentEdit(commentId: string) {
     const ok = await editComment(commentId, editCommentText);
     if (ok) {
       setEditingComment(null);
@@ -431,8 +416,7 @@ const CommentSection = ({ snippet }) => {
     }
   }
 
-  /** @param {string} commentId */
-  async function handleAddReply(commentId) {
+  async function handleAddReply(commentId: string) {
     const ok = await addReply(commentId, replyText);
     if (ok) {
       setReplyText("");
@@ -440,8 +424,7 @@ const CommentSection = ({ snippet }) => {
     }
   }
 
-  /** @param {string} commentId */
-  function toggleExpandReplies(commentId) {
+  function toggleExpandReplies(commentId: string): void {
     setExpandedReplies((prev) => ({ ...prev, [commentId]: !prev[commentId] }));
   }
 
@@ -452,8 +435,7 @@ const CommentSection = ({ snippet }) => {
 
   // ─── Inner components (declared here to share outer scope state) ────────────
 
-  /** @param {{ commentId: string }} props */
-  function ReplyInput({ commentId }) {
+  function ReplyInput({ commentId }: { commentId: string }) {
     return (
       <div className="mt-4 ml-4 pl-4 border-l-2 border-blue-500 relative">
         <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 focus-within:ring-2 focus-within:ring-blue-500 transition-all">
@@ -504,8 +486,7 @@ const CommentSection = ({ snippet }) => {
     );
   }
 
-  /** @param {{ comment: Comment }} props */
-  function RepliesList({ comment }) {
+  function RepliesList({ comment }: { comment: Comment }) {
     if (comment.replies.length === 0) return null;
     const sorted = [...comment.replies].sort(
       (a, b) =>
@@ -546,8 +527,7 @@ const CommentSection = ({ snippet }) => {
     );
   }
 
-  /** @param {{ comment: Comment }} props */
-  function CommentBody({ comment }) {
+  function CommentBody({ comment }: { comment: Comment }) {
     return editingComment === comment.id ? (
       <div className="mb-3">
         <textarea
@@ -590,8 +570,7 @@ const CommentSection = ({ snippet }) => {
     );
   }
 
-  /** @param {{ comment: Comment }} props */
-  function CommentActions({ comment }) {
+  function CommentActions({ comment }: { comment: Comment }) {
     return (
       <div className="flex items-center space-x-3">
         <button

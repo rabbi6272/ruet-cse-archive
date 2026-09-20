@@ -1,13 +1,18 @@
 "use client";
 
-import { addDoc, collection, doc, runTransaction } from "firebase/firestore";
+import { addDoc, collection } from "firebase/firestore";
+import { ref, runTransaction } from "firebase/database";
 import type { Dispatch, SetStateAction } from "react";
-import { CodelibraryDB } from "@/utils/CodelibraryDB";
+import {
+  CodelibraryDB,
+  ensureCodelibraryAuth,
+} from "@/utils/CodelibraryDB";
 import {
   CommentsDB,
   COLLECTION as COMMENTS_COLLECTION,
+  ensureCommentsAuth,
 } from "@/utils/CommentsDB";
-import { users } from "@/db/students_info";
+import { getStudentName } from "@/lib/students-loader";
 import { addNutrinos } from "@/lib/nutrinos-system";
 import toast from "react-hot-toast";
 import type {
@@ -19,13 +24,7 @@ import type {
 } from "./commentTypes";
 
 export function getNameFromRoll(roll: string): string {
-  const user = users.find((candidate) => candidate.roll === roll);
-  if (!user) return "Unknown User";
-  return user.name
-    .toLowerCase()
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+  return getStudentName(roll);
 }
 
 function generateId(): string {
@@ -109,29 +108,33 @@ async function patchComments(
   metadata: { rollNumber?: string; snippetTitle?: string; snippetAuthorRoll?: string },
   transform: (comments: Comment[]) => Comment[],
 ): Promise<void> {
-  const commentsRef = doc(CommentsDB, COMMENTS_COLLECTION, snippetId);
+  await ensureCommentsAuth();
 
-  await runTransaction(CommentsDB, async (transaction) => {
-    const snap = await transaction.get(commentsRef);
-    const existing = snap.exists() ? snap.data() : {};
+  const commentsRef = ref(CommentsDB, `${COMMENTS_COLLECTION}/${snippetId}`);
+
+  await runTransaction(commentsRef, (current: unknown) => {
+    const existing = (current ?? {}) as Record<string, unknown>;
+
     const currentComments = normalizeComments(existing.comments ?? []);
     const nextComments = transform(currentComments);
+
+    if (nextComments === currentComments) return current;
+
     const now = new Date().toISOString();
 
-    transaction.set(
-      commentsRef,
-      {
-        snippetId,
-        rollNumber: metadata.rollNumber ?? existing.rollNumber ?? null,
-        snippetTitle: metadata.snippetTitle ?? existing.snippetTitle ?? null,
-        snippetAuthorRoll:
-          metadata.snippetAuthorRoll ?? existing.snippetAuthorRoll ?? null,
-        comments: nextComments,
-        createdAt: existing.createdAt ?? now,
-        updatedAt: now,
-      },
-      { merge: true },
-    );
+    return {
+      snippetId,
+      rollNumber: metadata.rollNumber ?? (existing.rollNumber as string | null) ?? null,
+      snippetTitle:
+        metadata.snippetTitle ?? (existing.snippetTitle as string | null) ?? null,
+      snippetAuthorRoll:
+        metadata.snippetAuthorRoll ??
+        (existing.snippetAuthorRoll as string | null) ??
+        null,
+      comments: nextComments,
+      createdAt: (existing.createdAt as string | undefined) ?? now,
+      updatedAt: now,
+    };
   });
 }
 
@@ -148,6 +151,7 @@ async function notify(
   if (!user || !recipientRoll || recipientRoll === user.roll) return;
 
   try {
+    await ensureCodelibraryAuth();
     await addDoc(collection(CodelibraryDB, "notifications"), {
       recipientRoll,
       message,
