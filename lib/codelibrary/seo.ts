@@ -1,9 +1,16 @@
 import { collection, getDocs } from "firebase/firestore";
+import type { DocumentData, QuerySnapshot } from "firebase/firestore";
 import { CodelibraryDB, COLLECTION } from "@/utils/CodelibraryDB";
-import { decorateSnippet, normalizeSnippets } from "@/lib/codelibrary/snippetIdentity";
+import {
+  decorateSnippet,
+  normalizeSnippets,
+} from "@/lib/codelibrary/snippetIdentity";
+import type { DecodedSnippet } from "@/lib/codelibrary/snippetIdentity";
 
-function flattenSnippetDocuments(snapshots) {
-  const snippets = [];
+function flattenSnippetDocuments(
+  snapshots: QuerySnapshot<DocumentData>,
+): DecodedSnippet[] {
+  const snippets: DecodedSnippet[] = [];
 
   for (const snippetDoc of snapshots.docs) {
     const data = snippetDoc.data();
@@ -15,18 +22,24 @@ function flattenSnippetDocuments(snapshots) {
       continue;
     }
 
-    snippets.push(decorateSnippet({ ...data, id: data.id || snippetDoc.id }, snippetDoc.id));
+    snippets.push(
+      decorateSnippet(
+        { ...data, id: data.id || snippetDoc.id },
+        snippetDoc.id,
+      ),
+    );
   }
 
   return snippets;
 }
 
-async function fetchAllCodeSnippetsServer() {
+async function fetchAllCodeSnippetsServer(): Promise<DecodedSnippet[]> {
   try {
     const snippetsRef = collection(CodelibraryDB, COLLECTION);
     const snapshots = await getDocs(snippetsRef);
     return flattenSnippetDocuments(snapshots).sort(
-      (left, right) => new Date(right.date || 0) - new Date(left.date || 0),
+      (left, right) =>
+        new Date(right.date || 0).getTime() - new Date(left.date || 0).getTime(),
     );
   } catch (error) {
     console.error("Error fetching code snippets:", error);
@@ -34,8 +47,19 @@ async function fetchAllCodeSnippetsServer() {
   }
 }
 
+type SitemapEntry = {
+  url: string;
+  lastModified: string;
+  changeFrequency: string;
+  priority: number;
+  title: string;
+  description: string;
+  language: string;
+  author: string;
+};
+
 // Generate sitemap entries for code library
-export async function generateCodeLibrarySitemap() {
+export async function generateCodeLibrarySitemap(): Promise<SitemapEntry[]> {
   try {
     const snippets = await fetchAllCodeSnippetsServer();
 
@@ -45,7 +69,7 @@ export async function generateCodeLibrarySitemap() {
 
     const baseUrl = "https://csearchive.vercel.app";
 
-    const sitemapEntries = snippets.map((snippet) => {
+    const sitemapEntries: SitemapEntry[] = snippets.map((snippet) => {
       return {
         url: `${baseUrl}/codelibrary/${snippet.id}`,
         lastModified:
@@ -53,9 +77,9 @@ export async function generateCodeLibrarySitemap() {
         changeFrequency: "weekly",
         priority: 0.7,
         // Additional metadata for rich snippets
-        title: snippet.title,
-        description: snippet.description,
-        language: snippet.language,
+        title: snippet.title ?? "",
+        description: snippet.description ?? "",
+        language: snippet.language ?? "",
         author: snippet.rollNumber,
       };
     });
@@ -69,6 +93,8 @@ export async function generateCodeLibrarySitemap() {
       title: "Code Library - Programming Solutions & Examples",
       description:
         "Browse comprehensive code library with programming solutions and examples from RUET CSE students.",
+      language: "",
+      author: "",
     });
 
     return sitemapEntries;
@@ -78,20 +104,8 @@ export async function generateCodeLibrarySitemap() {
   }
 }
 
-// Generate robots.txt entries for code library
-export function generateCodeLibraryRobots() {
-  return [
-    "# Code Library",
-    "Allow: /codelibrary",
-    "Allow: /codelibrary/*",
-    "",
-    "# Sitemap",
-    "Sitemap: https://csearchive.vercel.app/sitemap-codelibrary.xml",
-  ];
-}
-
 // Generate structured data for code library collection
-export function generateCodeLibraryStructuredData() {
+export function generateCodeLibraryStructuredData(): Record<string, unknown> {
   return {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -144,21 +158,24 @@ export function generateCodeLibraryStructuredData() {
 }
 
 // Generate individual code snippet structured data
-export function generateCodeSnippetStructuredData(snippet, snippetId) {
+export function generateCodeSnippetStructuredData(
+  snippet: DecodedSnippet,
+  snippetId: string,
+): Record<string, unknown> {
   return {
     "@context": "https://schema.org",
     "@type": "SoftwareSourceCode",
-    name: snippet.title,
-    description: snippet.description,
-    text: snippet.codeSnippet,
-    programmingLanguage: snippet.language,
+    name: snippet.title ?? "",
+    description: snippet.description ?? "",
+    text: snippet.codeSnippet ?? "",
+    programmingLanguage: snippet.language ?? "",
     author: {
       "@type": "Person",
       name: snippet.rollNumber ? `Roll: ${snippet.rollNumber}` : "Anonymous",
       identifier: snippet.rollNumber,
     },
-    dateCreated: snippet.date,
-    dateModified: snippet.lastModified || snippet.date,
+    dateCreated: snippet.date ?? "",
+    dateModified: snippet.lastModified || snippet.date || "",
     url: `https://csearchive.vercel.app/codelibrary/${snippetId}`,
     codeRepository: "https://csearchive.vercel.app/codelibrary",
     publisher: {
@@ -200,7 +217,6 @@ export function generateCodeSnippetStructuredData(snippet, snippetId) {
 
 const seoUtils = {
   generateCodeLibrarySitemap,
-  generateCodeLibraryRobots,
   generateCodeLibraryStructuredData,
   generateCodeSnippetStructuredData,
 };

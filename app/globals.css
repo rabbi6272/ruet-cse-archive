@@ -193,12 +193,21 @@ body {
   overflow-x: hidden;
 }
 
-/* Global user-select: none to prevent text selection */
-* {
+/* Prevent text selection on interactive elements, not on content */
+button, a, nav, [role="navigation"], [role="menubar"], [role="menu"],
+.navbar, .dropdown, .mobile-menu {
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
+}
+
+/* Allow text selection in code blocks and content areas */
+pre, code, pre code, .hljs, textarea, [contenteditable="true"] {
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
 }
 
 .desktop-menu .nav-item button:hover {

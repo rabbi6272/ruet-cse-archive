@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
+import { onValue, ref } from "firebase/database";
 import AuthUtils from "@/lib/auth-utils-secure";
 import { CommentsDB, COLLECTION as COMMENTS_COLLECTION } from "@/utils/CommentsDB";
 import {
@@ -35,8 +35,21 @@ export function useComments({
     };
 
     check();
-    const interval = setInterval(check, 30_000);
-    return () => clearInterval(interval);
+
+    // Auth in this app is localStorage-based. React to changes via the
+    // `storage` event (fires when localStorage is written, incl. login/logout)
+    // and on tab focus (covers drift between sessions). No polling needed.
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === "user") check();
+    };
+    const onFocus = () => check();
+
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("focus", onFocus);
+    };
   }, []);
 
   useEffect(() => {
@@ -45,21 +58,16 @@ export function useComments({
       return;
     }
 
-    const commentsRef = doc(CommentsDB, COMMENTS_COLLECTION, snippetId);
+    const commentsRef = ref(CommentsDB, `${COMMENTS_COLLECTION}/${snippetId}`);
 
-    const unsubscribe = onSnapshot(
+    const unsubscribe = onValue(
       commentsRef,
       (snap) => {
-        if (snap.exists()) {
-          const data = snap.data();
-          setComments(sortNewestFirst(normalizeComments(data?.comments ?? [])));
-          return;
-        }
-
-        setComments([]);
+        const data = snap.val() as { comments?: unknown } | null;
+        setComments(sortNewestFirst(normalizeComments(data?.comments ?? [])));
       },
       (error) => {
-        console.error("[useComments] Firestore listener error:", error);
+        console.error("[useComments] Database listener error:", error);
         setComments([]);
       },
     );

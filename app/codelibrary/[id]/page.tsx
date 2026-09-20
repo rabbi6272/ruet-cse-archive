@@ -2,14 +2,28 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import hljs from "highlight.js";
-import "highlight.js/styles/monokai.css";
 import toast, { Toaster } from "react-hot-toast";
-import CommentSection from "@/app/codelibrary/components/CommentSection";
+import HighlightCode from "@/app/codelibrary/components/HighlightCode";
+import { CodeSnippetHelper } from "@/helpers/CodeSnippetHelper";
+
+type CodeSnippetDetail = {
+  id: string;
+  title?: string;
+  description?: string;
+  language?: string;
+  date?: string;
+  rollNumber?: string;
+  difficulty?: string;
+  tags?: string[];
+  likesCount?: number;
+  copiesCount?: number;
+  codeSnippet?: string;
+  code?: string;
+};
 
 export default function CodeSnapPage() {
-  const { id } = useParams();
-  const [codeSnap, setCodeSnap] = useState(null);
+  const { id } = useParams<{ id: string }>();
+  const [codeSnap, setCodeSnap] = useState<CodeSnippetDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -20,17 +34,14 @@ export default function CodeSnapPage() {
           throw new Error("Code snippet ID is required");
         }
 
-        const response = await fetch(`/api/codesnap/${id}`);
-        if (!response.ok) {
+        const snippet = await new CodeSnippetHelper().readById(id);
+        if (!snippet) {
           throw new Error("Code snippet not found");
         }
 
-        const snippetData = await response.json();
-        setCodeSnap({
-          ...snippetData,
-        });
+        setCodeSnap(snippet as CodeSnippetDetail);
       } catch (err) {
-        setError(err.message);
+        setError((err as Error).message);
       } finally {
         setLoading(false);
       }
@@ -38,23 +49,6 @@ export default function CodeSnapPage() {
 
     if (id) fetchCodeSnap();
   }, [id]);
-
-  // Highlight code after component renders
-  useEffect(() => {
-    if (codeSnap && codeSnap.codeSnippet) {
-      // Small delay to ensure DOM is ready
-      setTimeout(() => {
-        const codeBlocks = document.querySelectorAll("pre code");
-        codeBlocks.forEach((block) => {
-          // Remove existing highlighting
-          block.removeAttribute("data-highlighted");
-          block.className = block.className.replace(/hljs[^\s]*/g, "").trim();
-          // Apply new highlighting
-          hljs.highlightElement(block);
-        });
-      }, 100);
-    }
-  }, [codeSnap]);
 
   if (loading) {
     return (
@@ -211,40 +205,11 @@ export default function CodeSnapPage() {
             </div>
           </div>
 
-          <div className="relative">
-            <pre className="p-6 overflow-x-auto bg-gray-900 text-gray-100 rounded-b-xl">
-              <code
-                className={`language-${(
-                  codeSnap.language || "text"
-                ).toLowerCase()} hljs`}
-                style={{ background: "transparent" }}
-              >
-                {codeSnap.codeSnippet || codeSnap.code || "No code available"}
-              </code>
-            </pre>
-          </div>
+          <HighlightCode
+            code={codeSnap.codeSnippet || codeSnap.code || "No code available"}
+            language={codeSnap.language || "text"}
+          />
         </div>
-
-        {/* Comments Section - Advanced Component */}
-        {codeSnap && (
-          <>
-            {console.log(
-              "[CodeSnapPage] Rendering CommentSection with snippet:",
-              {
-                id: codeSnap.id || id,
-                rollNumber: codeSnap.rollNumber,
-                title: codeSnap.title,
-              },
-            )}
-            <CommentSection
-              snippet={{
-                id: codeSnap.id || id,
-                rollNumber: codeSnap.rollNumber,
-                title: codeSnap.title,
-              }}
-            />
-          </>
-        )}
       </div>
     </div>
   );

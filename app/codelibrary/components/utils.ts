@@ -1,25 +1,11 @@
-import { users } from "@/db/students_info";
+import { getStudentName } from "@/lib/students-loader";
 
-// Utility function to get name from roll number
-export function getNameFromRoll(roll) {
-  const user = users.find((u) => u.roll === roll);
-
-  if (!user) {
-    return "User not found";
-  }
-
-  const formattedName = user.name
-    .toLowerCase()
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-
-  return formattedName;
-}
+// Re-export getNameFromRoll from the single source
+export const getNameFromRoll = getStudentName;
 
 // Date formatting function
-export const formatDate = (dateString) => {
-  const date = new Date(dateString);
+export function formatDate(dateString?: string): string {
+  const date = new Date(dateString ?? "");
   if (isNaN(date.getTime())) {
     return "Unknown Date";
   }
@@ -27,4 +13,4 @@ export const formatDate = (dateString) => {
   const month = date.toLocaleString("en-US", { month: "long" });
   const year = date.getFullYear();
   return `${day} ${month}, ${year}`;
-};
+}

@@ -2,7 +2,6 @@
 // @ts-check
 /** @typedef {import('./types').Snippet} Snippet */
 
-import CommentSection from "./CommentSection";
 import CodeDisplay from "./CodeDisplay";
 import { getNameFromRoll } from "./useComments";
 import { formatDate } from "./utils";
@@ -70,8 +69,6 @@ const SnippetCard = ({
             </span>
           </div>
         </div>
-
-        <CommentSection snippet={snippet} />
       </div>
     </div>
   );

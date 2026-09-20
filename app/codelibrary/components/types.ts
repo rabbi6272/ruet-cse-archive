@@ -1,7 +1,5 @@
 /**
- * @fileoverview
- * Central JSDoc type definitions for the Code Library feature.
- * Import with:  @typedef {import('./types').Snippet} Snippet
+ * Central type definitions for the Code Library feature.
  *
  * Firestore schema
  * ─────────────────
@@ -17,65 +15,42 @@
  *                           ├── id, authorRoll, text, createdAt, likes, likedBy, isEdited, editedAt?
  *                           └── replies : Reply[]
  *
- * Notifications (Firestore — replaces RTDB)
+ * Notifications (Firestore)
  * Collection : "notifications"
  * Document   : auto-id
  *   └── recipientRoll, message, type, relatedSnippetId, …
  */
+import type { AuthUser, Comment, Reply } from "./commentTypes";
 
-/**
- * @typedef {Object} Reply
- * @property {string}                  id
- * @property {string}                  authorRoll
- * @property {string}                  text
- * @property {string}                  createdAt   - ISO date string
- * @property {string}                  [editedAt]
- * @property {boolean}                 isEdited
- * @property {number}                  likes
- * @property {Record<string, boolean>} likedBy     - keyed by rollNumber
- */
-
-/**
- * @typedef {Object} Comment
- * @property {string}                  id
- * @property {string}                  authorRoll
- * @property {string}                  text
- * @property {string}                  createdAt
- * @property {string}                  [editedAt]
- * @property {boolean}                 isEdited
- * @property {number}                  likes
- * @property {Record<string, boolean>} likedBy
- * @property {Reply[]}                 replies
- */
+export type { AuthUser, Comment, Reply };
 
 /**
  * Raw shape stored in Firestore — one element of the `snippets` array.
- *
- * @typedef {Object} FirestoreSnippet
- * @property {string}    id
- * @property {string}    rollNumber
- * @property {string}    title
- * @property {string}    description
- * @property {string}    code
- * @property {string}    language
- * @property {string}    date
- * @property {string}    [author]
- * @property {number}    likesCount
- * @property {number}    copiesCount
- * @property {Comment[]} comments     - embedded directly in the snippet
+ * Most fields are optional because legacy documents may be missing them.
  */
+export type FirestoreSnippet = {
+  id: string;
+  rollNumber: string;
+  title?: string;
+  description?: string;
+  code?: string;
+  codeSnippet?: string;
+  language?: string;
+  date?: string;
+  lastModified?: string;
+  author?: string;
+  isLiked?: boolean;
+  difficulty?: string;
+  tags?: string[];
+  likesCount?: number;
+  copiesCount?: number;
+  comments?: Comment[];
+};
 
 /**
  * FirestoreSnippet enriched with client-side fields at read time.
- *
- * @typedef {FirestoreSnippet & { isLiked: boolean, timestamp: number }} Snippet
  */
-
-/**
- * @typedef {Object} AuthUser
- * @property {string} roll
- * @property {string} name
- */
-
-// This file has no runtime exports — it exists purely for JSDoc type references.
-export {};
+export type Snippet = FirestoreSnippet & {
+  isLiked: boolean;
+  timestamp: number;
+};
