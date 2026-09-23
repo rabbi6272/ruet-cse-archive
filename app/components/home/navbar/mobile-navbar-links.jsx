@@ -23,7 +23,7 @@ const mobileNavItems = [
       },
       {
         name: "Facebook Page",
-        href: "https://www.facebook.com/people/RUET-CSE-24/61574730479807/",
+        href: "https://www.facebook.com/profile.php?id=61594261050819",
         target: "_blank",
       },
       { name: "Contributors", href: "/contact&help/developers" },
@@ -79,9 +79,8 @@ export function MobileNavbarLinks() {
       {/* Add slide-in animation with proper enter/exit states */}
       <div
         ref={navRef}
-        className={`mobile-navbar bg-white dark:bg-[#071a26] p-6 overflow-y-auto overflow-x-hidden ${
-          isNavOpen ? "show" : "hide"
-        }`}
+        className={`mobile-navbar bg-white dark:bg-[#071a26] p-6 overflow-y-auto overflow-x-hidden ${isNavOpen ? "show" : "hide"
+          }`}
         style={{
           left: isNavOpen ? "0" : "100%",
         }}
@@ -111,11 +110,10 @@ export function MobileNavbarLinks() {
                   </button>
                   {/* Use CSS transitions instead of Framer Motion */}
                   <div
-                    className={`overflow-hidden transition-all duration-300 ease-out ${
-                      openDropdown === index
+                    className={`overflow-hidden transition-all duration-300 ease-out ${openDropdown === index
                         ? "max-h-96 opacity-100"
                         : "max-h-0 opacity-0"
-                    }`}
+                      }`}
                   >
                     <div className="pl-4">
                       {item.subItems.map((sub) =>
