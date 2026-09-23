@@ -1,6 +1,9 @@
+import { avegance } from "@/app/fonts";
+import { StaticImageData } from "next/image";
+
+import { groupDevelopersByRole } from "@/lib/developer.utils";
 import { ProfileCard } from "@/app/contact&help/developers/ProfileCard";
 
-import { avegance } from "@/app/fonts";
 
 import rabbi2 from "@/public/images/developers/rabbi.jpg";
 import bitto2 from "@/public/images/developers/bitto2.jpg";
@@ -18,8 +21,6 @@ import seam from "@/public/images/developers/seam.jpg";
 import mustaq from "@/public/images/developers/mustaq.jpg";
 import arnob from "@/public/images/developers/arnob.jpg";
 
-import { groupDevelopersByRole } from "@/lib/developer-utils";
-import { StaticImageData } from "next/image";
 
 export interface Developer {
   name: string;
