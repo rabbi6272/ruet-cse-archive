@@ -39,7 +39,21 @@ export async function createWatchChannel(
   const drive = await createDriveClient();
   const channelId = randomUUID();
 
+  // changes.watch requires pageToken (query param). Prefer the stored token so
+  // the watch resumes from the same stream; otherwise fetch a fresh start token.
+  let pageToken = await getPageToken();
+  if (!pageToken) {
+    const start = await drive.changes.getStartPageToken();
+    pageToken = start.data.startPageToken ?? null;
+  }
+  if (!pageToken) {
+    throw new Error(
+      "Cannot create Drive watch: no pageToken available (changes.getStartPageToken failed)",
+    );
+  }
+
   const response = await drive.changes.watch({
+    pageToken,
     requestBody: {
       id: channelId,
       type: "web_hook",

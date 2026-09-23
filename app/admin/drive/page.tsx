@@ -286,7 +286,7 @@ export default function DriveAdminPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {message.text && (
           <div
-            className={`border rounded-md px-4 py-3 text-sm ${message.type === "success"
+            className={`flex justify-between items-center border rounded-md px-4 py-1 text-sm ${message.type === "success"
               ? "bg-green-50 border-green-200 text-green-700"
               : "bg-red-50 border-red-200 text-red-700"
               }`}
@@ -294,7 +294,7 @@ export default function DriveAdminPage() {
             {message.text}
             <button
               onClick={() => setMessage({ type: "", text: "" })}
-              className="ml-2 text-inherit opacity-70 hover:opacity-100"
+              className="text-2xl text-inherit opacity-70 hover:opacity-100 cursor-pointer"
             >
               ×
             </button>

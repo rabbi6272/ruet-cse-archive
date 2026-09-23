@@ -65,15 +65,15 @@ async function buildStatus(): Promise<AdminStatus> {
     },
     watch: watchInfo
       ? {
-          channelId: watchInfo.channelId,
-          resourceId: watchInfo.resourceId || null,
-          expiration: watchInfo.expiration
-            ? new Date(Number(watchInfo.expiration)).toISOString()
-            : null,
-          expired: watchInfo.expiration
-            ? Date.now() > Number(watchInfo.expiration)
-            : true,
-        }
+        channelId: watchInfo.channelId,
+        resourceId: watchInfo.resourceId || null,
+        expiration: watchInfo.expiration
+          ? new Date(Number(watchInfo.expiration)).toISOString()
+          : null,
+        expired: watchInfo.expiration
+          ? Date.now() > Number(watchInfo.expiration)
+          : true,
+      }
       : null,
     pageToken: pageToken ? "present" : "missing",
     lastNotification,

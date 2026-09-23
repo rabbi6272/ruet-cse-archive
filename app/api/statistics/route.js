@@ -8,13 +8,9 @@ import { getUserDisplayRole } from "@/lib/auth-utils";
 
 export async function GET() {
   try {
-    // Import firebase-admin dynamically to avoid build issues
-    const { adminDb } = await import("@/lib/firebase-admin");
-    
-    if (!adminDb) {
-      throw new Error("Firebase Admin not available");
-    }
-    
+    const { getAdminDb } = await import("@/lib/firebase-admin");
+    const adminDb = getAdminDb();
+
     // Fetch all users' Nutrinos data from Firebase
     const nutrinosRef = adminDb.ref("userNutrinos");
     const snapshot = await nutrinosRef.once("value");
