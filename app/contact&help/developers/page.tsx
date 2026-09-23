@@ -1,8 +1,11 @@
-import { ProfileCard } from "@/app/components/contact&help/developers/profileCard";
-
 import { avegance } from "@/app/fonts";
+import { StaticImageData } from "next/image";
 
-import rabbi2 from "@/public/images/developers/rabbi3.jpg";
+import { groupDevelopersByRole } from "@/lib/developer.utils";
+import { ProfileCard } from "@/app/contact&help/developers/ProfileCard";
+
+
+import rabbi2 from "@/public/images/developers/rabbi.jpg";
 import bitto2 from "@/public/images/developers/bitto2.jpg";
 import nilay from "@/public/images/developers/nilay.jpg";
 import amio from "@/public/images/developers/amio.jpg";
@@ -13,19 +16,31 @@ import def from "@/public/images/developers/default.jpg";
 import ahnaf from "@/public/images/developers/ahnaf.jpg";
 import shadman from "@/public/images/developers/shadman.jpg";
 import aqm from "@/public/images/developers/aqm.jpg";
-import ratul from "@/public/images/developers/ratul.jpg";
+import ratul from "@/public/images/developers/ratul2.jpeg";
 import seam from "@/public/images/developers/seam.jpg";
 import mustaq from "@/public/images/developers/mustaq.jpg";
 import arnob from "@/public/images/developers/arnob.jpg";
 
-import { groupDevelopersByRole } from "@/lib/developer-utils";
 
-const staticDevelopers = [
+export interface Developer {
+  name: string;
+  role: string;
+  location?: string;
+  image?: StaticImageData;
+  roll?: string;
+  github?: string;
+  linkedin?: string;
+  facebook?: string;
+  mail?: string;
+}
+
+const staticDevelopers: Developer[] = [
   {
     name: "Md. Fazle Rabbi",
     role: "Frontend & Backend, Code Reviewer",
     location: "Khulna, Bangladesh",
     image: rabbi2,
+    mail: "mmrabbi625442@gmail.com",
     roll: "2403172",
     github: "https://github.com/rabbi6272",
     linkedin: "https://www.linkedin.com/in/rabbi6272/",
@@ -51,16 +66,17 @@ const staticDevelopers = [
     linkedin: "https://www.linkedin.com/in/morchhalin-alam-amio-bb35a8360",
     facebook: "https://www.facebook.com/share/1FP1VwSFvd/",
   },
-
-  // {
-  //   name: "Sujoy Roy",
-  //   role: "Media Team",
-  //   image: sujoy,
-  //   location: "Barishal, Bangladesh",
-  //   github: "#",
-  //   linkedin: "https://www.linkedin.com/in/sujoy-roy-855738216",
-  //   facebook: "https://www.facebook.com/share/1JopP1ruvs/",
-  // },
+  {
+    name: "Sujoy Roy",
+    role: "Resource Management",
+    image: sujoy,
+    roll: "2403099",
+    mail: "sujoy2005roy@gmail.com",
+    location: "Barishal, Bangladesh",
+    github: "https://github.com/SujoyRoy",
+    linkedin: "https://www.linkedin.com/in/sujoy-roy-855738216",
+    facebook: "https://www.facebook.com/share/1JopP1ruvs/",
+  },
   // {
   //   name: "Eftekhar Hasnat Rahi",
   //   role: "Media Team",
@@ -92,11 +108,12 @@ const staticDevelopers = [
   },
   {
     name: "Tasaouf Ahnaf",
-    role: "Code Reviewer & Tester",
+    role: "Resource Management",
     image: ahnaf,
     roll: "2403140",
-    location: "Jessore, Bangladesh",
-    github: "#",
+    mail: "tasaouf.ahnaf@gmail.com",
+    location: "Dhaka, Bangladesh",
+    github: "https://github.com/Tasaouf-Ahnaf",
     linkedin: "https://www.linkedin.com/in/tasaoufahnaf/",
     facebook: "https://www.facebook.com/tasaouf.ahnaf",
   },
@@ -115,6 +132,7 @@ const staticDevelopers = [
     role: "Code Reviewer & Tester",
     image: arnob,
     roll: "2403155",
+    mail: "arnobbenedicttudu@gmail.com",
     location: "Rajshahi, Bangladesh",
     github: "https://github.com/Arnob001607",
     linkedin: "https://www.linkedin.com/in/arnob-b-tudu-616045360",
@@ -134,20 +152,23 @@ const staticDevelopers = [
     role: "Resource Management",
     image: ratul,
     roll: "2403149",
+    mail: "anratul05@gmail.com",
     location: "Dhaka, Bangladesh",
     github: "https://github.com/Arefin-Ratul",
     linkedin: "https://www.linkedin.com/in/arefin-noused-ratul-622692366",
     facebook: "https://www.facebook.com/arefin.ratul.18",
   },
-  // {
-  //   name: "Shahriar Seam",
-  //   role: "Resource Management",
-  //   image: seam,
-  //   location: "Dhaka, Bangladesh",
-  //   github: "https://github.com/salterynn",
-  //   linkedin: "#",
-  //   facebook: "https://www.facebook.com/shahriar.abdullah.1422",
-  // },
+  {
+    name: "Shahriar Seam",
+    role: "Code Reviewer & Tester",
+    image: seam,
+    roll: "2403150",
+    mail: "shahriar.seam@gmail.com",
+    location: "Dhaka, Bangladesh",
+    github: "https://github.com/salterynn",
+    linkedin: "#",
+    facebook: "https://www.facebook.com/shahriar.abdullah.1422",
+  },
   // {
   //   name: "Shariar Mustaq",
   //   role: "Resource Management",
@@ -160,17 +181,13 @@ const staticDevelopers = [
 ];
 
 export default function Developers() {
-  // groupDevelopersByRole is a utility function that takes an array of developers and groups them by their roles. It returns an object where the keys are the roles and the values are arrays of developers who have that role.
   const groupedDevelopers = groupDevelopersByRole(staticDevelopers);
 
   return (
     <div className="p-4 md:p-8 min-h-dvh">
       {/* <div className="p-3 md:p-6 w-full bg-[#ffffffa4] dark:bg-slate-700 rounded-lg"> */}
       <h3
-        className={
-          avegance.className +
-          " pt-1 tracking-wide text-center text-4xl lg:text-6xl font-normal text-gray-800 dark:text-gray-200"
-        }
+        className={`${avegance.className} pt-1 tracking-wide text-center text-4xl lg:text-6xl font-normal text-gray-800 dark:text-gray-200`}
       >
         The Avengers
       </h3>
@@ -182,14 +199,14 @@ export default function Developers() {
           <div className="mb-12 ">
             <h4
               className={
-                " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
+                " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
               }
             >
               Developers
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 px-4 lg:px-6">
               {groupedDevelopers["Frontend & Backend Developers"].map(
-                (developer) => (
+                (developer: (typeof staticDevelopers)[number]) => (
                   <ProfileCard
                     key={developer.name + (developer.roll || "")}
                     {...developer}
@@ -206,7 +223,7 @@ export default function Developers() {
           <div className="mb-12 ">
             <h4
               className={
-                " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
+                " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
               }
             >
               Security
@@ -228,7 +245,7 @@ export default function Developers() {
           <div className="mb-12 ">
             <h4
               className={
-                " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
+                " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
               }
             >
               Code Reviewers & Testers
@@ -252,7 +269,7 @@ export default function Developers() {
           <div className="mb-12 ">
             <h4
               className={
-                " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-2xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
+                " tracking-wide border-l-4 border-gray-500 dark:border-gray-300 pl-6 p-2 bg-gray-300 dark:bg-gray-700 rounded-md text-lg lg:text-xl font-normal text-gray-800 dark:text-gray-200 mb-4 lg:mb-6"
               }
             >
               Resources Management

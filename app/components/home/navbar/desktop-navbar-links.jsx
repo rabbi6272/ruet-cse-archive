@@ -61,7 +61,7 @@ export function DesktopNavbarLinks() {
               Official Website
             </Link>
             <Link
-              href="https://www.facebook.com/people/RUET-CSE-24/61574730479807/"
+              href="https://www.facebook.com/profile.php?id=61594261050819"
               target="_blank"
               className="block px-4 py-2 rounded text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-[#071a26]/90 hover:text-blue-600 dark:hover:text-blue-500"
             >
