@@ -1,36 +1,9 @@
 import { NextResponse } from "next/server";
-import { createDriveClient } from "@/lib/drive-auth.js";
-import { getCachedDriveData } from "@/lib/drive-cache.js";
+import { fetchDriveData } from "@/lib/drive-data";
+import { getCachedDriveData } from "@/lib/drive-cache";
 
-async function fetchDriveData(folderId) {
-  const drive = await createDriveClient();
-
-  const [folderInfo, filesResponse] = await Promise.all([
-    drive.files.get({
-      fileId: folderId,
-      fields: "id, name, parents",
-    }),
-    drive.files.list({
-      q: `'${folderId}' in parents and trashed = false`,
-      fields:
-        "files(id, name, mimeType, webViewLink, webContentLink, size, modifiedTime)",
-      pageSize: 1000,
-      orderBy: "name",
-    }),
-  ]);
-
-  return {
-    files: filesResponse.data.files || [],
-    parentFolderId: folderInfo.data.parents?.[0] || null,
-    currentFolder: {
-      id: folderInfo.data.id,
-      name: folderInfo.data.name,
-    },
-  };
-}
-
-export async function POST(req) {
-  let folderId;
+export async function POST(req: Request) {
+  let folderId: string | undefined;
 
   try {
     const body = await req.json();
@@ -50,7 +23,9 @@ export async function POST(req) {
   }
 
   try {
-    const data = await getCachedDriveData(folderId, () => fetchDriveData(folderId));
+    const data = await getCachedDriveData(folderId, () =>
+      fetchDriveData(folderId),
+    );
 
     return NextResponse.json(data, {
       headers: {
@@ -63,28 +38,34 @@ export async function POST(req) {
     let errorMessage = "Failed to fetch files from Google Drive";
     let statusCode = 500;
 
-    if (err.code === "ENOENT") {
+    const apiError = err as {
+      code?: string | number;
+      message?: string;
+      response?: { status?: number };
+    };
+
+    if (apiError.code === "ENOENT") {
       errorMessage = "Google Drive credentials file not found";
-    } else if (err.code === 403 || err.response?.status === 403) {
+    } else if (apiError.code === 403 || apiError.response?.status === 403) {
       errorMessage = "Access denied. Check your Google Drive API permissions.";
       statusCode = 403;
-    } else if (err.code === 404 || err.response?.status === 404) {
+    } else if (apiError.code === 404 || apiError.response?.status === 404) {
       errorMessage = "Folder not found or not accessible.";
       statusCode = 404;
-    } else if (err.code === 429 || err.response?.status === 429) {
+    } else if (apiError.code === 429 || apiError.response?.status === 429) {
       errorMessage = "Rate limit exceeded. Please try again in a moment.";
       statusCode = 429;
-    } else if (err.message?.includes("invalid_grant")) {
+    } else if (apiError.message?.includes("invalid_grant")) {
       errorMessage =
         "Authentication failed. Check your service account credentials and system time.";
-    } else if (err.message?.includes("JWT")) {
+    } else if (apiError.message?.includes("JWT")) {
       errorMessage =
         "JWT token error. Please regenerate your service account credentials.";
-    } else if (err.message?.includes("credentials not found")) {
+    } else if (apiError.message?.includes("credentials not found")) {
       errorMessage =
         "Google Drive credentials not found. Please add credentials.json or set environment variables.";
-    } else if (err.message) {
-      errorMessage = err.message;
+    } else if (apiError.message) {
+      errorMessage = apiError.message;
     }
 
     return NextResponse.json(
@@ -98,15 +79,28 @@ export async function POST(req) {
 }
 
 export async function GET() {
-  const { getWatchInfo, getPageToken } = await import("@/lib/drive-meta.js");
+  const { getWatchInfo, getPageToken, getLastNotification } = await import(
+    "@/lib/drive-meta"
+  );
 
-  const [watchInfo, pageToken] = await Promise.all([
-    getWatchInfo(),
-    getPageToken(),
-  ]);
+  let db: { ok: boolean; error?: string } = { ok: true };
+  let watchInfo: Awaited<ReturnType<typeof getWatchInfo>> = null;
+  let pageToken: string | null = null;
+  let lastNotification: Awaited<ReturnType<typeof getLastNotification>> = null;
+
+  try {
+    [watchInfo, pageToken, lastNotification] = await Promise.all([
+      getWatchInfo(),
+      getPageToken(),
+      getLastNotification(),
+    ]);
+  } catch (err) {
+    db = { ok: false, error: (err as Error).message };
+  }
 
   return NextResponse.json({
     storage: "next-cache (unstable_cache) + firebase-rtdb (drive/meta)",
+    db,
     watch: watchInfo
       ? {
           channelId: watchInfo.channelId,
@@ -119,5 +113,6 @@ export async function GET() {
         }
       : null,
     pageToken: pageToken ? "present" : "missing",
+    lastNotification,
   });
 }

@@ -1,4 +1,14 @@
-export function DriveFilePreviewModal({ previewID, handleClosePreview }) {
+import type { MouseEvent } from "react";
+
+interface DriveFilePreviewModalProps {
+  previewID: string;
+  handleClosePreview: () => void;
+}
+
+export function DriveFilePreviewModal({
+  previewID,
+  handleClosePreview,
+}: DriveFilePreviewModalProps) {
   return (
     <div
       className="fixed top-0 left-0 w-full h-screen backdrop-blur-md z-50"
@@ -17,7 +27,7 @@ export function DriveFilePreviewModal({ previewID, handleClosePreview }) {
         height="100%"
         allow="autoplay"
         className="rounded-lg"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e: MouseEvent<HTMLIFrameElement>) => e.stopPropagation()}
       ></iframe>
     </div>
   );

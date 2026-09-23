@@ -1,18 +1,43 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export function ApkDownload() {
   return (
     <section
       aria-labelledby="apk-heading"
-      className="w-full px-6 sm:px-8 py-10 sm:py-14"
+      className="w-full px-6 sm:px-8 py-8 sm:py-14"
     >
-      <div className="reveal max-w-5xl mx-auto rounded-3xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#071a26] px-6 sm:px-10 py-10 flex flex-col md:flex-row items-center md:justify-between gap-8 hover:shadow-md hover:border-blue-600/50 transition-all duration-300">
+      <div className="reveal max-w-5xl mx-auto rounded-3xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#071a26] px-6 sm:px-10 py-8 flex flex-col md:flex-row items-center md:justify-between gap-8 hover:shadow-md hover:border-blue-600/50 transition-all duration-300">
         {/* App info */}
-        <div className="flex items-center gap-5 w-full md:w-auto justify-center md:justify-start">
-          <img
+        <div className="md:hidden flex flex-col items-center gap-5 w-full md:w-auto justify-center md:justify-start">
+          <div className="flex items-center">
+            <Image
+              width={64}
+              height={64}
+              src="/images/semicolon.png"
+              alt="Semicolon app icon"
+              className="w-16 h-16 object-contain"
+            />
+            <h2
+              id="apk-heading"
+              className="font-[family-name:var(--font-space-grotesk)] text-xl font-semibold text-gray-900 dark:text-gray-100"
+            >
+              Take the archive with you
+            </h2>
+          </div>
+          <p className=" text-gray-600 dark:text-gray-400">
+            Semicolon, our companion app, brings a faster, optimized in-app
+            experience to the same resources.
+          </p>
+        </div>
+
+        <div className="hidden md:flex items-center gap-5 w-full md:w-auto justify-center md:justify-start">
+          <Image
+            width={80}
+            height={80}
             src="/images/semicolon.png"
             alt="Semicolon app icon"
-            className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-contain shadow-md"
+            className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-contain"
           />
           <div>
             <h2
@@ -32,7 +57,7 @@ export function ApkDownload() {
         <Link
           href="https://github.com/idcnys/semicolon/releases/download/apk_latest/semicolon_2.0.3.apk"
           download
-          className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-blue-600 text-white text-base font-semibold hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-colors shrink-0"
+          className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-blue-600 text-white text-base font-semibold hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-colors shrink-0"
         >
           <svg
             className="w-5 h-5"

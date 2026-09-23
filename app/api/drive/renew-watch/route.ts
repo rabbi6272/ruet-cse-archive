@@ -1,24 +1,32 @@
 import { NextResponse } from "next/server";
-import { renewWatchIfNeeded } from "@/lib/drive-changes.js";
+import { renewWatchIfNeeded } from "@/lib/drive-changes";
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET;
+const CRON_SECRET = process.env.CRON_SECRET;
 const WEBHOOK_URL = process.env.GOOGLE_DRIVE_WEBHOOK_URL;
 const WEBHOOK_TOKEN = process.env.GOOGLE_DRIVE_WEBHOOK_TOKEN;
 
-function verifyAuth(req) {
-  if (!ADMIN_SECRET) return false;
-  const authHeader = req.headers.get("authorization");
-  return authHeader === `Bearer ${ADMIN_SECRET}`;
+function verifyAuth(req: Request): boolean {
+  if (!ADMIN_SECRET && !CRON_SECRET) return false;
+  const authHeader = req.headers.get("authorization") || "";
+  if (!authHeader.startsWith("Bearer ")) return false;
+  const token = authHeader.slice("Bearer ".length);
+  return Boolean(
+    (ADMIN_SECRET && token === ADMIN_SECRET) ||
+      (CRON_SECRET && token === CRON_SECRET),
+  );
 }
 
-export async function POST(req) {
+export async function POST(req: Request) {
   if (!verifyAuth(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   if (!WEBHOOK_URL || !WEBHOOK_TOKEN) {
     return NextResponse.json(
-      { error: "GOOGLE_DRIVE_WEBHOOK_URL and GOOGLE_DRIVE_WEBHOOK_TOKEN must be set" },
+      {
+        error: "GOOGLE_DRIVE_WEBHOOK_URL and GOOGLE_DRIVE_WEBHOOK_TOKEN must be set",
+      },
       { status: 500 },
     );
   }
@@ -46,7 +54,7 @@ export async function POST(req) {
   } catch (err) {
     console.error("[RenewWatch] Failed:", err);
     return NextResponse.json(
-      { error: `Renewal failed: ${err.message}` },
+      { error: `Renewal failed: ${err instanceof Error ? err.message : err}` },
       { status: 500 },
     );
   }
